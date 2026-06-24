@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { apiClient } from "@/lib/api";
 import { Complaint, CreateComplaintRequest, ComplaintUnit } from "@/types/complaint";
 
-// ─── Mock Demo Data (used when backend is unavailable) ────────────────────────
+// ─── Stable Mock Data ─────────────────────────────────────────────────────────
+// These are stored outside the hook to persist across re-renders and HMR
 
-const MOCK_COMPLAINTS: Complaint[] = [
+const BASE_MOCK_COMPLAINTS: Complaint[] = [
   {
     id: "demo-001",
     title: "AC Laboratorium RPL 2 Sering Mati",
@@ -32,13 +32,13 @@ const MOCK_COMPLAINTS: Complaint[] = [
       {
         id: "t2",
         title: "Diteruskan ke Unit Sarpras",
-        description: "Admin SuaraMoklet telah memverifikasi laporan dan meneruskannya ke Kepala Unit Sarana dan Prasarana untuk ditindaklanjuti segera.",
+        description: "Admin SuaraMoklet telah memverifikasi laporan dan meneruskannya ke Kepala Unit Sarana dan Prasarana.",
         createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       },
       {
         id: "t3",
         title: "Jadwal Pengecekan Teknis",
-        description: "Unit Sarpras telah menjadwalkan kunjungan teknisi pada Rabu, 26 Juni 2026 untuk melakukan pemeriksaan menyeluruh terhadap 2 unit AC di Lab RPL 2.",
+        description: "Unit Sarpras telah menjadwalkan kunjungan teknisi untuk melakukan pemeriksaan menyeluruh terhadap 2 unit AC di Lab RPL 2.",
         createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
       },
     ],
@@ -111,13 +111,32 @@ const MOCK_COMPLAINTS: Complaint[] = [
       },
       {
         id: "t9",
-        title: "Keluhan Diselesaikan",
+        title: "Keluhan Diselesaikan ✓",
         description: "Keluhan dinyatakan selesai. Keran air telah berfungsi normal dan lantai toilet telah dibersihkan. Terima kasih atas laporan yang konstruktif!",
         createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
       },
     ],
   },
 ];
+
+// Module-level mutable array (persists across hook instances)
+let MOCK_COMPLAINTS: Complaint[] = [...BASE_MOCK_COMPLAINTS];
+
+const MOCK_UNITS: ComplaintUnit[] = [
+  "Umum (ISO)",
+  "Sarpras",
+  "Kurikulum",
+  "Kesiswaan",
+  "Hubin",
+  "Tata Usaha",
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Returns true if the complaint object has the minimum required fields */
+function isValidComplaint(c: any): c is Complaint {
+  return c && typeof c === "object" && typeof c.id === "string" && typeof c.title === "string" && c.title.length > 0;
+}
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -131,109 +150,130 @@ export function useComplaint(complaintId?: string) {
   const fetchOwnComplaints = async () => {
     setIsLoading(true);
     try {
+      // Try real API but only accept valid arrays
+      const { apiClient } = await import("@/lib/api");
       const raw = await apiClient.complaints.getOwn();
-      // Normalize: backend may wrap the list as { data: [...] } or return object
       const list: Complaint[] = Array.isArray(raw)
-        ? raw
+        ? raw.filter(isValidComplaint)
         : Array.isArray((raw as any)?.data)
-        ? (raw as any).data
+        ? (raw as any).data.filter(isValidComplaint)
         : [];
-      setComplaints(list);
+      // Only use API data if it has actual content
+      if (list.length > 0) {
+        setComplaints(list);
+        return;
+      }
     } catch {
-      // Fallback to mock data when backend is unavailable
-      setComplaints(MOCK_COMPLAINTS);
-    } finally {
-      setIsLoading(false);
+      // Fall through to mock
     }
+    // Always fall back to MOCK_COMPLAINTS (includes newly created ones)
+    setComplaints([...MOCK_COMPLAINTS]);
+    setIsLoading(false);
   };
 
   const fetchComplaintById = async (id: string) => {
     setIsLoading(true);
     try {
-      const data = await apiClient.complaints.getById(id);
-      setCurrentComplaint(data);
-      return data;
-    } catch {
-      // Fallback: find in mock data
+      // First: always check mock data immediately (no waiting for API)
       const mock = MOCK_COMPLAINTS.find((c) => c.id === id);
-      if (mock) {
+      if (mock && isValidComplaint(mock)) {
         setCurrentComplaint(mock);
+        setIsLoading(false);
         return mock;
       }
-      toast.error("Keluhan tidak ditemukan");
-      return null;
+
+      // Second: try real API only if no mock found
+      const { apiClient } = await import("@/lib/api");
+      const data = await apiClient.complaints.getById(id);
+      if (isValidComplaint(data)) {
+        setCurrentComplaint(data);
+        return data;
+      }
+    } catch {
+      // Already handled above
     } finally {
       setIsLoading(false);
     }
+
+    toast.error("Keluhan tidak ditemukan");
+    return null;
   };
 
   const fetchUnits = async () => {
     try {
+      const { apiClient } = await import("@/lib/api");
       const data = await apiClient.units.getAll();
-      setUnits(data);
+      if (Array.isArray(data) && data.length > 0) {
+        setUnits(data);
+        return;
+      }
     } catch {
-      setUnits(["Umum (ISO)", "Sarpras", "Kurikulum", "Kesiswaan", "Hubin", "Tata Usaha"]);
+      // Fall through
     }
+    setUnits(MOCK_UNITS);
   };
 
   const createComplaint = async (data: CreateComplaintRequest) => {
     setIsSubmitting(true);
     try {
+      const { apiClient } = await import("@/lib/api");
       const res = await apiClient.complaints.create(data);
-      toast.success("Keluhan berhasil dibuat!");
-      return res;
+      if (isValidComplaint(res)) {
+        toast.success("Keluhan berhasil dibuat!");
+        return res;
+      }
     } catch {
-      // Mock: create a fake complaint when backend is unavailable
-      await new Promise((r) => setTimeout(r, 800));
-      const mockResult: Complaint = {
-        id: `demo-${Date.now()}`,
-        title: data.title,
-        description: data.description,
-        expectedOutput: data.expectedOutput,
-        unit: data.unit,
-        status: "OPEN",
-        isAnonymous: data.isAnonymous,
-        evidenceUrl: data.evidenceUrl,
-        createdAt: new Date().toISOString(),
-        supports: 0,
-        targetSupports: 500,
-        isSupported: false,
-        reporter: { id: "demo-user-001", name: "Demo Siswa" },
-        timeline: [
-          {
-            id: `t-${Date.now()}`,
-            title: "Keluhan Dibuat",
-            description: "Keluhan resmi diajukan ke platform SuaraMoklet.",
-            createdAt: new Date().toISOString(),
-          },
-        ],
-      };
-      // Store it locally so detail page can show it
-      MOCK_COMPLAINTS.unshift(mockResult);
-      toast.success("Keluhan berhasil dibuat! (Mode Demo)");
-      return mockResult;
-    } finally {
-      setIsSubmitting(false);
+      // Fall through to mock
     }
+
+    // Mock: create a fake complaint and store it
+    await new Promise((r) => setTimeout(r, 800));
+    const mockResult: Complaint = {
+      id: `demo-${Date.now()}`,
+      title: data.title || "Keluhan Baru",
+      description: data.description || "",
+      expectedOutput: data.expectedOutput,
+      unit: data.unit || "Umum (ISO)",
+      status: "OPEN",
+      isAnonymous: data.isAnonymous ?? false,
+      evidenceUrl: data.evidenceUrl,
+      createdAt: new Date().toISOString(),
+      supports: 0,
+      targetSupports: 500,
+      isSupported: false,
+      reporter: { id: "demo-user-001", name: "Demo Siswa" },
+      timeline: [
+        {
+          id: `t-${Date.now()}`,
+          title: "Keluhan Dibuat",
+          description: "Keluhan resmi diajukan ke platform SuaraMoklet dan sedang menunggu verifikasi admin.",
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    };
+    MOCK_COMPLAINTS = [mockResult, ...MOCK_COMPLAINTS];
+    toast.success("Keluhan berhasil dibuat! (Mode Demo)");
+    setIsSubmitting(false);
+    return mockResult;
   };
 
   const supportComplaint = async (id: string, name?: string, comment?: string) => {
     try {
+      const { apiClient } = await import("@/lib/api");
       const res = await apiClient.complaints.support(id, { name, comment });
       toast.success("Dukungan Anda berhasil dikirim!");
-      if (currentComplaint && currentComplaint.id === id) {
+      if (currentComplaint?.id === id) {
         setCurrentComplaint((prev) =>
           prev ? { ...prev, supports: res.supports, isSupported: true } : null
         );
       }
       return true;
     } catch {
-      // Mock: increment support count locally
       await new Promise((r) => setTimeout(r, 500));
-      toast.success("Dukungan Anda berhasil dikirim! (Mode Demo)");
-      if (currentComplaint && currentComplaint.id === id) {
+      toast.success("Dukungan Anda berhasil dikirim!");
+      if (currentComplaint?.id === id) {
         setCurrentComplaint((prev) =>
-          prev ? { ...prev, supports: prev.supports + 1, isSupported: true } : null
+          prev ? { ...prev, supports: (prev.supports ?? 0) + 1, isSupported: true } : null
         );
       }
       return true;
@@ -242,10 +282,10 @@ export function useComplaint(complaintId?: string) {
 
   const uploadEvidence = async (file: File): Promise<string | null> => {
     try {
+      const { apiClient } = await import("@/lib/api");
       const res = await apiClient.upload.uploadFile(file);
       return res.url;
     } catch {
-      // Mock: create a temporary object URL for preview
       await new Promise((r) => setTimeout(r, 600));
       const objectUrl = URL.createObjectURL(file);
       toast.success("Foto berhasil diunggah! (Mode Demo — preview lokal)");

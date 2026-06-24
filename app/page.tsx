@@ -20,6 +20,7 @@ import {
   Sparkles,
   LogIn,
   LayoutDashboard,
+  ChevronDown,
 } from "lucide-react";
 import { ComplaintCard, ComplaintCardData } from "@/components/shared/complaint-card";
 import { cn } from "@/lib/utils";
@@ -34,7 +35,7 @@ const TRENDING_COMPLAINTS: ComplaintCardData[] = [
     title: "AC Lab RPL 2 Sering Mati",
     description:
       "Kondisi AC yang sering mati di laboratorium sangat mengganggu konsentrasi belajar saat praktikum berlangsung hampir setiap hari.",
-    image: "/images/ac_lab.png",
+    image: "/images/lab_ac_rusak.png",
     category: "Sarpras",
     status: "OPEN",
     supports: 842,
@@ -48,7 +49,7 @@ const TRENDING_COMPLAINTS: ComplaintCardData[] = [
     title: "Perbaikan Fasilitas Parkir Motor",
     description:
       "Area parkir saat musim hujan sangat becek dan licin, membahayakan siswa saat memarkir kendaraan mereka di pagi hari.",
-    image: "/images/parkir_motor.png",
+    image: "/images/parkir_sekolah.png",
     category: "Sarpras",
     status: "OPEN",
     supports: 650,
@@ -62,7 +63,7 @@ const TRENDING_COMPLAINTS: ComplaintCardData[] = [
     title: "Penambahan Buku di Perpustakaan",
     description:
       "Mohon pengadaan buku referensi terbaru untuk jurusan Rekayasa Perangkat Lunak agar bisa mendukung pembelajaran lebih optimal.",
-    image: "/images/perpustakaan.png",
+    image: "/images/perpus_sekolah.png",
     category: "Kurikulum",
     status: "IN_PROGRESS",
     supports: 412,
@@ -78,7 +79,7 @@ const LATEST_COMPLAINTS: ComplaintCardData[] = [
     title: "Jadwal Ekskul Basket Bentrok",
     description:
       "Jadwal ekstrakurikuler basket dan pramuka seringkali dilaksanakan pada hari dan jam yang bersamaan sehingga siswa yang mengikuti keduanya bingung.",
-    image: "/images/ekskul_bentrok.png",
+    image: "/images/basket_telkom.jpeg",
     category: "Kesiswaan",
     status: "OPEN",
     supports: 88,
@@ -91,7 +92,7 @@ const LATEST_COMPLAINTS: ComplaintCardData[] = [
     title: "Keran Air Toilet Gedung C Bocor",
     description:
       "Keran air di toilet lantai 2 gedung C terus mengeluarkan air walaupun sudah diputar penuh. Air terbuang percuma setiap hari.",
-    image: "/images/parkir_motor.png",
+    image: "/images/parkir_sekolah.png",
     category: "Sarpras",
     status: "CLOSED",
     supports: 45,
@@ -104,7 +105,7 @@ const LATEST_COMPLAINTS: ComplaintCardData[] = [
     title: "Penambahan Buku di Perpustakaan",
     description:
       "Mohon pengadaan buku referensi terbaru untuk jurusan Rekayasa Perangkat Lunak agar bisa mendukung pembelajaran lebih optimal.",
-    image: "/images/perpustakaan.png",
+    image: "/images/perpus_sekolah.png",
     category: "Kurikulum",
     status: "IN_PROGRESS",
     supports: 210,
@@ -185,16 +186,78 @@ function StatCard({ stat, triggered }: { stat: typeof STATS[0]; triggered: boole
   );
 }
 
+// ─── FAQ Accordion ────────────────────────────────────────────────────────────
+
+interface FaqItem {
+  question: string;
+  answer: string;
+}
+
+const FAQ_DATA: FaqItem[] = [
+  {
+    question: "Apa itu SuaraMoklet?",
+    answer: "SuaraMoklet adalah platform aspirasi dan pengaduan resmi untuk seluruh siswa SMK Telkom Malang guna menyampaikan masukan, ide, dan keluhan terkait sarana prasarana, kurikulum, kesiswaan, dan tata kelola sekolah secara transparan.",
+  },
+  {
+    question: "Apakah saya bisa melapor secara anonim?",
+    answer: "Ya! Pada langkah terakhir pengisian laporan (Langkah 5), Anda dapat mengaktifkan opsi 'Kirim Sebagai Anonim'. Nama Anda tidak akan ditampilkan kepada publik, namun tetap tersimpan secara aman di sistem untuk kebutuhan verifikasi pihak sekolah.",
+  },
+  {
+    question: "Bagaimana proses tindak lanjut dari laporan saya?",
+    answer: "Setiap laporan akan diverifikasi admin terlebih dahulu. Jika valid, laporan akan diteruskan ke Unit Kerja terkait (seperti Sarpras atau Kesiswaan) dan statusnya akan diubah menjadi 'PROSES'. Anda dapat memantau progres detailnya melalui visual timeline di halaman detail laporan.",
+  },
+  {
+    question: "Apa fungsi fitur 'Dukung Laporan'?",
+    answer: "Fitur dukungan memungkinkan siswa lain memberikan suara dukungan pada laporan Anda. Laporan dengan dukungan yang tinggi (mencapai target dukungan) akan diprioritaskan untuk segera ditindaklanjuti oleh manajemen sekolah.",
+  },
+  {
+    question: "Format dokumen bukti apa saja yang didukung?",
+    answer: "Kami mendukung berkas lampiran berupa gambar (JPG, JPEG, PNG) atau dokumen digital (PDF) dengan batas ukuran file maksimal sebesar 5MB untuk mempermudah unit pengelola melakukan inspeksi lapangan.",
+  },
+];
+
+function FaqAccordionItem({ item, isOpen, onClick }: { item: FaqItem; isOpen: boolean; onClick: () => void }) {
+  return (
+    <div className="border border-slate-200/80 rounded-2xl overflow-hidden bg-white shadow-sm hover:border-red-200 transition-all duration-300">
+      <button
+        onClick={onClick}
+        type="button"
+        className="w-full flex items-center justify-between p-5 text-left font-bold text-slate-800 hover:text-red-650 transition-colors gap-4 select-none cursor-pointer"
+      >
+        <span className="text-sm md:text-base leading-snug">{item.question}</span>
+        <ChevronDown 
+          className={cn("h-5 w-5 text-slate-400 shrink-0 transition-transform duration-300", 
+            isOpen && "rotate-180 text-red-600"
+          )} 
+        />
+      </button>
+      <div 
+        className={cn("grid transition-all duration-300 ease-in-out",
+          isOpen ? "grid-rows-[1fr] opacity-100 border-t border-slate-100" : "grid-rows-[0fr] opacity-0"
+        )}
+      >
+        <div className="overflow-hidden">
+          <p className="p-5 text-xs md:text-sm text-slate-500 leading-relaxed bg-slate-50/50">
+            {item.answer}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("Home");
+  const [mounted, setMounted] = useState(false);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
+    setMounted(true);
     const onScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -250,7 +313,7 @@ function Navbar() {
               className="h-9 w-52 rounded-full border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10 focus:bg-white transition-all"
             />
           </div>
-          {isAuthenticated ? (
+          {mounted && isAuthenticated ? (
             <Link
               href="/complaints"
               className="h-9 px-5 flex items-center gap-2 justify-center rounded-full bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors shadow-sm shadow-red-200 active:scale-[0.98]"
@@ -300,7 +363,7 @@ function Navbar() {
                 className="h-9 w-full rounded-full border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
               />
             </div>
-            {isAuthenticated ? (
+            {mounted && isAuthenticated ? (
               <Link
                 href="/complaints"
                 onClick={() => setMobileOpen(false)}
@@ -329,6 +392,7 @@ function Navbar() {
 
 export default function LandingPage() {
   const [statsTriggered, setStatsTriggered] = useState(false);
+  const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
   const statsRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer for stats counter animation
@@ -518,7 +582,32 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SECTION 6: CTA Banner ────────────────────── */}
+      {/* ── SECTION 6: FAQ Accordions ─────────────────── */}
+      <section id="faq" className="py-16 sm:py-24 bg-white border-t border-slate-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+              Pertanyaan yang Sering Diajukan
+            </h2>
+            <p className="mt-3 text-slate-500 text-sm max-w-md mx-auto leading-relaxed">
+              Temukan jawaban atas kebingungan Anda seputar penggunaan platform aspirasi SuaraMoklet.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {FAQ_DATA.map((faq, index) => (
+              <FaqAccordionItem
+                key={faq.question}
+                item={faq}
+                isOpen={activeFaqIndex === index}
+                onClick={() => setActiveFaqIndex(activeFaqIndex === index ? null : index)}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECTION 7: CTA Banner ────────────────────── */}
       <section className="py-16 sm:py-24 bg-slate-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="relative bg-gradient-to-br from-red-600 to-red-700 rounded-3xl px-8 py-14 sm:py-20 overflow-hidden shadow-2xl shadow-red-200">
@@ -597,10 +686,15 @@ export default function LandingPage() {
             <div>
               <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-4">Navigasi</h4>
               <ul className="space-y-3">
-                {["Home", "About", "Reports","FAQ"].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="text-sm text-slate-500 hover:text-red-600 transition-colors">
-                      {item}
+                {[
+                  { name: "Home", href: "#home" },
+                  { name: "About", href: "#about" },
+                  { name: "Reports", href: "#trending" },
+                  { name: "FAQ", href: "#faq" },
+                ].map((item) => (
+                  <li key={item.name}>
+                    <a href={item.href} className="text-sm text-slate-500 hover:text-red-600 transition-colors">
+                      {item.name}
                     </a>
                   </li>
                 ))}

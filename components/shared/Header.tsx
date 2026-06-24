@@ -12,6 +12,11 @@ export default function Header() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -50,7 +55,7 @@ export default function Header() {
 
         {/* Right tools: User profile / logout */}
         <div className="hidden md:flex items-center gap-3">
-          {user ? (
+          {mounted && user ? (
             <div className="flex items-center gap-4">
               <Link href="/profile" className="flex items-center gap-2 text-slate-700 hover:text-red-600 transition-colors">
                 <div className="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-600 text-xs uppercase">
@@ -103,7 +108,7 @@ export default function Header() {
             Profil
           </Link>
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-            {user ? (
+            {mounted && user ? (
               <>
                 <div className="flex items-center gap-2 px-3 py-2">
                   <div className="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-600 text-xs uppercase">

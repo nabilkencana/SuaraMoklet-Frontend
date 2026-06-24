@@ -52,18 +52,53 @@ export default function ComplaintDetailPage() {
 
   const { currentComplaint, isLoading, fetchComplaintById, supportComplaint } = useComplaint(complaintId);
   const [mounted, setMounted] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // ─── Safe date helper ─────────────────────────────────────────────────────
-  // Returns a valid ISO string, falling back to now() when input is invalid.
+  // Load complaint; set notFound if truly missing
+  useEffect(() => {
+    if (mounted && complaintId) {
+      fetchComplaintById(complaintId).then((res) => {
+        if (!res) setNotFound(true);
+      });
+    }
+  }, [mounted, complaintId]);
+
+  // Safe date helper — returns valid ISO string even when input is invalid
   const safeISO = (base: string | undefined, offsetMs = 0): string => {
     const ts = base ? new Date(base).getTime() : NaN;
     const resolved = isNaN(ts) ? Date.now() : ts;
     return new Date(resolved + offsetMs).toISOString();
   };
+
+  // Not-found state
+  if (notFound) {
+    return (
+      <div className="min-h-screen flex flex-col bg-slate-50">
+        <Header />
+        <main className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center space-y-4 max-w-sm">
+            <div className="h-16 w-16 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto">
+              <AlertCircle className="h-8 w-8 text-red-400" />
+            </div>
+            <h2 className="text-lg font-extrabold text-slate-800">Keluhan Tidak Ditemukan</h2>
+            <p className="text-sm text-slate-500 leading-relaxed">Keluhan yang Anda cari tidak ada atau sudah dihapus.</p>
+            <button
+              onClick={() => router.push("/complaints")}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Kembali ke Daftar Keluhan
+            </button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!mounted || isLoading || !currentComplaint) {
     return (
@@ -214,7 +249,9 @@ export default function ComplaintDetailPage() {
                 <span>Permasalahan</span>
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
-                {currentComplaint.description}
+                {currentComplaint.description || (
+                  <span className="text-slate-400 italic">Deskripsi belum tersedia.</span>
+                )}
               </p>
             </div>
 

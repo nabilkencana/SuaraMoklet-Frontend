@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { apiClient } from "@/lib/api";
 import { Comment, CreateCommentRequest } from "@/types/comment";
 
 // ─── Mock Demo Comments ───────────────────────────────────────────────────────
 
-const MOCK_COMMENTS: Comment[] = [
+const BASE_MOCK_COMMENTS: Comment[] = [
   // ─── demo-001: AC Lab RPL 2 ───────────────────────────────────────────────
   {
     id: "c-001",
@@ -83,7 +82,7 @@ const MOCK_COMMENTS: Comment[] = [
     id: "c-006",
     complaintId: "demo-002",
     content:
-      "Laporan ini sudah kami terima dan akan kami bahas dalam rapat koordinasi Kesiswaan pada Senin, 28 Juni 2026. Mohon sabar menunggu hasilnya.",
+      "Laporan ini sudah kami terima dan akan kami bahas dalam rapat koordinasi Kesiswaan pada Senin depan. Mohon sabar menunggu hasilnya.",
     createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     isPic: true,
     user: {
@@ -139,6 +138,9 @@ const MOCK_COMMENTS: Comment[] = [
   },
 ];
 
+// Module-level mutable array (persists across hook instances)
+let MOCK_COMMENTS: Comment[] = [...BASE_MOCK_COMMENTS];
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useComments(complaintId: string) {
@@ -149,15 +151,19 @@ export function useComments(complaintId: string) {
   const fetchComments = async () => {
     if (!complaintId) return;
     setIsLoading(true);
+
+    // Always load mock comments first for instant display
+    const mockForComplaint = MOCK_COMMENTS.filter((c) => c.complaintId === complaintId);
+    setComments(mockForComplaint);
+
     try {
+      const { apiClient } = await import("@/lib/api");
       const data = await apiClient.comments.getByComplaintId(complaintId);
-      setComments(data);
+      if (Array.isArray(data) && data.length > 0) {
+        setComments(data);
+      }
     } catch {
-      // Fallback: return mock comments for the given complaint
-      const mockForComplaint = MOCK_COMMENTS.filter(
-        (c) => c.complaintId === complaintId
-      );
-      setComments(mockForComplaint);
+      // Already set mock comments above
     } finally {
       setIsLoading(false);
     }
@@ -167,33 +173,38 @@ export function useComments(complaintId: string) {
     if (!complaintId) return null;
     setIsSubmitting(true);
     try {
+      const { apiClient } = await import("@/lib/api");
       const newComment = await apiClient.comments.create(complaintId, data);
-      toast.success("Tanggapan berhasil dikirim!");
-      await fetchComments();
-      return newComment;
+      if (newComment && newComment.id) {
+        toast.success("Tanggapan berhasil dikirim!");
+        await fetchComments();
+        return newComment;
+      }
     } catch {
-      // Mock: append comment locally
-      await new Promise((r) => setTimeout(r, 500));
-      const mockNew: Comment = {
-        id: `c-${Date.now()}`,
-        complaintId,
-        content: data.content,
-        evidenceUrl: data.evidenceUrl,
-        createdAt: new Date().toISOString(),
-        isPic: false,
-        user: {
-          id: "demo-user-001",
-          name: "Demo Siswa",
-          email: "demo@student.moklet.org",
-          role: "USER",
-        },
-      };
-      setComments((prev) => [...prev, mockNew]);
-      toast.success("Tanggapan berhasil dikirim! (Mode Demo)");
-      return mockNew;
-    } finally {
-      setIsSubmitting(false);
+      // Fall through to mock
     }
+
+    // Mock: append locally
+    await new Promise((r) => setTimeout(r, 500));
+    const mockNew: Comment = {
+      id: `c-${Date.now()}`,
+      complaintId,
+      content: data.content,
+      evidenceUrl: data.evidenceUrl,
+      createdAt: new Date().toISOString(),
+      isPic: false,
+      user: {
+        id: "demo-user-001",
+        name: "Demo Siswa",
+        email: "demo@student.moklet.org",
+        role: "USER",
+      },
+    };
+    MOCK_COMMENTS = [...MOCK_COMMENTS, mockNew];
+    setComments((prev) => [...prev, mockNew]);
+    toast.success("Tanggapan berhasil dikirim!");
+    setIsSubmitting(false);
+    return mockNew;
   };
 
   useEffect(() => {
