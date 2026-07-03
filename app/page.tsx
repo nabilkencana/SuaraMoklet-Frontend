@@ -25,6 +25,8 @@ import {
 import { ComplaintCard, ComplaintCardData } from "@/components/shared/complaint-card";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/app/store/auth.store";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
@@ -315,7 +317,7 @@ function Navbar() {
           </div>
           {mounted && isAuthenticated ? (
             <Link
-              href="/complaints"
+              href="/dashboard"
               className="h-9 px-5 flex items-center gap-2 justify-center rounded-full bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors shadow-sm shadow-red-200 active:scale-[0.98]"
             >
               <LayoutDashboard className="h-4 w-4" />
@@ -365,7 +367,7 @@ function Navbar() {
             </div>
             {mounted && isAuthenticated ? (
               <Link
-                href="/complaints"
+                href="/dashboard"
                 onClick={() => setMobileOpen(false)}
                 className="h-9 flex items-center justify-center gap-2 rounded-full bg-red-600 text-white text-sm font-semibold"
               >
@@ -391,9 +393,39 @@ function Navbar() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
+  const router = useRouter();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [mounted, setMounted] = useState(false);
   const [statsTriggered, setStatsTriggered] = useState(false);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
   const statsRef = useRef<HTMLDivElement>(null);
+  const [petitionTitle, setPetitionTitle] = useState("");
+
+  const handleStartPetition = (e: React.FormEvent) => {
+    e.preventDefault();
+    const title = petitionTitle.trim();
+    if (!title) {
+      toast.error("Silakan masukkan keluhan atau aspirasi Anda terlebih dahulu.");
+      return;
+    }
+
+    const createUrl = `/complaints/create?title=${encodeURIComponent(title)}`;
+    if (isAuthenticated) {
+      router.push(createUrl);
+    } else {
+      router.push(`/login?redirect=${encodeURIComponent(createUrl)}`);
+    }
+  };
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [mounted, isAuthenticated, router]);
 
   // Intersection Observer for stats counter animation
   useEffect(() => {
@@ -407,15 +439,27 @@ export default function LandingPage() {
     return () => observer.disconnect();
   }, []);
 
+  if (mounted && isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
+          <span className="text-sm font-medium text-slate-500">Memuat Dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans">
       {/* ── Navbar ───────────────────────────────────── */}
       <Navbar />
 
       {/* ── SECTION 1: Hero ──────────────────────────── */}
+      {/* ponytail: use min-h-[100dvh] and flex centering for simple full-viewport layout */}
       <section
         id="home"
-        className="relative pt-28 pb-20 sm:pt-36 sm:pb-28 overflow-hidden bg-white"
+        className="relative min-h-[100dvh] flex items-center justify-center pt-28 pb-20 sm:pt-36 sm:pb-28 overflow-hidden bg-white"
       >
         {/* Subtle grid background */}
         <div
@@ -425,10 +469,8 @@ export default function LandingPage() {
             backgroundSize: "40px 40px",
           }}
         />
-        {/* Glow orbs */}
-        <div className="pointer-events-none absolute top-[-80px] left-1/2 -translate-x-1/2 h-[480px] w-[480px] rounded-full bg-red-500/8 blur-[100px]" />
 
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center animate-fade-in-up">
 
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] tracking-tight text-slate-900">
@@ -438,35 +480,43 @@ export default function LandingPage() {
             <span className="relative inline-block text-red-600">
               Suaramu.
               <svg className="absolute -bottom-2 left-0 w-full" height="6" viewBox="0 0 200 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 4 Q50 0 100 4 Q150 8 200 4" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+                <path d="M0 4 Q50 0 100 4 Q150 8 200 4" stroke="#B61722" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
               </svg>
             </span>
           </h1>
 
-          <p className="mt-6 text-base sm:text-lg text-slate-500 max-w-xl mx-auto leading-relaxed">
+          <p className="mt-6 sm:mt-8 text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
             Platform tata kelola sekolah yang transparan. Suarakan pendapatmu, kumpulkan dukungan, dan wujudkan lingkungan belajar yang lebih baik bersama-sama.
           </p>
 
           {/* CTA Input */}
-          <div className="mt-10 max-w-xl mx-auto">
-            <div className="flex items-center bg-white rounded-2xl border-2 border-slate-200 shadow-lg shadow-slate-100 hover:border-red-300 focus-within:border-red-500 focus-within:shadow-red-100/50 focus-within:shadow-xl transition-all duration-300 overflow-hidden p-1.5">
+          <div className="mt-20 sm:mt-20 max-w-2xl mx-auto">
+            <form
+              onSubmit={handleStartPetition}
+              className="flex items-center bg-white rounded-2xl border-2 border-slate-200 shadow-lg shadow-slate-100 hover:border-red-300 focus-within:border-red-500 focus-within:shadow-red-100/50 focus-within:shadow-xl transition-all duration-300 overflow-hidden p-1.5"
+            >
               <div className="flex items-center gap-2.5 pl-3 shrink-0">
                 <Megaphone className="h-5 w-5 text-red-500" />
               </div>
               <input
                 type="text"
+                value={petitionTitle}
+                onChange={(e) => setPetitionTitle(e.target.value)}
                 placeholder="Apa yang ingin kamu ubah di sekolah?"
-                className="flex-1 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
+                className="flex-1 px-3 py-3 text-sm sm:text-base text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
               />
-              <button className="shrink-0 h-10 px-5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.97] text-white text-sm font-bold transition-all shadow-sm shadow-red-200 flex items-center gap-2">
+              <button
+                type="submit"
+                className="shrink-0 h-11 sm:h-12 px-6 rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.97] text-white text-sm sm:text-base font-bold transition-all shadow-sm shadow-red-200 flex items-center gap-2"
+              >
                 Mulai Petisi
                 <ArrowRight className="h-4 w-4" />
               </button>
-            </div>
+            </form>
 
             {/* Trust indicator */}
-            <div className="mt-4 flex items-center justify-center gap-2 text-slate-400 text-xs">
-              <Shield className="h-3.5 w-3.5 text-emerald-500" />
+            <div className="mt-5 flex items-center justify-center gap-2 text-slate-400 text-xs sm:text-sm">
+              <Shield className="h-4 w-4 text-emerald-500" />
               <span>
                 Lebih dari{" "}
                 <span className="font-semibold text-slate-600">1.200 siswa</span>{" "}

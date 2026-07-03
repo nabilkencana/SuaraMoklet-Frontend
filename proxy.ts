@@ -49,7 +49,12 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // 3. Role-ready routing architecture (Placeholder hooks for Next.js role enforcement)
+  // 3. Authenticated trying to access homepage -> Redirect to /dashboard
+  if (pathname === "/" && token) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // 4. Role-ready routing architecture (Placeholder hooks for Next.js role enforcement)
   if (token) {
     const userPayload = decodeJwt(token);
     
@@ -68,6 +73,7 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/",
     "/dashboard/:path*",
     "/profile/:path*",
     "/complaints/create",

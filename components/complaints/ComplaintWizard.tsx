@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -49,6 +49,7 @@ export default function ComplaintWizard() {
     register,
     trigger,
     getValues,
+    setValue,
     watch,
     formState: { errors },
   } = useForm<ComplaintFormData>({
@@ -61,6 +62,16 @@ export default function ComplaintWizard() {
       isAnonymous: false,
     },
   });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const titleParam = searchParams.get("title");
+      if (titleParam) {
+        setValue("title", titleParam);
+      }
+    }
+  }, [setValue]);
 
   const watchedTitle = watch("title");
   const watchedUnit = watch("unit");
@@ -166,14 +177,14 @@ export default function ComplaintWizard() {
       {/* Step Indicator Header */}
       <div>
         <div className="relative flex items-center justify-between mb-8">
-          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-100 -z-10" />
+          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-200 z-0" />
           <div 
-            className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-red-600 -z-10 transition-all duration-300"
+            className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-red-600 z-0 transition-all duration-300"
             style={{ width: `${((currentStep - 1) / 4) * 100}%` }}
           />
 
           {[1, 2, 3, 4, 5].map((step) => (
-            <div key={step} className="flex flex-col items-center gap-1.5 bg-white px-2">
+            <div key={step} className="relative z-10 flex flex-col items-center gap-1.5 bg-white px-2">
               <div 
                 className={`h-9 w-9 rounded-full flex items-center justify-center border-2 text-xs font-bold transition-all duration-300 ${
                   step === currentStep

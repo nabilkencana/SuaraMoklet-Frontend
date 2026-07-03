@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -36,10 +36,11 @@ export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const login = useAuthStore((state) => state.login);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const redirectUrl = searchParams.get("redirect") || "/";
+  const redirectUrl = searchParams.get("redirect") || "/dashboard";
 
   const {
     register,
@@ -53,6 +54,22 @@ export default function LoginForm() {
       password: "",
     },
   });
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace(redirectUrl);
+    }
+  }, [isAuthenticated, router, redirectUrl]);
+
+  if (isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+        <span className="text-xs text-neutral-400 font-medium">Mengalihkan ke Dashboard...</span>
+      </div>
+    );
+  }
 
   const fillDemo = () => {
     setValue("email", DEMO_USER.email);

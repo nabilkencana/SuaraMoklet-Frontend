@@ -1,49 +1,172 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { 
-  PlusCircle, 
-  MessageSquare, 
-  CheckCircle2, 
-  Clock, 
-  ChevronRight,
-  Sparkles,
-  User as UserIcon,
-  Shield,
-  FileText
+import React, { useState, useEffect } from "react";
+import {
+  FileText,
+  CheckCircle2,
+  TrendingUp,
+  Clock,
+  AlertCircle,
+  MessageSquare,
+  Plus
 } from "lucide-react";
+import Link from "next/link";
 import { useAuthStore } from "@/app/store/auth.store";
-import Header from "@/components/shared/Header";
-import Footer from "@/components/shared/Footer";
-import useComplaint from "@/hooks/useComplaint";
-import { ComplaintStatus } from "@/types/complaint";
+import { useComplaint } from "@/hooks/useComplaint";
+import { useDashboard } from "@/hooks/useDashboard";
 
-const STATUS_CONFIG: Record<ComplaintStatus, { label: string; classes: string }> = {
-  OPEN: {
-    label: "BARU",
-    classes: "bg-slate-100 text-slate-600 border border-slate-200/80",
-  },
-  IN_PROGRESS: {
-    label: "PROSES",
-    classes: "bg-blue-50 text-blue-600 border border-blue-200/80",
-  },
-  WAITING_USER: {
-    label: "RESPONS SISWA",
-    classes: "bg-amber-50 text-amber-600 border border-amber-200/80",
-  },
-  CLOSED: {
-    label: "SELESAI",
-    classes: "bg-emerald-50 text-emerald-600 border border-emerald-200/80",
-  },
-};
+// Import custom dashboard components
+import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import StatsCard from "@/components/dashboard/StatsCard";
+import RecentComplaintCard from "@/components/dashboard/RecentComplaintCard";
+import HelpCard from "@/components/dashboard/HelpCard";
+import NoticeBanner from "@/components/dashboard/NoticeBanner";
 
+// Skeletons
+function StatsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 animate-pulse">
+      {[1, 2, 3].map((n) => (
+        <div key={n} className="bg-white border border-slate-200 rounded-2xl p-5 h-22 flex items-center justify-between">
+          <div className="flex items-center gap-4 w-full">
+            <div className="h-12 w-12 bg-slate-100 border border-slate-150 rounded-xl shrink-0" />
+            <div className="space-y-2 w-1/2">
+              <div className="h-5 bg-slate-100 rounded w-12" />
+              <div className="h-3 bg-slate-100 rounded w-24" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function GuideSkeleton() {
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm animate-pulse space-y-6">
+      <div className="bg-slate-100 h-28 rounded-2xl" />
+      <div className="space-y-3">
+        <div className="h-4 bg-slate-100 rounded w-1/3" />
+        <div className="h-3 bg-slate-100 rounded w-2/3" />
+      </div>
+      <div className="space-y-4 pt-2">
+        {[1, 2, 3].map((n) => (
+          <div key={n} className="flex gap-4.5 items-start">
+            <div className="h-8.5 w-8.5 bg-slate-100 rounded-xl shrink-0" />
+            <div className="space-y-2 w-full">
+              <div className="h-3.5 bg-slate-100 rounded w-1/4" />
+              <div className="h-3 bg-slate-100 rounded w-5/6" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ListSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      {[1, 2, 3].map((n) => (
+        <div key={n} className="bg-white border border-slate-200 rounded-2xl p-5 h-36 flex flex-col justify-between">
+          <div className="flex justify-between">
+            <div className="h-5 bg-slate-100 rounded w-16" />
+            <div className="h-3 bg-slate-100 rounded w-12" />
+          </div>
+          <div className="h-4 bg-slate-100 rounded w-3/4 my-1" />
+          <div className="h-3 bg-slate-100 rounded w-full" />
+          <div className="h-3 bg-slate-100 rounded w-2/3" />
+          <div className="flex justify-between border-t border-slate-100 pt-3">
+            <div className="h-3 bg-slate-100 rounded w-24" />
+            <div className="h-3 bg-slate-100 rounded w-12" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+function AspirationGuideCard({ userName }: { userName: string }) {
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between p-6 md:p-8 space-y-6">
+      <div className="space-y-6">
+        {/* Welcome Section */}
+        <div className="bg-gradient-to-tr from-red-600/10 to-amber-600/10 rounded-2xl p-5 md:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-red-500/10">
+          <div className="space-y-1.5">
+            <h3 className="text-base md:text-lg font-bold text-slate-800 flex items-center gap-1.5">
+              Halo, {userName || "Siswa"}! 👋
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed max-w-md">
+              Siap membuat perubahan hari ini? Suaramu sangat berharga untuk menciptakan lingkungan SMK Telkom Malang yang lebih baik.
+            </p>
+          </div>
+          <Link
+            href="/complaints/create"
+            className="h-10 px-5 bg-red-650 hover:bg-red-700 text-white font-bold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 text-xs shadow-sm shadow-red-900/20 whitespace-nowrap"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Lapor Sekarang</span>
+          </Link>
+        </div>
+
+        {/* Guideline Title */}
+        <div className="space-y-1">
+          <h4 className="text-sm font-bold text-slate-800">Panduan Menulis Laporan Efektif</h4>
+          <p className="text-xs text-slate-400 font-semibold">Ikuti langkah berikut agar keluhanmu cepat diverifikasi dan ditindaklanjuti oleh pihak sekolah:</p>
+        </div>
+
+        {/* Steps List */}
+        <div className="space-y-5 pt-2">
+          {/* Step 1 */}
+          <div className="flex gap-4.5 items-start">
+            <div className="h-8.5 w-8.5 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-sm shrink-0 border border-slate-200/50">
+              1
+            </div>
+            <div className="space-y-0.5">
+              <h5 className="text-xs font-bold text-slate-700">Tentukan Unit Kerja yang Tepat</h5>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Pilih unit tujuan yang sesuai (misal: Sarpras untuk fasilitas fisik, Kesiswaan untuk kegiatan siswa) agar laporan langsung masuk ke tim pengelola terkait.
+              </p>
+            </div>
+          </div>
+
+          {/* Step 2 */}
+          <div className="flex gap-4.5 items-start">
+            <div className="h-8.5 w-8.5 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-sm shrink-0 border border-slate-200/50">
+              2
+            </div>
+            <div className="space-y-0.5">
+              <h5 className="text-xs font-bold text-slate-700">Tulis Kronologi & Ekspektasi Jelas</h5>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Deskripsikan permasalahan secara lengkap (apa, di mana, dan kapan) serta hasil konkret yang diharapkan agar unit kerja dapat memahami kebutuhan perbaikan secara akurat.
+              </p>
+            </div>
+          </div>
+
+          {/* Step 3 */}
+          <div className="flex gap-4.5 items-start">
+            <div className="h-8.5 w-8.5 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-sm shrink-0 border border-slate-200/50">
+              3
+            </div>
+            <div className="space-y-0.5">
+              <h5 className="text-xs font-bold text-slate-700">Lampirkan Bukti Valid</h5>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Unggah dokumen pendukung atau foto keadaan riil di lapangan pada langkah unggah berkas untuk mempermudah unit pengelola melakukan investigasi langsung.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 export default function DashboardPage() {
-  const router = useRouter();
-  const { user } = useAuthStore();
-  const { complaints, isLoading, fetchOwnComplaints } = useComplaint();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const { stats, fetchDashboardData, isLoading: statsLoading } = useDashboard();
+  const { complaints, fetchOwnComplaints, isLoading: complaintsLoading } = useComplaint();
+  const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
     setMounted(true);
@@ -61,184 +184,135 @@ export default function DashboardPage() {
     );
   }
 
-  // Count statistics based on real user data
+  const handleRefresh = () => {
+    fetchDashboardData();
+    fetchOwnComplaints();
+  };
+
+  // Convert complaints list to active, pending, solved for displays
   const ownComplaints = Array.isArray(complaints) ? complaints : [];
-  const totalCount = ownComplaints.length;
-  const inProgressCount = ownComplaints.filter((c) => c.status === "IN_PROGRESS" || c.status === "WAITING_USER").length;
-  const solvedCount = ownComplaints.filter((c) => c.status === "CLOSED").length;
+  const activeReportsCount = stats?.activeCount ?? ownComplaints.filter(c => c.status === "OPEN").length;
+  const resolvedReportsCount = stats?.resolvedCount ?? ownComplaints.filter(c => c.status === "CLOSED").length;
+  const pendingReportsCount = stats?.pendingCount ?? ownComplaints.filter(c => c.status === "IN_PROGRESS" || c.status === "WAITING_USER").length;
+  const resolutionRate = stats?.resolutionRate ?? (ownComplaints.length ? Math.round((resolvedReportsCount / ownComplaints.length) * 100) : 0);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Shared Header Navigation */}
-      <Header />
+    <div className="min-h-screen bg-[#FAFAFA] flex text-slate-800">
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-        
-        {/* Welcome Section Banner */}
-        <div className="relative bg-gradient-to-r from-red-600 to-red-850 rounded-2xl p-6 md:p-8 text-white shadow-md overflow-hidden">
-          {/* Decorative gradients */}
-          <div className="absolute right-0 bottom-0 top-0 w-1/3 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.08),transparent)] pointer-events-none" />
-          
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-white text-xs font-semibold">
-                <Sparkles className="h-3.5 w-3.5 text-red-200" />
-                Akses Terverifikasi
-              </div>
-              <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-                Halo, {user?.name || "Warga Moklet"}!
-              </h2>
-              <p className="text-sm text-red-100 max-w-xl leading-relaxed">
-                Selamat datang di dashboard pengaduan sekolah. Silakan buat laporan keluhan baru, pantau status investigasi, atau berpartisipasi dalam diskusi.
-              </p>
-            </div>
-            <div className="shrink-0">
-              <Link
-                href="/complaints/create"
-                className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-white text-red-600 font-bold text-sm hover:bg-red-50 active:scale-[0.98] transition-all shadow-sm cursor-pointer"
-              >
-                <PlusCircle className="h-5 w-5" />
-                <span>Buat Pengaduan</span>
-              </Link>
-            </div>
-          </div>
-        </div>
+      {/* 1. Left Sidebar Navigation (Dark) */}
+      <DashboardSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-        {/* Dashboard Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5"> 
-          {/* Stats 1: Total Laporan */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition-all duration-300">
-            <div className="h-12 w-12 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600">
-              <FileText className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-slate-800">{totalCount}</div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Laporan Anda</div>
-            </div>
-          </div>
+      {/* 2. Right Main Layout Wrapper */}
+      <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
 
-          {/* Stats 2: Sedang Diproses */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition-all duration-300">
-            <div className="h-12 w-12 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
-              <Clock className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-slate-800">{inProgressCount}</div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sedang Diproses</div>
-            </div>
-          </div>
+        {/* Header Greeting & Notifications */}
+        <DashboardHeader
+          onToggleSidebar={() => setSidebarOpen(true)}
+        />
 
-          {/* Stats 3: Terselesaikan */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition-all duration-300">
-            <div className="h-12 w-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-400">
-              <CheckCircle2 className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-slate-800">{solvedCount}</div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Terselesaikan</div>
-            </div>
-          </div>
-        </div>
+        {/* Dashboard Content Container */}
+        <main className="flex-grow p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
 
-        {/* Main Grid Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Left Column: Account Details Card */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm h-fit space-y-6">
-            <h3 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3.5 flex items-center gap-2">
-              <UserIcon className="h-5 w-5 text-red-600" />
-              <span>Detail Akun</span>
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Nama Lengkap</span>
-                <span className="text-sm font-semibold text-slate-700 mt-1 block">{user?.name || "Tidak tersedia"}</span>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Alamat Email</span>
-                <span className="text-sm font-semibold text-slate-700 mt-1 block">{user?.email || "Tidak tersedia"}</span>
-              </div>
+          {/* Quick Metrics row */}
+          {statsLoading ? (
+            <StatsSkeleton />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <StatsCard
+                title="Active Reports"
+                value={activeReportsCount}
+                icon={Clock}
+                color="blue"
+                subtitle="Menunggu tanggapan admin"
+              />
+              <StatsCard
+                title="Resolved Reports"
+                value={resolvedReportsCount}
+                icon={CheckCircle2}
+                color="emerald"
+                subtitle="Keluhan sukses diselesaikan"
+              />
+              <StatsCard
+                title="SLA Resolution Rate"
+                value={resolutionRate}
+                icon={TrendingUp}
+                color="red"
+                subtitle="Persentase penyelesaian"
+                showProgress={true}
+              />
             </div>
-          </div>
+          )}
 
-          {/* Right Column: Latest Complaints list */}
-          <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3.5">
-              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-red-600" />
-                <span>Pengaduan Terbaru Anda</span>
-              </h3>
-              <Link 
-                href="/complaints" 
-                className="text-xs font-bold text-red-600 hover:text-red-700 transition-colors flex items-center gap-0.5"
-              >
-                <span>Lihat semua</span>
-                <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
+          {/* Main 2-Column Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-            {/* Complaints list container */}
-            <div className="space-y-4">
-              {isLoading ? (
-                <div className="space-y-3">
-                  <div className="h-24 w-full bg-slate-100 animate-pulse rounded-xl" />
-                  <div className="h-24 w-full bg-slate-100 animate-pulse rounded-xl" />
-                </div>
-              ) : ownComplaints.length === 0 ? (
-                <div className="py-10 text-center space-y-3.5">
-                  <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 mx-auto">
-                    <MessageSquare className="h-6 w-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-bold text-slate-800">Belum ada pengaduan</p>
-                    <p className="text-xs text-slate-400 max-w-xs mx-auto">Anda belum pernah mengirim laporan keluhan atau aspirasi ke sekolah.</p>
-                  </div>
-                  <Link
-                    href="/complaints/create"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-700"
-                  >
-                    <span>Mulai buat laporan sekarang</span>
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
+            {/* Left Column: Aspiration & Complaint Guideline Card */}
+            <div className="lg:col-span-7">
+              {complaintsLoading ? (
+                <GuideSkeleton />
               ) : (
-                ownComplaints.slice(0, 3).map((complaint) => {
-                  const statusInfo = STATUS_CONFIG[complaint.status] || { label: "UNKNOWN", classes: "bg-slate-50 text-slate-500 border-slate-150" };
-                  return (
-                    <Link
-                      key={complaint.id}
-                      href={`/complaints/${complaint.id}`}
-                      className="block p-4 border border-slate-100 hover:border-slate-200 bg-slate-50/50 hover:bg-slate-50 rounded-xl transition-all duration-200 group"
-                    >
-                      <div className="flex items-start justify-between gap-4 mb-2">
-                        <span className="text-sm font-bold text-slate-800 group-hover:text-red-600 transition-colors line-clamp-1">
-                          {complaint.title}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold border shrink-0 tracking-wider uppercase ${statusInfo.classes}`}>
-                          {statusInfo.label}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-3">
-                        {complaint.description}
-                      </p>
-                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
-                        <span>Unit Penerima: <strong className="text-slate-500">{complaint.unit}</strong></span>
-                        <span>{new Date(complaint.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</span>
-                      </div>
-                    </Link>
-                  );
-                })
+                <AspirationGuideCard userName={user?.name || ""} />
               )}
             </div>
+
+            {/* Right Column: Recent complaints and administrator help */}
+            <div className="lg:col-span-5 space-y-6">
+
+              {/* Recent Complaints Section Header */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <MessageSquare className="h-4.5 w-4.5 text-red-650" />
+                    <span>Keluhan Saya</span>
+                  </h3>
+                  <Link
+                    href="/complaints"
+                    className="text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
+                  >
+                    Lihat Semua &rsaquo;
+                  </Link>
+                </div>
+
+                {/* Complaint list conditional states */}
+                {complaintsLoading ? (
+                  <ListSkeleton />
+                ) : ownComplaints.length === 0 ? (
+                  <div className="py-12 text-center space-y-4">
+                    <div className="h-14 w-14 rounded-full bg-slate-50 border border-slate-150 flex items-center justify-center mx-auto text-slate-350">
+                      <FileText className="h-7 w-7" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-slate-700">Belum ada keluhan</p>
+                      <p className="text-[10px] text-slate-400 font-semibold max-w-xs mx-auto leading-relaxed">
+                        Suarakan aspirasi Anda. Buat laporan keluhan pertama menggunakan form di sebelah kiri.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {ownComplaints.slice(0, 3).map((complaint) => (
+                      <RecentComplaintCard
+                        key={complaint.id}
+                        complaint={complaint}
+                        commentCount={complaint.timeline?.length || 0}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Support & Admin Help Box */}
+              <HelpCard />
+            </div>
           </div>
 
-        </div>
-
-      </main>
-
-      {/* Shared Footer Branding */}
-      <Footer />
+          {/* Bottom System Banner */}
+          <NoticeBanner />
+        </main>
+      </div>
     </div>
   );
 }
