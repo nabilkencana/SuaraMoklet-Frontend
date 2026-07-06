@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search, Heart, Clock, Inbox, Plus, ArrowRight, Tag } from "lucide-react";
+import { Search, PenTool, Clock, Inbox, Plus, ArrowRight, Tag } from "lucide-react";
 import useComplaint from "@/hooks/useComplaint";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,10 +32,11 @@ const STATUS_CONFIG: Record<ComplaintStatus, { label: string; classes: string }>
 
 export default function ComplaintList() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { complaints, isLoading, fetchOwnComplaints } = useComplaint();
 
-  // Search & Filter State
-  const [search, setSearch] = useState("");
+  // Search & Filter State — pre-populate from URL ?q= param
+  const [search, setSearch] = useState(() => searchParams.get("q") || "");
   const [activeFilter, setActiveFilter] = useState<"ALL" | ComplaintStatus>("ALL");
   const [sortBy, setSortBy] = useState<"NEWEST" | "OLDEST">("NEWEST");
 
@@ -161,7 +162,7 @@ export default function ComplaintList() {
                 <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
                   {/* Support */}
                   <div className="flex items-center gap-1.5 text-red-500 text-xs font-bold">
-                    <Heart className="h-4 w-4 fill-red-500/10 group-hover:fill-red-500 transition-colors" />
+                    <PenTool className="h-4 w-4" />
                     <span>{complaint.supports} Dukungan</span>
                   </div>
                   {/* Date */}

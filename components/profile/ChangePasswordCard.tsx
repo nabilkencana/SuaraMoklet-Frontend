@@ -145,7 +145,7 @@ export default function ChangePasswordCard({
               </button>
             </div>
             {errors.confirmPassword && (
-              <p className="text-xs font-medium text-red-655 mt-1">
+              <p className="text-xs font-medium text-red-600 mt-1">
                 {errors.confirmPassword.message as string}
               </p>
             )}

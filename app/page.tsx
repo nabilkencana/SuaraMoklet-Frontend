@@ -143,10 +143,11 @@ const STEPS = [
 ];
 
 const NAV_LINKS = [
-  { label: "Home", href: "#home" },
-  { label: "About", href: "#about" },
-  { label: "Reports", href: "#trending" },
-  { label: "FAQ", href: "#faq"},
+  { label: "Home", href: "/#home" },
+  { label: "Jelajahi Petisi", href: "/search" },
+  { label: "Tentang", href: "/#about" },
+  { label: "Trending", href: "/#trending" },
+  { label: "FAQ", href: "/#faq"},
 ];
 
 // ─── Counter Animation Hook ───────────────────────────────────────────────────
@@ -255,6 +256,8 @@ function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("Home");
   const [mounted, setMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
 
@@ -264,6 +267,15 @@ function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    router.push(`/search?q=${encodeURIComponent(q)}`);
+    setMobileOpen(false);
+    setSearchQuery("");
+  };
 
   return (
     <header
@@ -307,14 +319,16 @@ function Navbar() {
 
         {/* Search + Auth Button */}
         <div className="hidden md:flex items-center gap-3">
-          <div className="relative group">
+          <form onSubmit={handleSearch} className="relative group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-red-500 transition-colors" />
             <input
               type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari keluhan..."
               className="h-9 w-52 rounded-full border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10 focus:bg-white transition-all"
             />
-          </div>
+          </form>
           {mounted && isAuthenticated ? (
             <Link
               href="/dashboard"
@@ -357,14 +371,26 @@ function Navbar() {
             </a>
           ))}
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Cari keluhan..."
-                className="h-9 w-full rounded-full border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10"
-              />
-            </div>
+            {/* Mobile search — functional */}
+            <form onSubmit={handleSearch} className="relative flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari keluhan..."
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10 focus:bg-white transition-all"
+                />
+              </div>
+              <button
+                type="submit"
+                className="h-10 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors shrink-0 flex items-center gap-1.5"
+              >
+                <Search className="h-3.5 w-3.5" />
+                Cari
+              </button>
+            </form>
             {mounted && isAuthenticated ? (
               <Link
                 href="/dashboard"
@@ -409,8 +435,10 @@ export default function LandingPage() {
       return;
     }
 
+    // Read auth state fresh from the store at click-time to avoid stale closure
+    const auth = useAuthStore.getState().isAuthenticated;
     const createUrl = `/complaints/create?title=${encodeURIComponent(title)}`;
-    if (isAuthenticated) {
+    if (auth) {
       router.push(createUrl);
     } else {
       router.push(`/login?redirect=${encodeURIComponent(createUrl)}`);
@@ -420,12 +448,6 @@ export default function LandingPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (mounted && isAuthenticated) {
-      router.replace("/dashboard");
-    }
-  }, [mounted, isAuthenticated, router]);
 
   // Intersection Observer for stats counter animation
   useEffect(() => {
@@ -438,17 +460,6 @@ export default function LandingPage() {
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-
-  if (mounted && isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
-          <span className="text-sm font-medium text-slate-500">Memuat Dashboard...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans">
@@ -490,24 +501,25 @@ export default function LandingPage() {
           </p>
 
           {/* CTA Input */}
-          <div className="mt-20 sm:mt-20 max-w-2xl mx-auto">
-            <form
-              onSubmit={handleStartPetition}
-              className="flex items-center bg-white rounded-2xl border-2 border-slate-200 shadow-lg shadow-slate-100 hover:border-red-300 focus-within:border-red-500 focus-within:shadow-red-100/50 focus-within:shadow-xl transition-all duration-300 overflow-hidden p-1.5"
-            >
-              <div className="flex items-center gap-2.5 pl-3 shrink-0">
-                <Megaphone className="h-5 w-5 text-red-500" />
+          <div className="mt-16 sm:mt-20 max-w-2xl mx-auto">
+            <form onSubmit={handleStartPetition} className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:items-center sm:bg-white sm:rounded-2xl sm:border-2 sm:border-slate-200 sm:shadow-lg sm:shadow-slate-100 sm:hover:border-red-300 sm:focus-within:border-red-500 sm:focus-within:shadow-red-100/50 sm:focus-within:shadow-xl sm:transition-all sm:duration-300 sm:overflow-hidden sm:p-1.5">
+
+              {/* Input wrapper — bordered on mobile, borderless inside pill on desktop */}
+              <div className="flex items-center gap-2.5 flex-1 bg-white border-2 border-slate-200 rounded-2xl px-4 py-3 focus-within:border-red-500 transition-all sm:border-0 sm:rounded-none sm:px-0 sm:py-0 sm:focus-within:border-0">
+                <Megaphone className="h-5 w-5 text-red-500 shrink-0 sm:ml-3" />
+                <input
+                  type="text"
+                  value={petitionTitle}
+                  onChange={(e) => setPetitionTitle(e.target.value)}
+                  placeholder="Apa yang ingin kamu ubah di sekolah?"
+                  className="flex-1 px-2 sm:px-3 text-sm sm:text-base text-slate-900 placeholder:text-slate-400 bg-transparent outline-none py-1 sm:py-3"
+                />
               </div>
-              <input
-                type="text"
-                value={petitionTitle}
-                onChange={(e) => setPetitionTitle(e.target.value)}
-                placeholder="Apa yang ingin kamu ubah di sekolah?"
-                className="flex-1 px-3 py-3 text-sm sm:text-base text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
-              />
+
+              {/* Submit button — full width on mobile */}
               <button
                 type="submit"
-                className="shrink-0 h-11 sm:h-12 px-6 rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.97] text-white text-sm sm:text-base font-bold transition-all shadow-sm shadow-red-200 flex items-center gap-2"
+                className="w-full sm:w-auto sm:shrink-0 h-12 sm:h-11 px-6 rounded-2xl sm:rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.97] text-white text-sm font-bold transition-all shadow-md shadow-red-200/60 flex items-center justify-center gap-2"
               >
                 Mulai Petisi
                 <ArrowRight className="h-4 w-4" />

@@ -1,17 +1,17 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { 
-  Megaphone, 
-  LayoutDashboard, 
-  MessageSquare, 
-  Bell, 
-  User, 
-  HelpCircle, 
-  Settings, 
-  LogOut, 
+import {
+  Megaphone,
+  LayoutDashboard,
+  MessageSquare,
+  User,
+  LogOut,
   PlusCircle,
-  X
+  X,
+  Home,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/app/store/auth.store";
@@ -29,31 +29,26 @@ interface NavItem {
   disabled?: boolean;
 }
 
-export default function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
-  const pathname = usePathname() || "";
-  const router = useRouter();
-  const { logout, user } = useAuthStore();
+interface SidebarContentProps {
+  pathname: string;
+  navItems: NavItem[];
+  mounted: boolean;
+  user: { name: string; role: string; avatarUrl?: string } | null;
+  onClose: () => void;
+  onLogout: () => void;
+  onNavigateHome: () => void;
+}
 
-  const handleLogout = () => {
-    logout();
-    toast.success("Berhasil keluar", {
-      description: "Sesi Anda telah diakhiri.",
-    });
-    router.push("/");
-  };
-
-  const navItems: NavItem[] = [
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Keluhan Saya", href: "/complaints", icon: MessageSquare },
-    { label: "Profil Saya", href: "/profile", icon: User },
-  ];
-
-  const bottomItems: NavItem[] = [
-    { label: "Help Center", href: "#", icon: HelpCircle, disabled: true },
-    { label: "Settings", href: "#", icon: Settings, disabled: true },
-  ];
-
-  const SidebarContent = () => (
+function SidebarContent({
+  pathname,
+  navItems,
+  mounted,
+  user,
+  onClose,
+  onLogout,
+  onNavigateHome,
+}: SidebarContentProps) {
+  return (
     <div className="flex flex-col h-full bg-[#111111] text-white p-6 justify-between select-none font-sans">
       <div className="space-y-8">
         {/* Header Branding */}
@@ -99,7 +94,16 @@ export default function DashboardSidebar({ isOpen, onClose }: DashboardSidebarPr
                 key={item.label}
                 href={item.disabled ? "#" : item.href}
                 onClick={(e) => {
-                  if (item.disabled) e.preventDefault();
+                  if (item.disabled) {
+                    e.preventDefault();
+                    return;
+                  }
+                  if (item.href === "/") {
+                    e.preventDefault();
+                    onClose();
+                    onNavigateHome();
+                    return;
+                  }
                   onClose();
                 }}
                 className={cn(
@@ -124,40 +128,14 @@ export default function DashboardSidebar({ isOpen, onClose }: DashboardSidebarPr
 
       {/* Bottom menus */}
       <div className="space-y-5 pt-6 border-t border-white/[0.05]">
-        {/* Help & Settings */}
-        <div className="space-y-1">
-          {bottomItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.label}
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onClose();
-                }}
-                className={cn(
-                  "flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all",
-                  item.disabled
-                    ? "text-neutral-650 cursor-not-allowed opacity-55"
-                    : "text-neutral-400 hover:text-white hover:bg-white/[0.03]"
-                )}
-              >
-                <Icon className="h-4.5 w-4.5 text-neutral-550 shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* User profile section */}
-        {user && (
+        {/* User profile section — only rendered client-side after mount */}
+        {mounted && user && (
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.02]">
             <div className="h-9 w-9 rounded-xl bg-slate-100/10 border border-white/10 flex items-center justify-center font-extrabold text-white text-xs uppercase shadow-sm overflow-hidden select-none shrink-0">
               {user.avatarUrl ? (
-                <img 
-                  src={user.avatarUrl} 
-                  alt={user.name} 
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -173,7 +151,7 @@ export default function DashboardSidebar({ isOpen, onClose }: DashboardSidebarPr
 
         {/* Logout button */}
         <button
-          onClick={handleLogout}
+          onClick={onLogout}
           className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide text-red-500 hover:text-red-400 hover:bg-red-950/20 border border-transparent transition-all cursor-pointer text-left"
         >
           <LogOut className="h-4.5 w-4.5 text-red-500 shrink-0" />
@@ -182,25 +160,67 @@ export default function DashboardSidebar({ isOpen, onClose }: DashboardSidebarPr
       </div>
     </div>
   );
+}
+
+export default function DashboardSidebar({ isOpen, onClose }: DashboardSidebarProps) {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const pathname = usePathname() || "";
+  const router = useRouter();
+  const { logout, user } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    toast.success("Berhasil keluar", {
+      description: "Sesi Anda telah diakhiri.",
+    });
+    router.push("/");
+  };
+
+  const handleNavigateHome = () => {
+    // Use window.location.href for a full navigation to ensure the landing page loads properly
+    window.location.href = "/";
+  };
+
+  const navItems: NavItem[] = [
+    { label: "Halaman Utama", href: "/", icon: Home },
+    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Keluhan Saya", href: "/complaints", icon: MessageSquare },
+    { label: "Profil Saya", href: "/profile", icon: User },
+  ];
+
+  const contentProps: SidebarContentProps = {
+    pathname,
+    navItems,
+    mounted,
+    user: user ?? null,
+    onClose,
+    onLogout: handleLogout,
+    onNavigateHome: handleNavigateHome,
+  };
 
   return (
     <>
       {/* Desktop Persistent Sidebar */}
       <aside className="hidden lg:block w-64 h-screen fixed left-0 top-0 border-r border-white/[0.05] z-30">
-        <SidebarContent />
+        <SidebarContent {...contentProps} />
       </aside>
 
       {/* Mobile Drawer Sidebar */}
       {isOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           {/* Backdrop */}
-          <div 
+          <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
             onClick={onClose}
           />
           {/* Drawer Element */}
           <div className="fixed inset-y-0 left-0 w-[270px] max-w-[80vw] h-full shadow-2xl z-50 transform transition-transform duration-300 ease-out">
-            <SidebarContent />
+            <SidebarContent {...contentProps} />
           </div>
         </div>
       )}

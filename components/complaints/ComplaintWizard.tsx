@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,7 +25,7 @@ import { apiClient } from "@/lib/api";
 
 const complaintSchema = z.object({
   title: z.string().min(5, "Judul keluhan minimal harus 5 karakter"),
-  description: z.string().min(50, "Deskripsi keluhan minimal harus 50 karakter"),
+  description: z.string().min(1, "Deskripsi keluhan tidak boleh kosong"),
   expectedOutput: z.string().optional(),
   unit: z.enum(["Umum (ISO)", "Sarpras", "Kurikulum", "Kesiswaan", "Hubin", "Tata Usaha"] as const),
   isAnonymous: z.boolean(),
@@ -44,6 +44,7 @@ export default function ComplaintWizard() {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -128,6 +129,12 @@ export default function ComplaintWizard() {
     const validTypes = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
     if (!validTypes.includes(fileToUpload.type)) {
       toast.error("Format file tidak didukung! Gunakan JPG, PNG, atau PDF.");
+      return;
+    }
+
+    // Validate file size: max 5MB
+    if (fileToUpload.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 5MB.");
       return;
     }
 
@@ -244,7 +251,7 @@ export default function ComplaintWizard() {
                 <textarea
                   id="description"
                   rows={5}
-                  placeholder="Jelaskan detail permasalahan minimal 50 karakter agar admin dapat meninjau dengan lengkap..."
+                  placeholder="Jelaskan detail permasalahan agar admin dapat meninjau dengan lengkap..."
                   className={`flex w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:border-red-500/80 focus:ring-4 focus:ring-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 ${
                     errors.description ? "border-red-500/60 focus:border-red-500" : ""
                   }`}
@@ -312,30 +319,34 @@ export default function ComplaintWizard() {
               </div>
 
               {/* Upload Dropzone */}
+              {/* Hidden file input controlled via ref */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+
               {!file ? (
                 <div 
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-all cursor-pointer ${
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center gap-3 transition-all cursor-pointer select-none ${
                     isDragOver 
                       ? "border-red-600 bg-red-50/40" 
-                      : "border-slate-300 hover:border-slate-400 bg-slate-50/50"
+                      : "border-slate-300 hover:border-red-400 hover:bg-red-50/20 bg-slate-50/50"
                   }`}
                 >
                   <div className="h-12 w-12 rounded-full bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shadow-sm">
                     <UploadCloud className="h-6 w-6" />
                   </div>
                   <div className="text-center">
-                    <label className="relative cursor-pointer text-sm font-bold text-red-600 hover:text-red-700 transition-colors">
-                      <span>Unggah file bukti</span>
-                      <input 
-                        type="file" 
-                        accept="image/*,application/pdf" 
-                        className="hidden" 
-                        onChange={handleFileChange}
-                      />
-                    </label>
+                    <span className="text-sm font-bold text-red-600 hover:text-red-700 transition-colors">
+                      Unggah file bukti
+                    </span>
                     <p className="text-xs text-slate-400 mt-1">atau seret dan taruh di sini</p>
                   </div>
                   <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium mt-1">JPG, JPEG, PNG, atau PDF (Maks. 5MB)</p>
