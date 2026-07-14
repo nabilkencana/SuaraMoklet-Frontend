@@ -204,7 +204,7 @@ export function useComplaint(complaintId?: string) {
       const { apiClient } = await import("@/lib/api");
       const data = await apiClient.units.getAll();
       if (Array.isArray(data) && data.length > 0) {
-        setUnits(data);
+        setUnits(data.map((u: any) => u.name as ComplaintUnit));
         return;
       }
     } catch {

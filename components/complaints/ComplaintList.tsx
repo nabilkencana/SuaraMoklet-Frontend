@@ -16,13 +16,21 @@ const STATUS_CONFIG: Record<ComplaintStatus, { label: string; classes: string }>
     label: "OPEN",
     classes: "bg-slate-100 text-slate-600 border border-slate-200 ring-1 ring-slate-100/50",
   },
+  NEW: {
+    label: "NEW",
+    classes: "bg-red-50 text-red-650 border border-red-200 ring-1 ring-red-100/50",
+  },
+  WAITING_RESPONSE: {
+    label: "WAITING RESPONSE",
+    classes: "bg-amber-50 text-amber-600 border border-amber-200 ring-1 ring-amber-100/50",
+  },
   IN_PROGRESS: {
     label: "IN PROGRESS",
     classes: "bg-blue-50 text-blue-600 border border-blue-200 ring-1 ring-blue-100/50",
   },
   WAITING_USER: {
     label: "WAITING USER",
-    classes: "bg-amber-50 text-amber-600 border border-amber-200 ring-1 ring-amber-100/50",
+    classes: "bg-amber-50 text-amber-650 border border-amber-200 ring-1 ring-amber-100/50",
   },
   CLOSED: {
     label: "CLOSED",

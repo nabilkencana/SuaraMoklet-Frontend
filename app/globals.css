@@ -23,7 +23,7 @@
   --color-neutral-550: #626262;
   --color-neutral-650: #494949;
 
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-plus-jakarta-sans), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, monospace;
 
   --animate-fade-in-up: fade-in-up 0.5s ease-out forwards;
@@ -74,7 +74,7 @@ html {
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-plus-jakarta-sans), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Glass panel for dark pages (login/register/dashboard) */

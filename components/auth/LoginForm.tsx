@@ -12,18 +12,57 @@ import { useAuthStore } from "@/app/store/auth.store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-// ─── Dummy Account ────────────────────────────────────────────────────────────
-const DEMO_USER = {
-  email: "demo@student.moklet.org",
-  password: "demo12345",
-  account: {
-    id: "demo-user-001",
-    name: "Demo Siswa",
+// ─── Dummy Accounts ───────────────────────────────────────────────────────────
+const DEMO_USERS = [
+  {
+    roleLabel: "Siswa",
     email: "demo@student.moklet.org",
-    role: "USER" as const,
+    password: "demo12345",
+    account: {
+      id: "demo-user-001",
+      name: "Demo Siswa",
+      email: "demo@student.moklet.org",
+      role: "USER" as const,
+    },
+    token: "demo-access-token-user-2026",
   },
-  token: "demo-access-token-suaramoklet-2026",
-};
+  {
+    roleLabel: "Super Admin",
+    email: "superadmin@moklet.org",
+    password: "superadmin123",
+    account: {
+      id: "demo-superadmin-001",
+      name: "Super Admin",
+      email: "superadmin@moklet.org",
+      role: "SUPERADMIN" as const,
+    },
+    token: "demo-access-token-superadmin-2026",
+  },
+  {
+    roleLabel: "ISO Officer",
+    email: "iso@moklet.org",
+    password: "iso12345",
+    account: {
+      id: "demo-iso-001",
+      name: "ISO Officer",
+      email: "iso@moklet.org",
+      role: "SUPER_PIC" as const,
+    },
+    token: "demo-access-token-iso-2026",
+  },
+  {
+    roleLabel: "PIC Sarpras",
+    email: "pic_sarpras@moklet.org",
+    password: "sarpras123",
+    account: {
+      id: "demo-pic-001",
+      name: "PIC Sarpras",
+      email: "pic_sarpras@moklet.org",
+      role: "UNIT_PIC" as const,
+    },
+    token: "demo-access-token-pic-2026",
+  },
+];
 
 const loginSchema = z.object({
   email: z.string().min(1, "Email wajib diisi").email("Format email tidak valid"),
@@ -39,6 +78,7 @@ export default function LoginForm() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedDemoIndex, setSelectedDemoIndex] = useState(0);
 
   const redirectUrl = searchParams.get("redirect") || "/dashboard";
 
@@ -71,10 +111,12 @@ export default function LoginForm() {
     );
   }
 
-  const fillDemo = () => {
-    setValue("email", DEMO_USER.email);
-    setValue("password", DEMO_USER.password);
-    toast.info("Kredensial demo telah diisi!", {
+  const fillDemo = (index: number) => {
+    const demo = DEMO_USERS[index];
+    setSelectedDemoIndex(index);
+    setValue("email", demo.email);
+    setValue("password", demo.password);
+    toast.info(`Kredensial ${demo.roleLabel} telah diisi!`, {
       description: "Klik 'Masuk ke Akun' untuk melanjutkan.",
     });
   };
@@ -82,18 +124,28 @@ export default function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
 
-    // ─── Dummy account bypass (no backend required) ───────────────────────────
-    if (
-      data.email.trim() === DEMO_USER.email &&
-      data.password === DEMO_USER.password
-    ) {
+    // ─── Dummy accounts bypass (no backend required) ───────────────────────────
+    const matchedDemo = DEMO_USERS.find(
+      (demo) =>
+        data.email.trim() === demo.email &&
+        data.password === demo.password
+    );
+    if (matchedDemo) {
       await new Promise((r) => setTimeout(r, 700)); // simulate network delay
-      login(DEMO_USER.account, DEMO_USER.token);
-      toast.success(`Selamat datang, ${DEMO_USER.account.name}!`, {
-        description: "Anda masuk menggunakan akun demo.",
+      login(matchedDemo.account, matchedDemo.token);
+      toast.success(`Selamat datang, ${matchedDemo.account.name}!`, {
+        description: `Anda masuk sebagai ${matchedDemo.roleLabel} (akun demo).`,
       });
       setIsLoading(false);
-      router.push(redirectUrl);
+      
+      let finalRedirect = redirectUrl;
+      if (redirectUrl === "/dashboard" || redirectUrl === "/complaints") {
+        if (matchedDemo.account.role === "SUPERADMIN") finalRedirect = "/admin";
+        else if (matchedDemo.account.role === "SUPER_PIC") finalRedirect = "/iso";
+        else if (matchedDemo.account.role === "UNIT_PIC") finalRedirect = "/unit";
+      }
+      
+      router.push(finalRedirect);
       router.refresh();
       return;
     }
@@ -118,31 +170,63 @@ export default function LoginForm() {
     }
   };
 
+  const currentDemo = DEMO_USERS[selectedDemoIndex];
+
   return (
     <div className="space-y-5">
-      {/* Demo account hint card */}
-      <div className="relative rounded-xl border border-dashed border-red-300 bg-red-50/60 p-4 space-y-2.5">
-        <div className="flex items-center gap-1.5 text-red-600">
-          <Sparkles className="h-3.5 w-3.5" />
-          <span className="text-[10px] font-extrabold uppercase tracking-widest">Akun Demo Tersedia</span>
+      {/* Demo account selector card */}
+      <div className="relative rounded-2xl border border-dashed border-red-300 bg-red-50/60 p-4.5 space-y-3 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-red-600">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span className="text-[10px] font-extrabold uppercase tracking-widest">Akun Demo Multi-Role</span>
+          </div>
+          <span className="text-[9px] text-red-500/80 font-bold bg-red-100 px-2 py-0.5 rounded-full">
+            Pilih Peran
+          </span>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-xs">
+
+        {/* Tabs for Roles */}
+        <div className="grid grid-cols-4 gap-1 p-1 bg-red-100/50 rounded-xl">
+          {DEMO_USERS.map((demo, idx) => (
+            <button
+              key={demo.roleLabel}
+              type="button"
+              onClick={() => {
+                setSelectedDemoIndex(idx);
+                setValue("email", demo.email);
+                setValue("password", demo.password);
+              }}
+              className={`py-1 px-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                selectedDemoIndex === idx
+                  ? "bg-red-600 text-white shadow-sm"
+                  : "text-red-700 hover:bg-red-200/50"
+              }`}
+            >
+              {demo.roleLabel.split(" ")[0]}
+            </button>
+          ))}
+        </div>
+
+        {/* Selected Credentials */}
+        <div className="grid grid-cols-2 gap-3 text-xs bg-white/70 p-3 rounded-xl border border-red-100">
           <div className="space-y-0.5">
-            <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider block">Email</span>
-            <code className="text-[11px] font-mono text-neutral-700 font-semibold">{DEMO_USER.email}</code>
+            <span className="text-[9px] font-extrabold text-neutral-400 uppercase tracking-wider block">Email ({currentDemo.account.role})</span>
+            <code className="text-[10.5px] font-mono text-neutral-700 font-semibold truncate block">{currentDemo.email}</code>
           </div>
           <div className="space-y-0.5">
-            <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider block">Password</span>
-            <code className="text-[11px] font-mono text-neutral-700 font-semibold">{DEMO_USER.password}</code>
+            <span className="text-[9px] font-extrabold text-neutral-400 uppercase tracking-wider block">Password</span>
+            <code className="text-[10.5px] font-mono text-neutral-700 font-semibold block">{currentDemo.password}</code>
           </div>
         </div>
+
         <button
           type="button"
-          onClick={fillDemo}
-          className="inline-flex items-center gap-1.5 text-[10px] font-bold text-red-600 hover:text-red-700 transition-colors cursor-pointer select-none"
+          onClick={() => fillDemo(selectedDemoIndex)}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-white border border-red-200 text-[10px] font-extrabold uppercase tracking-wider text-red-600 hover:bg-red-50 active:scale-[0.98] transition-all rounded-xl shadow-xs cursor-pointer select-none"
         >
           <ClipboardCopy className="h-3 w-3" />
-          <span>Klik untuk isi otomatis</span>
+          <span>Autofill Kredensial {currentDemo.roleLabel}</span>
         </button>
       </div>
 

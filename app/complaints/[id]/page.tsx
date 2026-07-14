@@ -35,8 +35,10 @@ import Header from "@/components/shared/Header";
 
 const STATUS_CONFIG: Record<ComplaintStatus, { label: string; classes: string }> = {
   OPEN: { label: "OPEN", classes: "bg-slate-100 text-slate-600 border border-slate-200" },
+  NEW: { label: "NEW", classes: "bg-red-50 text-red-650 border border-red-200" },
+  WAITING_RESPONSE: { label: "WAITING RESPONSE", classes: "bg-amber-50 text-amber-600 border border-amber-200" },
   IN_PROGRESS: { label: "IN PROGRESS", classes: "bg-blue-50 text-blue-600 border border-blue-200" },
-  WAITING_USER: { label: "WAITING USER", classes: "bg-amber-50 text-amber-600 border border-amber-200" },
+  WAITING_USER: { label: "WAITING USER", classes: "bg-amber-50 text-amber-650 border border-amber-200" },
   CLOSED: { label: "CLOSED", classes: "bg-emerald-50 text-emerald-600 border border-emerald-200" },
 };
 

@@ -14,6 +14,14 @@ const STATUS_BADGE_CONFIG: Record<ComplaintStatus, { label: string; classes: str
     label: "OPEN",
     classes: "bg-blue-50 text-blue-600 border border-blue-200/80",
   },
+  NEW: {
+    label: "NEW",
+    classes: "bg-red-50 text-red-650 border border-red-200/80",
+  },
+  WAITING_RESPONSE: {
+    label: "WAITING RESPONSE",
+    classes: "bg-amber-50 text-amber-600 border border-amber-200/80",
+  },
   IN_PROGRESS: {
     label: "IN PROGRESS",
     classes: "bg-amber-50 text-amber-600 border border-amber-200/80",

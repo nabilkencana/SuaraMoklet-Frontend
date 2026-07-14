@@ -1,4 +1,4 @@
-export type ComplaintStatus = "OPEN" | "IN_PROGRESS" | "WAITING_USER" | "CLOSED";
+export type ComplaintStatus = "NEW" | "WAITING_RESPONSE" | "WAITING_USER" | "IN_PROGRESS" | "CLOSED" | "OPEN";
 
 export type ComplaintUnit =
   | "Umum (ISO)"
@@ -8,6 +8,12 @@ export type ComplaintUnit =
   | "Hubin"
   | "Tata Usaha";
 
+export interface UnitModel {
+  id: string;
+  name: string;
+  description?: string;
+}
+
 export interface TimelineEvent {
   id: string;
   title: string;
@@ -15,6 +21,8 @@ export interface TimelineEvent {
   status?: ComplaintStatus;
   createdAt: string;
 }
+
+export type ComplaintVisibility = "PUBLIC" | "PRIVATE";
 
 export interface Complaint {
   id: string;
@@ -29,6 +37,8 @@ export interface Complaint {
   supports: number;
   targetSupports?: number; // target count e.g. 500
   isSupported?: boolean;   // supported status by the current user
+  visibility?: ComplaintVisibility;
+  category?: string;
   reporter?: {
     id: string;
     name: string;

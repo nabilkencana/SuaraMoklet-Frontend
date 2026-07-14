@@ -1,7 +1,7 @@
 import { api } from "./axios";
 import { User, UserRole } from "@/types/auth";
 import { UpdateProfileRequest, ChangePasswordRequest } from "@/types/profile";
-import { Complaint, CreateComplaintRequest, ComplaintUnit } from "@/types/complaint";
+import { Complaint, CreateComplaintRequest, ComplaintUnit, UnitModel } from "@/types/complaint";
 import { Comment, CreateCommentRequest } from "@/types/comment";
 import { DashboardStats } from "@/types/dashboard";
 
@@ -68,6 +68,11 @@ export const profileApi = {
 };
 
 export const complaintsApi = {
+  getAll: async (params?: any): Promise<Complaint[]> => {
+    const response = await api.get<Complaint[]>("/complaints", { params });
+    return response.data;
+  },
+
   getOwn: async (): Promise<Complaint[]> => {
     const response = await api.get<Complaint[]>("/complaints/my");
     return response.data;
@@ -87,6 +92,16 @@ export const complaintsApi = {
     const response = await api.post<{ supports: number }>(`/complaints/${id}/support`, data);
     return response.data;
   },
+
+  forward: async (id: string, data: { toUnitId: string; forwardNote?: string }): Promise<Complaint> => {
+    const response = await api.patch<Complaint>(`/complaints/${id}/forward`, data);
+    return response.data;
+  },
+
+  updateVisibility: async (id: string, visibility: "PUBLIC" | "PRIVATE"): Promise<Complaint> => {
+    const response = await api.patch<Complaint>(`/complaints/${id}/visibility`, { visibility });
+    return response.data;
+  },
 };
 
 export const commentsApi = {
@@ -102,8 +117,37 @@ export const commentsApi = {
 };
 
 export const unitsApi = {
-  getAll: async (): Promise<ComplaintUnit[]> => {
-    const response = await api.get<ComplaintUnit[]>("/units");
+  getAll: async (): Promise<UnitModel[]> => {
+    const response = await api.get<UnitModel[]>("/units");
+    return response.data;
+  },
+
+  create: async (data: { name: string; description?: string }): Promise<UnitModel> => {
+    const response = await api.post<UnitModel>("/units", data);
+    return response.data;
+  },
+
+  update: async (id: string, data: { name?: string; description?: string }): Promise<UnitModel> => {
+    const response = await api.patch<UnitModel>(`/units/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/units/${id}`);
+  },
+
+  addMember: async (unitId: string, data: { email: string; isPic?: boolean }): Promise<any> => {
+    const response = await api.post(`/units/${unitId}/members`, data);
+    return response.data;
+  },
+
+  removeMember: async (unitId: string, userId: string): Promise<any> => {
+    const response = await api.delete(`/units/${unitId}/members/${userId}`);
+    return response.data;
+  },
+
+  updateMemberPic: async (unitId: string, userId: string, data: { isPic: boolean }): Promise<any> => {
+    const response = await api.patch(`/units/${unitId}/members/${userId}/pic`, data);
     return response.data;
   },
 };

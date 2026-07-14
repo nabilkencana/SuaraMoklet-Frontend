@@ -42,20 +42,30 @@ export default function Header() {
     router.push("/");
   };
 
-  // Dynamically determine links
-  const links = isAuthenticated
-    ? [
-        { label: "Home", href: "/" },
-        { label: "Jelajahi", href: "/search" },
-        { label: "Keluhan Saya", href: "/complaints" },
-      ]
-    : [
-        { label: "Home", href: "/#home" },
-        { label: "Jelajahi", href: "/search" },
-        { label: "Tentang", href: "/#about" },
-        { label: "Trending", href: "/#trending" },
-        { label: "FAQ", href: "/#faq" },
-      ];
+  // Dynamically determine links based on role
+  let links = [
+    { label: "Home", href: "/" },
+    { label: "Jelajahi", href: "/search" },
+  ];
+
+  if (mounted && isAuthenticated) {
+    links.push({ label: "Keluhan Saya", href: "/complaints" });
+    if (user?.role === "SUPERADMIN") {
+      links.push({ label: "Panel Admin", href: "/admin" });
+    } else if (user?.role === "SUPER_PIC") {
+      links.push({ label: "Forwarding ISO", href: "/iso" });
+    } else if (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER") {
+      links.push({ label: "Keluhan Unit", href: "/unit" });
+    }
+  } else {
+    links = [
+      { label: "Home", href: "/#home" },
+      { label: "Jelajahi", href: "/search" },
+      { label: "Tentang", href: "/#about" },
+      { label: "Trending", href: "/#trending" },
+      { label: "FAQ", href: "/#faq" },
+    ];
+  }
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";

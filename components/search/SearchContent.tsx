@@ -502,7 +502,7 @@ export default function SearchContent() {
                           href={`/complaints/${item.id}`}
                           className="w-full h-10 rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-[0.98] text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1.5 relative z-20"
                         >
-                          Tandatangani petisi ini
+                          <PenTool className="h-4 w-4" /> Beri dukungan
                         </Link>
                       </div>
                     </div>
