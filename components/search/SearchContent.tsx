@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Header from "@/components/shared/Header";
 import {
   Search,
   Megaphone,
@@ -235,14 +236,6 @@ const STATUSES = [
   { value: "CLOSED", label: "Selesai (CLOSED)" },
 ];
 
-const NAV_LINKS = [
-  { label: "Home", href: "/#home" },
-  { label: "Jelajahi Petisi", href: "/search" },
-  { label: "Tentang", href: "/#about" },
-  { label: "Trending", href: "/#trending" },
-  { label: "FAQ", href: "/#faq" },
-];
-
 export default function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -253,18 +246,13 @@ export default function SearchContent() {
 
   const [mounted, setMounted] = useState(false);
   const [searchVal, setSearchVal] = useState(query);
-  const [navbarSearchQuery, setNavbarSearchQuery] = useState(query);
   const [selectedTopic, setSelectedTopic] = useState(topicParam);
   const [selectedStatus, setSelectedStatus] = useState(statusParam);
   const [sortBy, setSortBy] = useState(sortParam);
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
     setMounted(true);
     setSearchVal(query);
-    setNavbarSearchQuery(query);
     setSelectedStatus(statusParam);
     setSortBy(sortParam);
     setSelectedTopic(topicParam);
@@ -273,11 +261,6 @@ export default function SearchContent() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     router.push(`/search?q=${encodeURIComponent(searchVal.trim())}`);
-  };
-
-  const handleNavbarSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    router.push(`/search?q=${encodeURIComponent(navbarSearchQuery.trim())}`);
   };
 
   const handleCategorySelect = (category: string) => {
@@ -320,136 +303,8 @@ export default function SearchContent() {
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-slate-800 font-sans flex flex-col pt-16">
       
-      {/* ── Navbar (Identical to Homepage) ──────────────────── */}
-      <header className="fixed top-0 inset-x-0 z-50 transition-all duration-300 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-6">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="h-8 w-8 rounded-lg bg-red-600 flex items-center justify-center shadow-sm shadow-red-200">
-              <Megaphone className="h-4.5 w-4.5 text-white" />
-            </div>
-            <span className="font-extrabold text-red-600 text-lg tracking-tight">SuaraMoklet</span>
-          </Link>
-
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-1">
-            {NAV_LINKS.map((link) => {
-              const isActive = link.label === "Jelajahi Petisi";
-              return (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className={cn(
-                    "relative px-3.5 py-1.5 text-sm font-medium rounded-lg transition-colors",
-                    isActive
-                      ? "text-red-600"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                  )}
-                >
-                  {link.label}
-                  {isActive && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full bg-red-600" />
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Search + Auth Button */}
-          <div className="hidden md:flex items-center gap-3">
-            <form onSubmit={handleNavbarSearchSubmit} className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-red-500 transition-colors" />
-              <input
-                type="text"
-                value={navbarSearchQuery}
-                onChange={(e) => setNavbarSearchQuery(e.target.value)}
-                placeholder="Cari keluhan..."
-                className="h-9 w-52 rounded-full border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10 focus:bg-white transition-all"
-              />
-            </form>
-            {mounted && isAuthenticated ? (
-              <Link
-                href="/dashboard"
-                className="h-9 px-5 flex items-center gap-2 justify-center rounded-full bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors shadow-sm shadow-red-200 active:scale-[0.98]"
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                <span>Dashboard</span>
-              </Link>
-            ) : (
-              <Link
-                href="/login"
-                className="h-9 px-5 flex items-center gap-2 justify-center rounded-full bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors shadow-sm shadow-red-200 active:scale-[0.98]"
-              >
-                <LogIn className="h-4 w-4" />
-                <span>Login</span>
-              </Link>
-            )}
-          </div>
-
-          {/* Mobile menu toggle */}
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden h-9 w-9 flex items-center justify-center rounded-lg text-slate-655 hover:bg-slate-100 transition-colors"
-          >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </nav>
-
-        {/* Mobile Menu */}
-        {mobileOpen && (
-          <div className="md:hidden bg-white border-t border-slate-100 px-4 py-4 space-y-1 shadow-lg">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-red-600 transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
-            <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-              <form onSubmit={handleNavbarSearchSubmit} className="relative flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <input
-                    type="text"
-                    value={navbarSearchQuery}
-                    onChange={(e) => setNavbarSearchQuery(e.target.value)}
-                    placeholder="Cari keluhan..."
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10 focus:bg-white transition-all"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="h-10 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors shrink-0 flex items-center gap-1.5"
-                >
-                  <Search className="h-3.5 w-3.5" />
-                  Cari
-                </button>
-              </form>
-              {mounted && isAuthenticated ? (
-                <Link
-                  href="/dashboard"
-                  onClick={() => setMobileOpen(false)}
-                  className="h-9 flex items-center justify-center gap-2 rounded-full bg-red-600 text-white text-sm font-semibold"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  <span>Dashboard</span>
-                </Link>
-              ) : (
-                <Link
-                  href="/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="h-9 flex items-center justify-center rounded-full bg-red-600 text-white text-sm font-semibold"
-                >
-                  Login
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
-      </header>
+      {/* ── Navbar (Unified Header) ──────────────────── */}
+      <Header />
 
       {/* ── Search Mode Content ─────────────────────────────── */}
       {!isResultsView ? (

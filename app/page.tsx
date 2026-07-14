@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/app/store/auth.store";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Header from "@/components/shared/Header";
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
@@ -117,13 +118,6 @@ const LATEST_COMPLAINTS: ComplaintCardData[] = [
   },
 ];
 
-const STATS = [
-  { value: "12.000+", label: "Total Laporan", icon: FileText, color: "text-red-600", bg: "bg-red-50" },
-  { value: "8.500+", label: "Siswa Aktif", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-  { value: "95%", label: "Laporan Ditindaklanjuti", icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-50" },
-  { value: "4.8/5", label: "Kepuasan Pengguna", icon: Star, color: "text-amber-600", bg: "bg-amber-50" },
-];
-
 const STEPS = [
   {
     num: 1,
@@ -142,54 +136,7 @@ const STEPS = [
   },
 ];
 
-const NAV_LINKS = [
-  { label: "Home", href: "/#home" },
-  { label: "Jelajahi Petisi", href: "/search" },
-  { label: "Tentang", href: "/#about" },
-  { label: "Trending", href: "/#trending" },
-  { label: "FAQ", href: "/#faq"},
-];
-
-// ─── Counter Animation Hook ───────────────────────────────────────────────────
-
-function useCountUp(target: string, duration = 1800, triggered = false) {
-  const [display, setDisplay] = useState("0");
-  useEffect(() => {
-    if (!triggered) return;
-    const numericStr = target.replace(/[^0-9.]/g, "");
-    const suffix = target.replace(/[0-9.]/g, "");
-    const end = parseFloat(numericStr);
-    if (isNaN(end)) { setDisplay(target); return; }
-    let start = 0;
-    const step = end / (duration / 16);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= end) { setDisplay(target); clearInterval(timer); return; }
-      const val = end % 1 !== 0 ? start.toFixed(1) : Math.floor(start).toLocaleString("id-ID");
-      setDisplay(val + suffix);
-    }, 16);
-    return () => clearInterval(timer);
-  }, [target, duration, triggered]);
-  return display;
-}
-
-// ─── Stat Card ────────────────────────────────────────────────────────────────
-
-function StatCard({ stat, triggered }: { stat: typeof STATS[0]; triggered: boolean }) {
-  const display = useCountUp(stat.value, 1800, triggered);
-  const Icon = stat.icon;
-  return (
-    <div className="flex flex-col items-center gap-3 p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
-      <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center", stat.bg)}>
-        <Icon className={cn("h-6 w-6", stat.color)} />
-      </div>
-      <p className={cn("text-3xl font-extrabold tracking-tight", stat.color)}>{display}</p>
-      <p className="text-sm text-slate-500 font-medium text-center">{stat.label}</p>
-    </div>
-  );
-}
-
-// ─── FAQ Accordion ────────────────────────────────────────────────────────────
+// Local Navbar has been replaced by the unified Header component
 
 interface FaqItem {
   question: string;
@@ -249,172 +196,6 @@ function FaqAccordionItem({ item, isOpen, onClick }: { item: FaqItem; isOpen: bo
   );
 }
 
-// ─── Navbar ───────────────────────────────────────────────────────────────────
-
-function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [activeLink, setActiveLink] = useState("Home");
-  const [mounted, setMounted] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const router = useRouter();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const user = useAuthStore((s) => s.user);
-
-  useEffect(() => {
-    setMounted(true);
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = searchQuery.trim();
-    if (!q) return;
-    router.push(`/search?q=${encodeURIComponent(q)}`);
-    setMobileOpen(false);
-    setSearchQuery("");
-  };
-
-  return (
-    <header
-      className={cn(
-        "fixed top-0 inset-x-0 z-50 transition-all duration-300",
-        scrolled
-          ? "bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm"
-          : "bg-transparent"
-      )}
-    >
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-6">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <div className="h-8 w-8 rounded-lg bg-red-600 flex items-center justify-center shadow-sm shadow-red-200">
-            <Megaphone className="h-4.5 w-4.5 text-white" />
-          </div>
-          <span className="font-extrabold text-red-600 text-lg tracking-tight">SuaraMoklet</span>
-        </Link>
-
-        {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-1">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              onClick={() => setActiveLink(link.label)}
-              className={cn(
-                "relative px-3.5 py-1.5 text-sm font-medium rounded-lg transition-colors",
-                activeLink === link.label
-                  ? "text-red-600"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              )}
-            >
-              {link.label}
-              {activeLink === link.label && (
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full bg-red-600" />
-              )}
-            </a>
-          ))}
-        </div>
-
-        {/* Search + Auth Button */}
-        <div className="hidden md:flex items-center gap-3">
-          <form onSubmit={handleSearch} className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-red-500 transition-colors" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari keluhan..."
-              className="h-9 w-52 rounded-full border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10 focus:bg-white transition-all"
-            />
-          </form>
-          {mounted && isAuthenticated ? (
-            <Link
-              href="/dashboard"
-              className="h-9 px-5 flex items-center gap-2 justify-center rounded-full bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors shadow-sm shadow-red-200 active:scale-[0.98]"
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              <span>Dashboard</span>
-            </Link>
-          ) : (
-            <Link
-              href="/login"
-              className="h-9 px-5 flex items-center gap-2 justify-center rounded-full bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors shadow-sm shadow-red-200 active:scale-[0.98]"
-            >
-              <LogIn className="h-4 w-4" />
-              <span>Login</span>
-            </Link>
-          )}
-        </div>
-
-        {/* Mobile menu toggle */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden h-9 w-9 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
-      </nav>
-
-      {/* Mobile Menu */}
-      {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-slate-100 px-4 py-4 space-y-1 shadow-lg">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              onClick={() => { setActiveLink(link.label); setMobileOpen(false); }}
-              className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-red-600 transition-colors"
-            >
-              {link.label}
-            </a>
-          ))}
-          <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-            {/* Mobile search — functional */}
-            <form onSubmit={handleSearch} className="relative flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari keluhan..."
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10 focus:bg-white transition-all"
-                />
-              </div>
-              <button
-                type="submit"
-                className="h-10 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors shrink-0 flex items-center gap-1.5"
-              >
-                <Search className="h-3.5 w-3.5" />
-                Cari
-              </button>
-            </form>
-            {mounted && isAuthenticated ? (
-              <Link
-                href="/dashboard"
-                onClick={() => setMobileOpen(false)}
-                className="h-9 flex items-center justify-center gap-2 rounded-full bg-red-600 text-white text-sm font-semibold"
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                <span>Dashboard</span>
-              </Link>
-            ) : (
-              <Link
-                href="/login"
-                onClick={() => setMobileOpen(false)}
-                className="h-9 flex items-center justify-center rounded-full bg-red-600 text-white text-sm font-semibold"
-              >
-                Login
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
-    </header>
-  );
-}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
@@ -464,7 +245,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans">
       {/* ── Navbar ───────────────────────────────────── */}
-      <Navbar />
+      <Header />
 
       {/* ── SECTION 1: Hero ──────────────────────────── */}
       {/* ponytail: use min-h-[100dvh] and flex centering for simple full-viewport layout */}
@@ -525,16 +306,6 @@ export default function LandingPage() {
                 <ArrowRight className="h-4 w-4" />
               </button>
             </form>
-
-            {/* Trust indicator */}
-            <div className="mt-5 flex items-center justify-center gap-2 text-slate-400 text-xs sm:text-sm">
-              <Shield className="h-4 w-4 text-emerald-500" />
-              <span>
-                Lebih dari{" "}
-                <span className="font-semibold text-slate-600">1.200 siswa</span>{" "}
-                telah berpartisipasi bulan ini.
-              </span>
-            </div>
           </div>
         </div>
       </section>
@@ -624,26 +395,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SECTION 5: Stats ─────────────────────────── */}
-      <section className="py-16 sm:py-24 bg-white" ref={statsRef}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold mb-4">
-              Platform dalam Angka
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Dipercaya Ribuan Warga Sekolah
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {STATS.map((stat) => (
-              <StatCard key={stat.label} stat={stat} triggered={statsTriggered} />
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── SECTION 6: FAQ Accordions ─────────────────── */}
       <section id="faq" className="py-16 sm:py-24 bg-white border-t border-slate-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -679,10 +430,6 @@ export default function LandingPage() {
             <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-white/[0.03]" />
 
             <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 text-white text-xs font-semibold mb-6">
-                <Sparkles className="h-3.5 w-3.5" />
-                Bergabung Sekarang
-              </div>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
                 Suaramu Bisa Membawa Perubahan
               </h2>
@@ -717,9 +464,7 @@ export default function LandingPage() {
             {/* Col 1: Brand */}
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-4">
-                <div className="h-8 w-8 rounded-lg bg-red-600 flex items-center justify-center">
-                  <Megaphone className="h-4 w-4 text-white" />
-                </div>
+                <img src="/logo.png" alt="Logo" className="h-8 w-8 object-contain shrink-0" />
                 <span className="font-extrabold text-red-600 text-lg">SuaraMoklet</span>
               </div>
               <p className="text-sm text-slate-500 leading-relaxed max-w-xs">
