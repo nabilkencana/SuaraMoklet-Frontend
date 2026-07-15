@@ -80,7 +80,7 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDemoIndex, setSelectedDemoIndex] = useState(0);
 
-  const redirectUrl = searchParams.get("redirect") || "/dashboard";
+  const redirectUrl = searchParams.get("redirect") || "/";
 
   const {
     register,
@@ -106,7 +106,7 @@ export default function LoginForm() {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-red-600" />
-        <span className="text-xs text-neutral-400 font-medium">Mengalihkan ke Dashboard...</span>
+        <span className="text-xs text-neutral-400 font-medium">Mengalihkan ke Beranda...</span>
       </div>
     );
   }
@@ -139,10 +139,8 @@ export default function LoginForm() {
       setIsLoading(false);
       
       let finalRedirect = redirectUrl;
-      if (redirectUrl === "/dashboard" || redirectUrl === "/complaints") {
-        if (matchedDemo.account.role === "SUPERADMIN") finalRedirect = "/admin";
-        else if (matchedDemo.account.role === "SUPER_PIC") finalRedirect = "/iso";
-        else if (matchedDemo.account.role === "UNIT_PIC") finalRedirect = "/unit";
+      if (redirectUrl === "/dashboard" || redirectUrl === "/complaints" || redirectUrl === "/") {
+        finalRedirect = "/";
       }
       
       router.push(finalRedirect);
@@ -159,9 +157,10 @@ export default function LoginForm() {
       });
       router.push(redirectUrl);
       router.refresh();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
-      const errorMessage = error.response?.data?.message || "Email atau password salah.";
+      const err = error as { response?: { data?: { message?: string } } };
+      const errorMessage = err.response?.data?.message || "Email atau password salah.";
       toast.error("Gagal Masuk", {
         description: errorMessage,
       });

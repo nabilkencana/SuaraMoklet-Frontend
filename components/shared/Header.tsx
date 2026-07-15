@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Megaphone, Menu, X, LogOut, Search, LogIn } from "lucide-react";
+import { Megaphone, Menu, X, LogOut, Search, LogIn, Settings } from "lucide-react";
 import { useAuthStore } from "@/app/store/auth.store";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -50,13 +50,6 @@ export default function Header() {
 
   if (mounted && isAuthenticated) {
     links.push({ label: "Keluhan Saya", href: "/complaints" });
-    if (user?.role === "SUPERADMIN") {
-      links.push({ label: "Panel Admin", href: "/admin" });
-    } else if (user?.role === "SUPER_PIC") {
-      links.push({ label: "Forwarding ISO", href: "/iso" });
-    } else if (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER") {
-      links.push({ label: "Keluhan Unit", href: "/unit" });
-    }
   } else {
     links = [
       { label: "Home", href: "/#home" },
@@ -128,6 +121,21 @@ export default function Header() {
               className="h-9 w-52 rounded-full border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-red-400 focus:ring-4 focus:ring-red-500/10 focus:bg-white transition-all"
             />
           </form>
+
+          {mounted && isAuthenticated && user && user.role !== "USER" && (
+            <Link
+              href="/dashboard"
+              className={cn(
+                "h-8 px-4 flex items-center justify-center rounded-full text-xs font-extrabold active:scale-[0.98] transition-all cursor-pointer border shrink-0",
+                pathname === "/dashboard"
+                  ? "bg-red-600 text-white border-red-600 shadow-sm shadow-red-200"
+                  : "bg-red-50 text-red-600 border-red-100 hover:bg-red-100/60"
+              )}
+            >
+              <Settings className="h-3.5 w-3.5 mr-1.5 animate-spin-slow" style={{ animationDuration: '8s' }} />
+              <span>Kelola</span>
+            </Link>
+          )}
 
           {mounted && isAuthenticated && user ? (
             <div className="flex items-center gap-4">
@@ -216,6 +224,21 @@ export default function Header() {
 
             {mounted && isAuthenticated && user ? (
               <>
+                {user.role !== "USER" && (
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors",
+                      pathname === "/dashboard"
+                        ? "bg-red-50 text-red-650"
+                        : "text-slate-700 hover:bg-slate-50 hover:text-red-650"
+                    )}
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    <span>Kelola</span>
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   onClick={() => setMobileOpen(false)}

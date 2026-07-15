@@ -30,6 +30,7 @@ import { useAuthStore } from "@/app/store/auth.store";
 import { cn } from "@/lib/utils";
 import { ComplaintStatus, TimelineEvent } from "@/types/complaint";
 import Header from "@/components/shared/Header";
+import UnitComplaintDetailPage from "@/components/dashboard/UnitComplaintDetailPage";
 
 // NAV_LINKS has been removed in favor of the unified Header component
 
@@ -44,7 +45,7 @@ const STATUS_CONFIG: Record<ComplaintStatus, { label: string; classes: string }>
 
 function Accordion({ title, icon: Icon, children, defaultOpen = false }: {
   title: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
   defaultOpen?: boolean;
 }) {
@@ -71,15 +72,18 @@ export default function ComplaintDetailPage() {
   const router = useRouter();
   const complaintId = params.id as string;
 
-  const { currentComplaint, isLoading, fetchComplaintById, supportComplaint } = useComplaint(complaintId);
   const { isAuthenticated, user } = useAuthStore();
+  const { currentComplaint, isLoading, fetchComplaintById, supportComplaint } = useComplaint(complaintId);
   const [mounted, setMounted] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   // True when logged-in user is the owner of this complaint
   const isOwner = !!(user && currentComplaint?.reporter?.id && user.id === currentComplaint.reporter.id);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (mounted && complaintId) {
@@ -89,9 +93,13 @@ export default function ComplaintDetailPage() {
     }
   }, [mounted, complaintId]);
 
+  if (isAuthenticated && (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN")) {
+    return <UnitComplaintDetailPage complaintId={complaintId} />;
+  }
+
   const safeISO = (base: string | undefined, offsetMs = 0): string => {
     const ts = base ? new Date(base).getTime() : NaN;
-    const resolved = isNaN(ts) ? Date.now() : ts;
+    const resolved = isNaN(ts) ? 1700000000000 : ts;
     return new Date(resolved + offsetMs).toISOString();
   };
 
