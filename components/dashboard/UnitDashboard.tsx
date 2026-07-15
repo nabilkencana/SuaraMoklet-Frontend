@@ -118,6 +118,17 @@ export default function UnitDashboard() {
   const [statusFilter, setStatusFilter] = useState("Semua Status");
   const [priorityFilter, setPriorityFilter] = useState("Semua Prioritas");
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentPage(1);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [statusFilter]);
+
   // Determine active unit dynamically
   const getAssignedUnit = () => {
     if (user?.email === "pic_sarpras@moklet.org") return "Sarpras";
@@ -241,6 +252,11 @@ export default function UnitDashboard() {
     return matchesStatus && matchesPriority;
   });
 
+  // Pagination math
+  const totalPages = Math.ceil(filteredComplaints.length / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedComplaints = filteredComplaints.slice(startIndex, startIndex + itemsPerPage);
+
   const handleDownloadReport = () => {
     toast.promise(
       new Promise((resolve) => setTimeout(resolve, 1500)),
@@ -347,21 +363,18 @@ export default function UnitDashboard() {
               <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Dashboard Unit {currentUnit}</h1>
               <p className="text-slate-500 text-xs mt-0.5 font-medium">Ringkasan dan manajemen keluhan infrastruktur sekolah.</p>
             </div>
-
-            <button
-              onClick={handleDownloadReport}
-              className="h-10 px-4 bg-[#b61722] hover:bg-[#a7151e] text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
-            >
-              <Download className="h-4 w-4" />
-              <span>Unduh Laporan</span>
-            </button>
           </div>
 
           {/* 4 Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-
             {/* Card 1: Keluhan Baru */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between border-l-[5px] border-l-slate-400">
+            <div
+              onClick={() => setStatusFilter(statusFilter === "Baru" ? "Semua Status" : "Baru")}
+              className={cn(
+                "bg-white rounded-3xl border p-5 shadow-xs flex items-center justify-between border-l-[5px] transition-all cursor-pointer hover:bg-slate-50/50 hover:scale-102",
+                statusFilter === "Baru" ? "border-l-slate-600 border-slate-350 shadow-sm" : "border-slate-200/80 border-l-slate-400"
+              )}
+            >
               <div className="space-y-1">
                 <span className="block text-xs font-bold text-slate-450">Keluhan Baru</span>
                 <span className="block text-3xl font-extrabold text-slate-800 leading-tight">{statsNew}</span>
@@ -373,7 +386,13 @@ export default function UnitDashboard() {
             </div>
 
             {/* Card 2: Belum Direspon */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between border-l-[5px] border-l-amber-500">
+            <div
+              onClick={() => setStatusFilter(statusFilter === "Belum Direspon" ? "Semua Status" : "Belum Direspon")}
+              className={cn(
+                "bg-white rounded-3xl border p-5 shadow-xs flex items-center justify-between border-l-[5px] transition-all cursor-pointer hover:bg-slate-50/50 hover:scale-102",
+                statusFilter === "Belum Direspon" ? "border-l-amber-600 border-slate-350 shadow-sm" : "border-slate-200/80 border-l-amber-500"
+              )}
+            >
               <div className="space-y-1">
                 <span className="block text-xs font-bold text-slate-450">Belum Direspon</span>
                 <span className="block text-3xl font-extrabold text-slate-800 leading-tight">{statsWaiting}</span>
@@ -385,19 +404,31 @@ export default function UnitDashboard() {
             </div>
 
             {/* Card 3: Sedang Diproses */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between border-l-[5px] border-l-orange-550">
+            <div
+              onClick={() => setStatusFilter(statusFilter === "Diproses" ? "Semua Status" : "Diproses")}
+              className={cn(
+                "bg-white rounded-3xl border p-5 shadow-xs flex items-center justify-between border-l-[5px] transition-all cursor-pointer hover:bg-slate-50/50 hover:scale-102",
+                statusFilter === "Diproses" ? "border-l-orange-600 border-slate-350 shadow-sm" : "border-slate-200/80 border-l-orange-550"
+              )}
+            >
               <div className="space-y-1">
                 <span className="block text-xs font-bold text-slate-450">Sedang Diproses</span>
                 <span className="block text-3xl font-extrabold text-slate-800 leading-tight">{statsProgress}</span>
                 <span className="block text-[10px] text-slate-400 font-bold">Dalam penanganan</span>
               </div>
-              <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-550 shadow-2xs">
+              <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-555 shadow-2xs">
                 <RefreshCw className="h-5 w-5" />
               </div>
             </div>
 
             {/* Card 4: Selesai Bulan Ini */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between border-l-[5px] border-l-red-600">
+            <div
+              onClick={() => setStatusFilter(statusFilter === "Selesai" ? "Semua Status" : "Selesai")}
+              className={cn(
+                "bg-white rounded-3xl border p-5 shadow-xs flex items-center justify-between border-l-[5px] transition-all cursor-pointer hover:bg-slate-50/50 hover:scale-102",
+                statusFilter === "Selesai" ? "border-l-red-700 border-slate-350 shadow-sm" : "border-slate-200/80 border-l-red-600"
+              )}
+            >
               <div className="space-y-1">
                 <span className="block text-xs font-bold text-slate-450">Selesai Bulan Ini</span>
                 <span className="block text-3xl font-extrabold text-slate-800 leading-tight">{statsClosed}</span>
@@ -407,7 +438,6 @@ export default function UnitDashboard() {
                 <CheckCircle2 className="h-5 w-5" />
               </div>
             </div>
-
           </div>
 
           {/* Table Container */}
@@ -430,17 +460,6 @@ export default function UnitDashboard() {
                   <option value="Diproses">Diproses</option>
                   <option value="Selesai">Selesai</option>
                 </select>
-
-                <select
-                  value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value)}
-                  className="h-10 rounded-xl border border-slate-250 bg-white px-3.5 text-xs font-bold text-slate-650 outline-none focus:border-red-500 cursor-pointer transition-all"
-                >
-                  <option value="Semua Prioritas">Semua Prioritas</option>
-                  <option value="Tinggi">Tinggi</option>
-                  <option value="Sedang">Sedang</option>
-                  <option value="Rendah">Rendah</option>
-                </select>
               </div>
             </div>
 
@@ -453,7 +472,6 @@ export default function UnitDashboard() {
                     <th className="pb-3 font-semibold">Judul</th>
                     <th className="pb-3 font-semibold">Pelapor</th>
                     <th className="pb-3 font-semibold">Status</th>
-                    <th className="pb-3 font-semibold">Prioritas</th>
                     <th className="pb-3 font-semibold">Tanggal</th>
                     <th className="pb-3 text-right pr-2 font-semibold">Aksi</th>
                   </tr>
@@ -461,20 +479,20 @@ export default function UnitDashboard() {
                 <tbody className="divide-y divide-slate-100">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
+                      <td colSpan={5} className="py-12 text-center text-slate-400 font-medium">
                         <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-[#b61722]" />
                         Memuat data keluhan...
                       </td>
                     </tr>
-                  ) : filteredComplaints.length === 0 ? (
+                  ) : paginatedComplaints.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-slate-400 font-semibold text-xs leading-relaxed">
+                      <td colSpan={5} className="py-12 text-center text-slate-400 font-semibold text-xs leading-relaxed">
                         <Building className="h-7 w-7 text-slate-350 mx-auto mb-2 opacity-50" />
                         Tidak ada keluhan masuk yang sesuai filter.
                       </td>
                     </tr>
                   ) : (
-                    filteredComplaints.map((c) => {
+                    paginatedComplaints.map((c) => {
                       const isClosed = c.status === "CLOSED";
 
                       // Status Label & Badge formatting
@@ -489,14 +507,6 @@ export default function UnitDashboard() {
                       } else if (c.status === "CLOSED") {
                         statusText = "Selesai";
                         statusBadgeClass = "bg-slate-100 text-slate-500 border border-slate-200";
-                      }
-
-                      // Priority Badge formatting
-                      let priorityClass = "border-slate-200 text-slate-500 bg-slate-50/50";
-                      if (c.priority === "Tinggi") {
-                        priorityClass = "border-red-200 text-red-600 bg-red-50/30";
-                      } else if (c.priority === "Sedang") {
-                        priorityClass = "border-slate-300 text-slate-700 bg-white";
                       }
 
                       return (
@@ -531,16 +541,6 @@ export default function UnitDashboard() {
                             </span>
                           </td>
 
-                          {/* Prioritas */}
-                          <td className="py-4">
-                            <span className={cn(
-                              "inline-flex items-center px-2.5 py-0.5 rounded-md text-[9px] font-extrabold border uppercase tracking-wider",
-                              priorityClass
-                            )}>
-                              {c.priority}
-                            </span>
-                          </td>
-
                           {/* Tanggal */}
                           <td className="py-4 font-semibold text-slate-500">
                             {formatDate(c.createdAt)}
@@ -549,22 +549,17 @@ export default function UnitDashboard() {
                           {/* Aksi */}
                           <td className="py-4 text-right pr-2">
                             <div className="inline-flex items-center gap-2 justify-end">
-                              {/* Balas button (only for WAITING_RESPONSE or NEW) */}
-                              {c.status !== "CLOSED" && c.status !== "IN_PROGRESS" && (
-                                <button
-                                  onClick={() => handleOpenReplyModal(c)}
-                                  className="h-8 px-3 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-lg flex items-center gap-1 shadow-2xs transition-all cursor-pointer active:scale-95"
-                                >
-                                  <CornerUpLeft className="h-3.5 w-3.5" />
-                                  <span>Balas</span>
-                                </button>
-                              )}
-
-                              {/* Detail button */}
+                              {/* Detail button with optional notification badge for new/waiting complaints */}
                               <button
                                 onClick={() => router.push(`/complaints/${c.id}`)}
-                                className="h-8 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-lg flex items-center gap-1 shadow-3xs transition-all cursor-pointer active:scale-95"
+                                className="relative h-8 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-lg flex items-center gap-1 shadow-3xs transition-all cursor-pointer active:scale-[0.96]"
                               >
+                                {(c.status === "NEW" || c.status === "WAITING_RESPONSE") && (
+                                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-650"></span>
+                                  </span>
+                                )}
                                 <Eye className="h-3.5 w-3.5 text-slate-500" />
                                 <span>Detail</span>
                               </button>
@@ -580,16 +575,27 @@ export default function UnitDashboard() {
 
             {/* Table Pagination Footer */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-slate-100 text-xs text-slate-400 font-semibold">
-              <span>Menampilkan 1-{filteredComplaints.length} dari {allComplaints.length} keluhan</span>
+              <span>
+                Menampilkan {filteredComplaints.length === 0 ? 0 : startIndex + 1}-
+                {Math.min(startIndex + itemsPerPage, filteredComplaints.length)} dari {filteredComplaints.length} keluhan
+              </span>
 
               <div className="flex items-center gap-1 border border-slate-200 rounded-xl p-1 bg-white">
-                <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  className="h-7 w-7 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+                >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <button className="h-7 w-7 rounded-lg bg-[#b61722] flex items-center justify-center text-white font-bold">
-                  1
+                <button className="h-7 px-2 rounded-lg bg-[#b61722] flex items-center justify-center text-white font-bold select-none text-[10px]">
+                  {currentPage} / {totalPages}
                 </button>
-                <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  className="h-7 w-7 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+                >
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>

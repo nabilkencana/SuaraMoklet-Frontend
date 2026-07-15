@@ -308,7 +308,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
               ]
             };
           });
-          
+
           setReplyStatus(nextStatus);
         } catch (err) {
           throw err;
@@ -337,7 +337,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
         }
         setIsForwardModalOpen(false);
         toast.success(`Keluhan berhasil diteruskan ke Unit ID: ${forwardUnitId}`);
-        router.push("/complaints");
+        router.push("/unit/complaints");
       })(),
       {
         loading: "Meneruskan keluhan...",
@@ -398,21 +398,21 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9]">
-      
+
       {/* ─── LEFT SIDEBAR (Dark UI) ─── */}
       <UnitSidebar activeTab="keluhan" />
 
       {/* ─── MAIN WORKSPACE ─── */}
       <div className="flex-grow h-full flex flex-col min-w-0 overflow-hidden bg-[#f9f9f9]">
-        
+
         {/* Scrollable Container */}
         <div className="flex-grow overflow-y-auto p-8 space-y-6">
-          
+
           {/* Breadcrumbs Row */}
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-            <button onClick={() => router.push("/unit")} className="hover:text-red-500 transition-colors">Dashboard Unit</button>
+            <button onClick={() => router.push("/dashboard")} className="hover:text-red-500 transition-colors">Dashboard Unit</button>
             <span>&gt;</span>
-            <button onClick={() => router.push("/complaints")} className="hover:text-red-500 transition-colors">Keluhan Masuk</button>
+            <button onClick={() => router.push("/unit/complaints")} className="hover:text-red-500 transition-colors">Keluhan Masuk</button>
             <span>&gt;</span>
             <span className="text-slate-500">Detail Keluhan</span>
           </div>
@@ -423,49 +423,24 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
               <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Detail Keluhan</h1>
               <p className="text-slate-500 text-xs mt-0.5 font-medium">Kelola keluhan yang masuk ke unit Anda.</p>
             </div>
-
-            <div className="flex items-center gap-2.5">
-              <button
-                onClick={() => setIsForwardModalOpen(true)}
-                className="h-10 px-4 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-3xs transition-all cursor-pointer"
-              >
-                <Share2 className="h-4 w-4 text-slate-500" />
-                <span>Teruskan Keluhan</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  const replyForm = document.getElementById("reply-form-section");
-                  if (replyForm) replyForm.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="h-10 px-4 bg-[#b61722] hover:bg-[#a7151e] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
-              >
-                <Send className="h-4 w-4" />
-                <span>Beri Respon</span>
-              </button>
-            </div>
           </div>
 
           {/* Split Content Grid (2/3 Left, 1/3 Right) */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-            
+
             {/* ─── LEFT COLUMN (2/3) ─── */}
             <div className="lg:col-span-2 space-y-6">
-              
+
               {/* Card 1: Summary */}
               <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-                
+
                 {/* Badges */}
                 <div className="flex items-center justify-between">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-200">
                     {complaint.status}
                   </span>
-                  
+
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-red-600 flex items-center gap-1">
-                      <AlertCircle className="h-4 w-4" />
-                      Prioritas {complaint.priority || "Tinggi"}
-                    </span>
                     <span className="text-xs font-bold text-slate-400 flex items-center gap-1">
                       <Globe className="h-4 w-4" />
                       Publik
@@ -510,7 +485,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
               {/* Card 3: Attachments */}
               <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
                 <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lampiran (2)</span>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="h-40 rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden shadow-3xs group cursor-pointer">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -536,7 +511,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
               {/* Card 4: Discussion & Responses */}
               <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-5">
                 <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Diskusi &amp; Tanggapan</span>
-                
+
                 <div className="space-y-4">
                   {comments.map((comment) => {
                     const isOfficial = comment.isPic;
@@ -554,7 +529,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                           <span className="font-bold text-slate-800">
                             {comment.user?.name || "Anonim"}
                           </span>
-                          
+
                           {isOfficial && (
                             <span className="px-2 py-0.5 bg-[#b61722] text-white font-extrabold text-[8px] uppercase tracking-wider rounded-md">
                               Respon Resmi Unit
@@ -573,7 +548,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
               {/* Card 5: Action Reply Form */}
               <div id="reply-form-section" className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
                 <span className="block text-[10px] font-bold text-slate-455 uppercase tracking-wider">Kirim Tanggapan Unit</span>
-                
+
                 <form onSubmit={handleSendReply} className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Tanggapan Unit</label>
@@ -588,7 +563,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    
+
                     {/* Status Update */}
                     <div className="space-y-1.5">
                       <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Update Status</label>
@@ -635,25 +610,43 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
             {/* ─── RIGHT COLUMN (1/3) ─── */}
             <div className="space-y-6">
-              
+
               {/* Card 1: Status & Control */}
               <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-5">
                 <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status &amp; Kontrol</span>
-                
+
                 {/* Status Block */}
-                <div className="bg-[#0B0F19] rounded-2xl p-5 text-center shadow-inner">
-                  <span className="block text-[9px] font-bold text-neutral-450 uppercase tracking-widest">Status Saat Ini</span>
-                  <span className="block text-xl font-extrabold text-amber-500 tracking-wider mt-1">{complaint.status}</span>
-                </div>
+                {(() => {
+                  let displayStatus = "BARU";
+                  let statusColorClass = "text-sky-400";
+                  if (complaint.status === "WAITING_RESPONSE") {
+                    displayStatus = "BELUM DIRESPON";
+                    statusColorClass = "text-rose-400";
+                  } else if (complaint.status === "IN_PROGRESS") {
+                    displayStatus = "SEDANG DIPROSES";
+                    statusColorClass = "text-amber-500";
+                  } else if (complaint.status === "CLOSED") {
+                    displayStatus = "SELESAI";
+                    statusColorClass = "text-emerald-500";
+                  }
+
+                  return (
+                    <div className="bg-[#0B0F19] rounded-2xl p-5 text-center shadow-inner relative overflow-hidden">
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">Status Saat Ini</span>
+                      <span className={cn("block text-base font-black tracking-widest mt-1.5", statusColorClass)}>
+                        {displayStatus}
+                      </span>
+                    </div>
+                  );
+                })()}
 
                 {/* PIC Info */}
                 <div className="space-y-2 pt-2 border-t border-slate-50">
                   <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">PIC Unit Bertanggung Jawab</span>
-                  
+
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/images/rahmat_hidayat.png" alt="Rahmat" className="h-full w-full object-cover" />
+                    <div className="h-9 w-9 rounded-full bg-red-50 text-[#b61722] border border-red-100 flex items-center justify-center font-extrabold text-xs shrink-0 select-none shadow-3xs">
+                      RH
                     </div>
                     <div className="space-y-0.5">
                       <span className="block font-bold text-slate-800 text-xs leading-none">Rahmat Hidayat</span>
@@ -665,24 +658,26 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                 {/* Action Controls */}
                 <div className="space-y-2 pt-3 border-t border-slate-50">
                   <button
+                    disabled={complaint.status === "IN_PROGRESS" || complaint.status === "CLOSED"}
                     onClick={() => handleStatusTransition("IN_PROGRESS")}
-                    className="w-full h-11 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-3xs cursor-pointer"
+                    className="w-full h-11 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-3xs cursor-pointer active:scale-[0.98]"
                   >
-                    <RefreshCw className="h-4 w-4 text-slate-400" />
+                    <RefreshCw className="h-4 w-4 text-slate-400 animate-spin-slow" />
                     <span>Update Status</span>
                   </button>
 
                   <button
                     onClick={() => setIsForwardModalOpen(true)}
-                    className="w-full h-11 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                    className="w-full h-11 bg-neutral-900 hover:bg-neutral-850 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-[0.98]"
                   >
                     <Share2 className="h-4 w-4 text-[#b61722]" />
                     <span>Teruskan (Forward)</span>
                   </button>
 
                   <button
+                    disabled={complaint.status === "CLOSED"}
                     onClick={() => handleStatusTransition("CLOSED")}
-                    className="w-full h-11 bg-white hover:bg-red-50 border border-red-200 text-[#b61722] text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-3xs cursor-pointer"
+                    className="w-full h-11 bg-white hover:bg-red-50/50 disabled:opacity-50 disabled:cursor-not-allowed border border-red-200 text-[#b61722] text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-3xs cursor-pointer active:scale-[0.98]"
                   >
                     <CheckCircle className="h-4 w-4" />
                     <span>Tutup Keluhan</span>
@@ -694,12 +689,12 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
               {/* Card 2: Process Audit Trail */}
               <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
                 <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Riwayat Proses</span>
-                
+
                 {/* Timeline */}
                 <div className="relative border-l border-slate-100 pl-4.5 space-y-5 ml-1 pt-1.5 pb-1">
                   {timelineList.map((evt, idx) => (
                     <div key={evt.id || idx} className="relative space-y-1">
-                      
+
                       {/* Timeline dot */}
                       <div className={cn(
                         "absolute left-[-22px] top-1.5 h-2.5 w-2.5 rounded-full border border-white shrink-0",
@@ -735,22 +730,6 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
               </div>
 
-              {/* Card 3: Help Widget */}
-              <div className="bg-sky-50/70 border border-sky-100 rounded-3xl p-5 flex items-start gap-3.5 shadow-2xs">
-                <div className="h-9 w-9 rounded-xl bg-sky-500 text-white flex items-center justify-center shrink-0">
-                  <HelpCircle className="h-5 w-5" />
-                </div>
-                <div className="space-y-0.5">
-                  <h4 className="font-extrabold text-sky-950 text-xs">Butuh Bantuan Teknis?</h4>
-                  <button
-                    onClick={() => toast.info("Menghubungi Super Admin...")}
-                    className="block text-[10px] text-sky-700 hover:text-sky-850 hover:underline font-extrabold"
-                  >
-                    Hubungi Super Admin
-                  </button>
-                </div>
-              </div>
-
             </div>
 
           </div>
@@ -763,7 +742,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       {isForwardModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            
+
             <div className="flex justify-between items-start">
               <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">Teruskan / Delegasikan Laporan</h3>
               <button
@@ -775,7 +754,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
             </div>
 
             <form onSubmit={handleForwardComplaint} className="space-y-4 pt-2">
-              
+
               {/* Unit target */}
               <div className="space-y-1.5">
                 <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Unit Kerja Tujuan</label>

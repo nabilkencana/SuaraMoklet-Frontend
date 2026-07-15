@@ -14,10 +14,6 @@ import UnitComplaintsList from "@/components/dashboard/UnitComplaintsList";
 export default function MyComplaintsPage() {
   const { user, isAuthenticated } = useAuthStore();
 
-  if (isAuthenticated && (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN")) {
-    return <UnitComplaintsList />;
-  }
-
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-slate-800 flex flex-col pt-16">
       <Header />

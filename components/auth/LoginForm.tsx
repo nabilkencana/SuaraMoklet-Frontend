@@ -76,6 +76,7 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const login = useAuthStore((state) => state.login);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDemoIndex, setSelectedDemoIndex] = useState(0);
@@ -98,9 +99,14 @@ export default function LoginForm() {
   // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace(redirectUrl);
+      const isUnitOrAdmin = user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC";
+      let finalRedirect = redirectUrl;
+      if (isUnitOrAdmin && (redirectUrl === "/dashboard" || redirectUrl === "/complaints" || redirectUrl === "/unit" || redirectUrl === "/unit/complaints" || redirectUrl === "/")) {
+        finalRedirect = "/";
+      }
+      router.replace(finalRedirect);
     }
-  }, [isAuthenticated, router, redirectUrl]);
+  }, [isAuthenticated, router, redirectUrl, user]);
 
   if (isAuthenticated) {
     return (
@@ -139,7 +145,9 @@ export default function LoginForm() {
       setIsLoading(false);
       
       let finalRedirect = redirectUrl;
-      if (redirectUrl === "/dashboard" || redirectUrl === "/complaints" || redirectUrl === "/") {
+      const roleStr = matchedDemo.account.role as string;
+      const isUnitOrAdmin = roleStr === "UNIT_PIC" || roleStr === "UNIT_MEMBER" || roleStr === "SUPERADMIN" || roleStr === "SUPER_PIC";
+      if (isUnitOrAdmin && (redirectUrl === "/dashboard" || redirectUrl === "/complaints" || redirectUrl === "/unit" || redirectUrl === "/unit/complaints" || redirectUrl === "/")) {
         finalRedirect = "/";
       }
       
@@ -155,7 +163,12 @@ export default function LoginForm() {
       toast.success(`Selamat datang kembali, ${response.user.name}!`, {
         description: "Login berhasil.",
       });
-      router.push(redirectUrl);
+      const isUnitOrAdmin = response.user.role === "UNIT_PIC" || response.user.role === "UNIT_MEMBER" || response.user.role === "SUPERADMIN" || response.user.role === "SUPER_PIC";
+      let finalRedirect = redirectUrl;
+      if (isUnitOrAdmin && (redirectUrl === "/dashboard" || redirectUrl === "/complaints" || redirectUrl === "/unit" || redirectUrl === "/unit/complaints" || redirectUrl === "/")) {
+        finalRedirect = "/";
+      }
+      router.push(finalRedirect);
       router.refresh();
     } catch (error: unknown) {
       console.error("Login error:", error);

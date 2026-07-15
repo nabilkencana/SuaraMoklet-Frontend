@@ -93,7 +93,7 @@ export default function ComplaintDetailPage() {
     }
   }, [mounted, complaintId]);
 
-  if (isAuthenticated && (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN")) {
+  if (isAuthenticated && (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER")) {
     return <UnitComplaintDetailPage complaintId={complaintId} />;
   }
 
