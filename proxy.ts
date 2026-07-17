@@ -49,18 +49,10 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-
-  // 4. Role-ready routing architecture (Placeholder hooks for Next.js role enforcement)
   if (token) {
     const userPayload = decodeJwt(token);
-    
     if (userPayload) {
-      const userRole = userPayload.role;
-      
-      // Role enforcement example:
-      // if (pathname.startsWith("/dashboard/admin") && userRole !== "SUPERADMIN") {
-      //   return NextResponse.redirect(new URL("/dashboard/unauthorized", request.url));
-      // }
+      // Place additional role-based enforcement here if required
     }
   }
 
@@ -69,7 +61,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
     "/dashboard/:path*",
     "/profile/:path*",
     "/complaints/create",

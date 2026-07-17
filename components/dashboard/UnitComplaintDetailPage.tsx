@@ -34,70 +34,7 @@ import { cn } from "@/lib/utils";
 import UnitSidebar from "@/components/dashboard/UnitSidebar";
 
 // ─── Extended Figma Mock Details ──────────────────────────────────────────────
-const FIGMA_MOCK_DETAIL = {
-  id: "SM-2026-0892",
-  title: "AC Laboratorium Komputer RPL 2 Sering Mati",
-  description: "AC di Laboratorium Komputer RPL 2 sering mati secara tiba-tiba saat kegiatan belajar mengajar berlangsung. Hal ini menyebabkan suhu ruangan menjadi sangat panas dan mengganggu konsentrasi siswa serta kinerja perangkat komputer yang ada di laboratorium. Masalah ini sudah terjadi selama kurang lebih 3 hari terakhir. Mohon segera dilakukan pengecekan dan perbaikan agar fasilitas lab kembali nyaman untuk digunakan.",
-  unit: "Sarpras" as ComplaintUnit,
-  status: "IN_PROGRESS" as ComplaintStatus,
-  isAnonymous: true,
-  createdAt: "2026-10-12T08:15:00.000Z",
-  supports: 532,
-  visibility: "PUBLIC" as ComplaintVisibility,
-  category: "Fasilitas Fisik",
-  priority: "Tinggi",
-  pic: {
-    name: "Rahmat Hidayat",
-    role: "Teknisi Senior - Sarpras",
-    avatarUrl: "/images/rahmat_hidayat.png"
-  },
-  attachments: [
-    "/images/lab_ac_rusak.png",
-    "/images/ac_indoor.png"
-  ],
-  timeline: [
-    {
-      id: "t1",
-      title: "Unit Sarpras Memberi Respon",
-      description: "Update: Sedang menunggu teknisi eksternal.",
-      createdAt: "2026-10-12T10:15:00.000Z"
-    },
-    {
-      id: "t2",
-      title: "Dibaca oleh PIC (Rahmat H.)",
-      description: "Status berubah menjadi Sedang Diproses.",
-      createdAt: "2026-10-12T09:45:00.000Z"
-    },
-    {
-      id: "t3",
-      title: "Masuk ke Unit Sarpras",
-      description: "Sistem meneruskan keluhan secara otomatis.",
-      createdAt: "2026-10-12T08:30:00.000Z"
-    },
-    {
-      id: "t4",
-      title: "Keluhan Dibuat",
-      description: "ID Keluhan: #SM-2026-0892",
-      createdAt: "2026-10-12T08:15:00.000Z"
-    }
-  ],
-  comments: [
-    {
-      id: "c1",
-      content: "Kapan kira-kira tim teknisi bisa datang mengecek? Anak-anak sudah mulai mengeluh gerah di jam siang.",
-      isPic: false,
-      createdAt: "2026-10-12T08:30:00.000Z",
-      user: { id: "student-anon", name: "Anonim", role: "USER" }
-    },
-    {
-      id: "c2",
-      content: "Terima kasih atas laporannya. Laporan sudah kami terima dan sedang dijadwalkan untuk pengecekan oleh teknisi eksternal siang ini pukul 14:00 WIB.",
-      isPic: true,
-      createdAt: "2026-10-12T10:15:00.000Z",
-      user: { id: "pic-rahmat", name: "Unit Sarpras", role: "UNIT_PIC" }
-    }
-  ]
-};
+
 
 interface ExtendedComplaint extends Complaint {
   priority: string;
@@ -135,50 +72,45 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     try {
       let activeDetail: ExtendedComplaint | null = null;
 
-      // Handle mockup entry or backend fetch
-      if (complaintId.toLowerCase().includes("cmp-") || complaintId.toLowerCase().includes("req-") || complaintId.toLowerCase().includes("0892")) {
-        activeDetail = {
-          ...FIGMA_MOCK_DETAIL,
-          id: complaintId
-        } as unknown as ExtendedComplaint;
-      } else {
-        try {
-          const raw = await apiClient.complaints.getById(complaintId);
-          const hash = raw.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-          const val = hash % 3;
-          const priority = val === 0 ? "Tinggi" : val === 1 ? "Sedang" : "Rendah";
+      try {
+        const raw = await apiClient.complaints.getById(complaintId);
+        const hash = raw.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const val = hash % 3;
+        const priority = val === 0 ? "Tinggi" : val === 1 ? "Sedang" : "Rendah";
 
-          activeDetail = {
-            ...raw,
-            priority,
-            category: raw.category || "Fasilitas Fisik",
-            pic: {
-              name: "Rahmat Hidayat",
-              role: "Teknisi Senior - Sarpras",
-              avatarUrl: "/images/rahmat_hidayat.png"
+        activeDetail = {
+          ...raw,
+          priority,
+          category: raw.category || "Fasilitas Fisik",
+          pic: {
+            name: "Rahmat Hidayat",
+            role: "Teknisi Senior - Sarpras",
+            avatarUrl: "/images/rahmat_hidayat.png"
+          },
+          timeline: raw.timeline || [
+            {
+              id: "t1",
+              title: "Masuk ke Unit",
+              description: "Sistem meneruskan keluhan secara otomatis.",
+              createdAt: raw.createdAt
             },
-            timeline: [
-              {
-                id: "t1",
-                title: "Masuk ke Unit Sarpras",
-                description: "Sistem meneruskan keluhan secara otomatis.",
-                createdAt: raw.createdAt
-              },
-              {
-                id: "t2",
-                title: "Keluhan Dibuat",
-                description: `ID Keluhan: #${raw.id.slice(0, 8)}`,
-                createdAt: raw.createdAt
-              }
-            ],
-            comments: []
-          };
-        } catch (err) {
-          activeDetail = {
-            ...FIGMA_MOCK_DETAIL,
-            id: complaintId
-          } as unknown as ExtendedComplaint;
-        }
+            {
+              id: "t2",
+              title: "Keluhan Dibuat",
+              description: `ID Keluhan: #${raw.id.slice(0, 8)}`,
+              createdAt: raw.createdAt
+            }
+          ],
+          comments: []
+        };
+      } catch (err) {
+        console.error("Failed to load complaint by ID:", err);
+      }
+
+      if (!activeDetail) {
+        toast.error("Keluhan tidak ditemukan");
+        router.push("/dashboard");
+        return;
       }
 
       setComplaint(activeDetail);
@@ -186,14 +118,10 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
       // Load comments
       let loadedComments: Comment[] = [];
-      if (!complaintId.toLowerCase().includes("cmp-") && !complaintId.toLowerCase().includes("req-") && !complaintId.toLowerCase().includes("0892")) {
-        try {
-          loadedComments = await apiClient.comments.getByComplaintId(complaintId);
-        } catch (err) {
-          loadedComments = [];
-        }
-      } else {
-        loadedComments = activeDetail.comments || [];
+      try {
+        loadedComments = await apiClient.comments.getByComplaintId(complaintId);
+      } catch (err) {
+        loadedComments = [];
       }
       setComments(loadedComments);
 

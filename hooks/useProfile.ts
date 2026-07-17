@@ -22,12 +22,12 @@ export function useProfile() {
           avatarUrl: data.avatarUrl,
         });
       }
-    } catch {
-      // Fallback: build profile from the currently stored user in Zustand
+    } catch (err: any) {
+      console.error("Failed to load user profile:", err);
       if (storeUser) {
         setProfile({
           user: storeUser,
-          phone: "081234567890",
+          phone: "",
           avatarUrl: storeUser.avatarUrl || undefined,
         });
       }
@@ -49,18 +49,11 @@ export function useProfile() {
       }
       toast.success("Profil berhasil diperbarui!");
       return true;
-    } catch {
-      // Mock: update local state directly
-      await new Promise((r) => setTimeout(r, 600));
-      if (storeUser) {
-        const updatedUser: User = { ...storeUser, name: data.name, avatarUrl: data.avatarUrl };
-        setUser(updatedUser);
-        setProfile((prev) =>
-          prev ? { ...prev, user: updatedUser, phone: data.phone, avatarUrl: data.avatarUrl } : null
-        );
-      }
-      toast.success("Profil berhasil diperbarui! (Mode Demo)");
-      return true;
+    } catch (err: any) {
+      console.error("Failed to update profile:", err);
+      const msg = err.response?.data?.message || "Gagal memperbarui profil.";
+      toast.error(msg);
+      return false;
     } finally {
       setIsUpdating(false);
     }
@@ -69,11 +62,11 @@ export function useProfile() {
   const uploadAvatar = async (file: File): Promise<string | null> => {
     setIsUpdating(true);
     try {
-      // 1. Upload the file
+      // 1. Upload the file to S3
       const res = await apiClient.upload.uploadAvatar(file);
       const url = res.url;
 
-      // 2. Patch the avatar in profile
+      // 2. Patch the avatar url in database
       const updated = await apiClient.profile.updateAvatar(url);
       setProfile(updated);
       if (updated.user) {
@@ -84,19 +77,10 @@ export function useProfile() {
       }
       toast.success("Foto profil berhasil diunggah!");
       return url;
-    } catch {
-      // Fallback: local URL for demo preview
-      await new Promise((r) => setTimeout(r, 600));
-      const mockUrl = URL.createObjectURL(file);
-      if (storeUser) {
-        const updatedUser: User = { ...storeUser, avatarUrl: mockUrl };
-        setUser(updatedUser);
-        setProfile((prev) =>
-          prev ? { ...prev, user: updatedUser, avatarUrl: mockUrl } : null
-        );
-      }
-      toast.success("Foto profil berhasil diunggah! (Mode Demo)");
-      return mockUrl;
+    } catch (err: any) {
+      console.error("Failed to upload avatar:", err);
+      toast.error("Gagal mengunggah foto profil.");
+      return null;
     } finally {
       setIsUpdating(false);
     }
@@ -108,11 +92,11 @@ export function useProfile() {
       await apiClient.profile.changePassword(data);
       toast.success("Kata sandi berhasil diperbarui!");
       return true;
-    } catch {
-      // Mock: simulate success
-      await new Promise((r) => setTimeout(r, 600));
-      toast.success("Kata sandi berhasil diperbarui! (Mode Demo)");
-      return true;
+    } catch (err: any) {
+      console.error("Failed to update password:", err);
+      const msg = err.response?.data?.message || "Gagal memperbarui kata sandi.";
+      toast.error(msg);
+      return false;
     } finally {
       setIsUpdating(false);
     }

@@ -2,147 +2,6 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Comment, CreateCommentRequest } from "@/types/comment";
 
-// ─── Mock Demo Comments ───────────────────────────────────────────────────────
-
-const BASE_MOCK_COMMENTS: Comment[] = [
-  // ─── demo-001: AC Lab RPL 2 ───────────────────────────────────────────────
-  {
-    id: "c-001",
-    complaintId: "demo-001",
-    content:
-      "Terima kasih atas laporannya. Tim kami sudah memeriksa kondisi AC di Lab RPL 2 dan menemukan bahwa 2 dari 3 unit memang memerlukan perbaikan komponen kapasitor. Teknisi dijadwalkan datang Rabu ini pukul 08.00 WIB.",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    isPic: true,
-    user: {
-      id: "pic-001",
-      name: "Bpk. Hendra — PIC Sarpras",
-      email: "sarpras@moklet.sch.id",
-      role: "UNIT_PIC",
-    },
-  },
-  {
-    id: "c-002",
-    complaintId: "demo-001",
-    content:
-      "Terima kasih Pak Hendra! Kami sangat menghargai respons cepat dari Unit Sarpras. Kami akan pastikan ruangan Lab RPL 2 bisa diakses teknisi pada Rabu pagi.",
-    createdAt: new Date(Date.now() - 1.5 * 24 * 60 * 60 * 1000).toISOString(),
-    isPic: false,
-    user: {
-      id: "demo-user-001",
-      name: "Andi Maulana",
-      email: "demo@student.moklet.org",
-      role: "USER",
-    },
-  },
-  {
-    id: "c-003",
-    complaintId: "demo-001",
-    content:
-      "Saya juga merasakan hal yang sama saat praktikum minggu lalu. Suhu di dalam sangat tidak nyaman. Semoga perbaikan bisa segera selesai. Kami dukung penuh keluhan ini!",
-    createdAt: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
-    isPic: false,
-    user: {
-      id: "user-002",
-      name: "Reza Pratama",
-      email: "reza@student.moklet.org",
-      role: "USER",
-    },
-  },
-  {
-    id: "c-004",
-    complaintId: "demo-001",
-    content:
-      "Update: Teknisi sudah selesai melakukan pengecekan hari ini. Kapasitor pada 2 unit AC berhasil diganti. Kedua unit sudah berfungsi normal. Mohon konfirmasi dari pelapor apakah sudah terasa perbaikannya.",
-    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    isPic: true,
-    user: {
-      id: "pic-001",
-      name: "Bpk. Hendra — PIC Sarpras",
-      email: "sarpras@moklet.sch.id",
-      role: "UNIT_PIC",
-    },
-  },
-
-  // ─── demo-002: Ekskul Bentrok ─────────────────────────────────────────────
-  {
-    id: "c-005",
-    complaintId: "demo-002",
-    content:
-      "Kami dari OSIS sudah mencoba mengkomunikasikan masalah ini ke Pembina Pramuka dan Pelatih Basket. Rencananya akan ada rapat koordinasi ekskul minggu depan untuk menyusun jadwal yang tidak bentrok.",
-    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    isPic: false,
-    user: {
-      id: "user-003",
-      name: "Ketua OSIS",
-      email: "osis@moklet.sch.id",
-      role: "USER",
-    },
-  },
-  {
-    id: "c-006",
-    complaintId: "demo-002",
-    content:
-      "Laporan ini sudah kami terima dan akan kami bahas dalam rapat koordinasi Kesiswaan pada Senin depan. Mohon sabar menunggu hasilnya.",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    isPic: true,
-    user: {
-      id: "pic-002",
-      name: "Ibu Sari — Waka Kesiswaan",
-      email: "kesiswaan@moklet.sch.id",
-      role: "UNIT_PIC",
-    },
-  },
-
-  // ─── demo-003: Keran Bocor ────────────────────────────────────────────────
-  {
-    id: "c-007",
-    complaintId: "demo-003",
-    content:
-      "Laporan ini sangat valid. Saya sendiri hampir terpeleset kemarin sore di toilet Gedung C. Kondisi lantai sangat licin akibat air yang terus mengalir dari keran bocor tersebut.",
-    createdAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000).toISOString(),
-    isPic: false,
-    user: {
-      id: "user-004",
-      name: "Siswa XII IPA 3",
-      email: "siswa@student.moklet.org",
-      role: "USER",
-    },
-  },
-  {
-    id: "c-008",
-    complaintId: "demo-003",
-    content:
-      "Kami dari Unit Sarpras sudah mengirim teknisi pagi tadi. Keran air yang bocor sudah berhasil diganti dengan yang baru. Mohon konfirmasi apakah kondisi sudah normal.",
-    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
-    isPic: true,
-    user: {
-      id: "pic-001",
-      name: "Bpk. Hendra — PIC Sarpras",
-      email: "sarpras@moklet.sch.id",
-      role: "UNIT_PIC",
-    },
-  },
-  {
-    id: "c-009",
-    complaintId: "demo-003",
-    content:
-      "Sudah normal Pak! Keran sudah tidak bocor lagi dan lantai sudah kering. Terima kasih banyak atas respons yang cepat dari Unit Sarpras. Sangat diapresiasi!",
-    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-    isPic: false,
-    user: {
-      id: "demo-user-001",
-      name: "Demo Siswa",
-      email: "demo@student.moklet.org",
-      role: "USER",
-    },
-  },
-];
-
-// Module-level mutable array (persists across hook instances)
-let MOCK_COMMENTS: Comment[] = [...BASE_MOCK_COMMENTS];
-
-// ─── Hook ─────────────────────────────────────────────────────────────────────
-
 export function useComments(complaintId: string) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -152,18 +11,17 @@ export function useComments(complaintId: string) {
     if (!complaintId) return;
     setIsLoading(true);
 
-    // Always load mock comments first for instant display
-    const mockForComplaint = MOCK_COMMENTS.filter((c) => c.complaintId === complaintId);
-    setComments(mockForComplaint);
-
     try {
       const { apiClient } = await import("@/lib/api");
       const data = await apiClient.comments.getByComplaintId(complaintId);
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         setComments(data);
+      } else {
+        setComments([]);
       }
-    } catch {
-      // Already set mock comments above
+    } catch (err: any) {
+      console.error("Failed to load comments:", err);
+      setComments([]);
     } finally {
       setIsLoading(false);
     }
@@ -180,31 +38,15 @@ export function useComments(complaintId: string) {
         await fetchComments();
         return newComment;
       }
-    } catch {
-      // Fall through to mock
+      return null;
+    } catch (err: any) {
+      console.error("Failed to post comment:", err);
+      const msg = err.response?.data?.message || "Gagal mengirim tanggapan.";
+      toast.error(msg);
+      return null;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Mock: append locally
-    await new Promise((r) => setTimeout(r, 500));
-    const mockNew: Comment = {
-      id: `c-${Date.now()}`,
-      complaintId,
-      content: data.content,
-      evidenceUrl: data.evidenceUrl,
-      createdAt: new Date().toISOString(),
-      isPic: false,
-      user: {
-        id: "demo-user-001",
-        name: "Demo Siswa",
-        email: "demo@student.moklet.org",
-        role: "USER",
-      },
-    };
-    MOCK_COMMENTS = [...MOCK_COMMENTS, mockNew];
-    setComments((prev) => [...prev, mockNew]);
-    toast.success("Tanggapan berhasil dikirim!");
-    setIsSubmitting(false);
-    return mockNew;
   };
 
   useEffect(() => {
@@ -221,4 +63,5 @@ export function useComments(complaintId: string) {
     addComment,
   };
 }
+
 export default useComments;

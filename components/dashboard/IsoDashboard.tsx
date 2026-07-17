@@ -18,55 +18,7 @@ import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
 import { Complaint, ComplaintUnit, UnitModel } from "@/types/complaint";
 
-// Fallback dummy data for complete standalone testing
-const MOCK_UNITS: UnitModel[] = [
-  { id: "unit-1", name: "Sarpras", description: "Sarana dan Prasarana" },
-  { id: "unit-2", name: "Kesiswaan", description: "Kesiswaan & Tata Tertib" },
-  { id: "unit-3", name: "Kurikulum", description: "Akademik & Pembelajaran" },
-  { id: "unit-4", name: "Humas", description: "Hubungan Masyarakat" },
-];
 
-const MOCK_COMPLAINTS: Complaint[] = [
-  {
-    id: "complaint-new-1",
-    title: "Kebocoran Atap Kelas X-RPL 1",
-    description: "Atap bocor saat hujan deras dan membasahi area barisan belakang kelas.",
-    unit: "Umum (ISO)" as ComplaintUnit,
-    status: "NEW",
-    isAnonymous: false,
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    supports: 15,
-    visibility: "PUBLIC",
-    category: "FASILITAS",
-    reporter: { id: "u-1", name: "Ahmad Dani" },
-  },
-  {
-    id: "complaint-new-2",
-    title: "Bullying Verbal di Kantin Sekolah",
-    description: "Adanya candaan berlebihan yang mengarah ke verbal bullying dari kakak kelas.",
-    unit: "Umum (ISO)" as ComplaintUnit,
-    status: "NEW",
-    isAnonymous: true,
-    createdAt: new Date(Date.now() - 7200000).toISOString(),
-    supports: 1,
-    visibility: "PRIVATE",
-    category: "KETERTIBAN",
-    reporter: null,
-  },
-  {
-    id: "complaint-forwarded-1",
-    title: "AC Lab Komputer RPL 2 Mati",
-    description: "Dua unit AC di ruang Lab RPL 2 mati mendadak.",
-    unit: "Sarpras" as ComplaintUnit,
-    status: "WAITING_RESPONSE",
-    isAnonymous: false,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    supports: 42,
-    visibility: "PUBLIC",
-    category: "FASILITAS",
-    reporter: { id: "u-2", name: "Siswa Moklet" },
-  },
-];
 
 export default function IsoDashboard() {
   const router = useRouter();
@@ -110,26 +62,19 @@ export default function IsoDashboard() {
       let loadedComplaints: Complaint[] = [];
       try {
         const raw = await apiClient.complaints.getAll();
-        const apiComplaints = Array.isArray(raw)
-          ? raw
-          : Array.isArray((raw as any)?.data)
-          ? (raw as any).data
-          : [];
-        loadedComplaints = apiComplaints.length > 0 ? apiComplaints : MOCK_COMPLAINTS;
+        loadedComplaints = Array.isArray(raw) ? raw : [];
       } catch (err) {
-        loadedComplaints = MOCK_COMPLAINTS;
+        console.error("Failed to fetch complaints:", err);
       }
       setComplaints(loadedComplaints);
 
       // Fetch units
       let loadedUnits: UnitModel[] = [];
       try {
-        loadedUnits = await apiClient.units.getAll();
+        const res = await apiClient.units.getAll();
+        loadedUnits = Array.isArray(res) ? res : [];
       } catch (err) {
-        loadedUnits = MOCK_UNITS;
-      }
-      if (loadedUnits.length === 0) {
-        loadedUnits = MOCK_UNITS;
+        console.error("Failed to fetch units:", err);
       }
       setUnits(loadedUnits);
       if (loadedUnits.length > 0) {

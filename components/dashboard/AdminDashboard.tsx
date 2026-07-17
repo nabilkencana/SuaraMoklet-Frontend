@@ -47,55 +47,7 @@ import { apiClient } from "@/lib/api";
 import { Complaint, ComplaintUnit, UnitModel, ComplaintVisibility } from "@/types/complaint";
 import { cn } from "@/lib/utils";
 
-// Mock data fallbacks for simulation
-const MOCK_UNITS: UnitModel[] = [
-  { id: "unit-1", name: "Sarpras", description: "Sarana dan Prasarana Sekolah" },
-  { id: "unit-2", name: "Kesiswaan", description: "Kesiswaan & Pembinaan Karakter" },
-  { id: "unit-3", name: "Kurikulum", description: "Kurikulum & Proses Akademik" },
-  { id: "unit-4", name: "Humas", description: "Hubungan Masyarakat & Kerja Sama Industri" },
-];
 
-const MOCK_COMPLAINTS: Complaint[] = [
-  {
-    id: "complaint-1",
-    title: "Kebocoran Pipa Lab Kimia",
-    description: "Air terus mengalir dari pipa wastafel lab kimia lantai 2, membanjiri lantai dan merusak lemari penyimpanan.",
-    unit: "Sarpras" as ComplaintUnit,
-    status: "NEW",
-    isAnonymous: false,
-    createdAt: new Date(Date.now() - 3 * 24 * 3600000).toISOString(), // 3 days ago
-    supports: 42,
-    visibility: "PUBLIC",
-    category: "FASILITAS",
-    reporter: { id: "u-1", name: "Siswa Moklet" },
-  },
-  {
-    id: "complaint-2",
-    title: "Update Kurikulum Merdeka",
-    description: "Pertanyaan mengenai jadwal sosialisasi silabus baru untuk materi kejuruan IT.",
-    unit: "Kurikulum" as ComplaintUnit,
-    status: "IN_PROGRESS",
-    isAnonymous: false,
-    createdAt: new Date(Date.now() - 4 * 3600000).toISOString(), // 4 hours ago
-    supports: 8,
-    visibility: "PRIVATE",
-    category: "AKADEMIK",
-    reporter: { id: "u-2", name: "Guru Moklet" },
-  },
-  {
-    id: "complaint-3",
-    title: "AC Ruang Guru Rusak",
-    description: "AC di ruang guru utama mengeluarkan bunyi bising dan tidak dingin selama seminggu.",
-    unit: "Sarpras" as ComplaintUnit,
-    status: "WAITING_USER",
-    isAnonymous: false,
-    createdAt: new Date(Date.now() - 5 * 24 * 3600000).toISOString(), // 5 days ago
-    supports: 12,
-    visibility: "PUBLIC",
-    category: "FASILITAS",
-    reporter: { id: "u-3", name: "Orang Tua Warga" },
-  },
-];
 
 interface UnitMember {
   id: string;
@@ -193,16 +145,9 @@ export default function AdminDashboard() {
       let loadedUnits: UnitModel[] = [];
       try {
         const raw = await apiClient.units.getAll();
-        loadedUnits = Array.isArray(raw)
-          ? raw
-          : Array.isArray((raw as { data?: unknown[] })?.data)
-            ? (raw as { data?: UnitModel[] }).data || []
-            : [];
+        loadedUnits = Array.isArray(raw) ? raw : [];
       } catch (err) {
-        loadedUnits = MOCK_UNITS;
-      }
-      if (loadedUnits.length === 0) {
-        loadedUnits = MOCK_UNITS;
+        console.error("Failed to fetch units:", err);
       }
       setUnits(loadedUnits);
       if (loadedUnits.length > 0) {
@@ -215,24 +160,32 @@ export default function AdminDashboard() {
       let loadedComplaints: Complaint[] = [];
       try {
         const raw = await apiClient.complaints.getAll();
-        const apiComplaints = Array.isArray(raw)
-          ? raw
-          : Array.isArray((raw as { data?: unknown[] })?.data)
-            ? (raw as { data?: Complaint[] }).data || []
-            : [];
-        loadedComplaints = apiComplaints.length > 0 ? apiComplaints : MOCK_COMPLAINTS;
+        loadedComplaints = Array.isArray(raw) ? raw : [];
       } catch (err) {
-        loadedComplaints = MOCK_COMPLAINTS;
+        console.error("Failed to fetch complaints:", err);
       }
       setComplaints(loadedComplaints);
 
-      // Generate dummy members for view
-      const mockMembers = [
-        { id: "u-1", name: "Budi Santoso", email: "budi@moklet.org", role: "UNIT_PIC", isPic: true, unitId: loadedUnits[0]?.id || "unit-1", unitName: loadedUnits[0]?.name || "Sarpras" },
-        { id: "u-2", name: "Joko Widodo", email: "joko@moklet.org", role: "UNIT_MEMBER", isPic: false, unitId: loadedUnits[0]?.id || "unit-1", unitName: loadedUnits[0]?.name || "Sarpras" },
-        { id: "u-3", name: "Siti Rahma", email: "siti@moklet.org", role: "UNIT_PIC", isPic: true, unitId: loadedUnits[1]?.id || "unit-2", unitName: loadedUnits[1]?.name || "Kesiswaan" },
-      ];
-      setUnitMembers(mockMembers);
+      // 3. Dynamic members from fetched units
+      const dbMembers: any[] = [];
+      loadedUnits.forEach((u: any) => {
+        if (Array.isArray(u.memberships)) {
+          u.memberships.forEach((m: any) => {
+            if (m.user) {
+              dbMembers.push({
+                id: m.user.id,
+                name: m.user.name,
+                email: m.user.email,
+                role: m.user.role,
+                isPic: m.isPIC,
+                unitId: u.id,
+                unitName: u.name,
+              });
+            }
+          });
+        }
+      });
+      setUnitMembers(dbMembers);
     } catch (e) {
       toast.error("Gagal Memuat Data");
     } finally {

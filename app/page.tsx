@@ -28,95 +28,7 @@ import { useAuthStore } from "@/app/store/auth.store";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Header from "@/components/shared/Header";
-
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const TRENDING_COMPLAINTS: ComplaintCardData[] = [
-  {
-    id: "demo-001",
-    rank: 1,
-    title: "AC Lab RPL 2 Sering Mati",
-    description:
-      "Kondisi AC yang sering mati di laboratorium sangat mengganggu konsentrasi belajar saat praktikum berlangsung hampir setiap hari.",
-    image: "/images/lab_ac_rusak.png",
-    category: "Sarpras",
-    status: "OPEN",
-    supports: 842,
-    reporter: "Andi M.",
-    reporterInitial: "AM",
-    timeAgo: "2 jam yang lalu",
-  },
-  {
-    id: "demo-002",
-    rank: 2,
-    title: "Perbaikan Fasilitas Parkir Motor",
-    description:
-      "Area parkir saat musim hujan sangat becek dan licin, membahayakan siswa saat memarkir kendaraan mereka di pagi hari.",
-    image: "/images/parkir_sekolah.png",
-    category: "Sarpras",
-    status: "OPEN",
-    supports: 650,
-    reporter: "Budi S.",
-    reporterInitial: "BS",
-    timeAgo: "2 hari yang lalu",
-  },
-  {
-    id: "demo-003",
-    rank: 3,
-    title: "Penambahan Buku di Perpustakaan",
-    description:
-      "Mohon pengadaan buku referensi terbaru untuk jurusan Rekayasa Perangkat Lunak agar bisa mendukung pembelajaran lebih optimal.",
-    image: "/images/perpus_sekolah.png",
-    category: "Kurikulum",
-    status: "IN_PROGRESS",
-    supports: 412,
-    reporter: "Siti A.",
-    reporterInitial: "SA",
-    timeAgo: "4 hari yang lalu",
-  },
-];
-
-const LATEST_COMPLAINTS: ComplaintCardData[] = [
-  {
-    id: "demo-002",
-    title: "Jadwal Ekskul Basket Bentrok",
-    description:
-      "Jadwal ekstrakurikuler basket dan pramuka seringkali dilaksanakan pada hari dan jam yang bersamaan sehingga siswa yang mengikuti keduanya bingung.",
-    image: "/images/basket_telkom.jpeg",
-    category: "Kesiswaan",
-    status: "OPEN",
-    supports: 88,
-    reporter: "Anonim",
-    reporterInitial: "AN",
-    timeAgo: "1 hari yang lalu",
-  },
-  {
-    id: "demo-003",
-    title: "Keran Air Toilet Gedung C Bocor",
-    description:
-      "Keran air di toilet lantai 2 gedung C terus mengeluarkan air walaupun sudah diputar penuh. Air terbuang percuma setiap hari.",
-    image: "/images/parkir_sekolah.png",
-    category: "Sarpras",
-    status: "CLOSED",
-    supports: 45,
-    reporter: "Demo Siswa",
-    reporterInitial: "DS",
-    timeAgo: "kemarin",
-  },
-  {
-    id: "demo-001",
-    title: "Penambahan Buku di Perpustakaan",
-    description:
-      "Mohon pengadaan buku referensi terbaru untuk jurusan Rekayasa Perangkat Lunak agar bisa mendukung pembelajaran lebih optimal.",
-    image: "/images/perpus_sekolah.png",
-    category: "Kurikulum",
-    status: "IN_PROGRESS",
-    supports: 210,
-    reporter: "Siti A.",
-    reporterInitial: "SA",
-    timeAgo: "kemarin",
-  },
-];
+import { apiClient } from "@/lib/api";
 
 const STEPS = [
   {
@@ -207,6 +119,9 @@ export default function LandingPage() {
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
   const statsRef = useRef<HTMLDivElement>(null);
   const [petitionTitle, setPetitionTitle] = useState("");
+  const [trendingComplaints, setTrendingComplaints] = useState<ComplaintCardData[]>([]);
+  const [latestComplaints, setLatestComplaints] = useState<ComplaintCardData[]>([]);
+  const [isLoadingComplaints, setIsLoadingComplaints] = useState(true);
 
   const handleStartPetition = (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,6 +143,56 @@ export default function LandingPage() {
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const loadPublicComplaints = async () => {
+      try {
+        const publicList = await apiClient.complaints.getPublic({ limit: 10 });
+        
+        const formatTimeAgo = (dateStr: string) => {
+          const diffMs = Date.now() - new Date(dateStr).getTime();
+          const diffDays = Math.floor(diffMs / (24 * 3600 * 1000));
+          const diffHours = Math.floor(diffMs / (3600 * 1000));
+          if (diffDays > 0) return `${diffDays} hari yang lalu`;
+          if (diffHours > 0) return `${diffHours} jam yang lalu`;
+          return "Baru saja";
+        };
+
+        const mapped: ComplaintCardData[] = publicList.map((c) => {
+          const reporterName = c.isAnonymous ? "Anonim" : (c.reporter?.name || "Warga Moklet");
+          const reporterInitial = reporterName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() || "AN";
+          return {
+            id: c.id,
+            title: c.title,
+            description: c.description,
+            image: c.evidenceUrl || undefined,
+            category: c.unit as any,
+            status: c.status as any,
+            supports: c.supports || 0,
+            reporter: reporterName,
+            reporterInitial,
+            timeAgo: formatTimeAgo(c.createdAt),
+          };
+        });
+
+        // 1. Trending sorted by supports count
+        const trending = [...mapped].sort((a, b) => b.supports - a.supports).slice(0, 3).map((item, idx) => ({
+          ...item,
+          rank: idx + 1,
+        }));
+        setTrendingComplaints(trending);
+
+        // 2. Latest sorted by date or index
+        setLatestComplaints(mapped.slice(0, 3));
+      } catch (err) {
+        console.error("Failed to load public complaints:", err);
+      } finally {
+        setIsLoadingComplaints(false);
+      }
+    };
+    
+    loadPublicComplaints();
   }, []);
 
   // Intersection Observer for stats counter animation
@@ -327,9 +292,19 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {TRENDING_COMPLAINTS.map((complaint) => (
-              <ComplaintCard key={complaint.id} data={complaint} />
-            ))}
+            {isLoadingComplaints ? (
+              <div className="col-span-full py-12 flex justify-center text-slate-400">
+                Memuat data keluhan...
+              </div>
+            ) : trendingComplaints.length > 0 ? (
+              trendingComplaints.map((complaint) => (
+                <ComplaintCard key={complaint.id} data={complaint} />
+              ))
+            ) : (
+              <div className="col-span-full py-12 text-center text-slate-400 font-medium">
+                Belum ada keluhan publik saat ini.
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -388,9 +363,19 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {LATEST_COMPLAINTS.map((complaint) => (
-              <ComplaintCard key={complaint.id} data={complaint} />
-            ))}
+            {isLoadingComplaints ? (
+              <div className="col-span-full py-12 flex justify-center text-slate-400">
+                Memuat data keluhan...
+              </div>
+            ) : latestComplaints.length > 0 ? (
+              latestComplaints.map((complaint) => (
+                <ComplaintCard key={complaint.id} data={complaint} />
+              ))
+            ) : (
+              <div className="col-span-full py-12 text-center text-slate-400 font-medium">
+                Belum ada keluhan publik saat ini.
+              </div>
+            )}
           </div>
         </div>
       </section>
