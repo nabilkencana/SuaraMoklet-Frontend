@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Complaint, CreateComplaintRequest, ComplaintUnit } from "@/types/complaint";
 
-export function useComplaint(complaintId?: string) {
+export function useComplaint(complaintId?: string, options?: { skipFetchUnits?: boolean }) {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [currentComplaint, setCurrentComplaint] = useState<Complaint | null>(null);
   const [units, setUnits] = useState<ComplaintUnit[]>([]);
@@ -130,8 +130,10 @@ export function useComplaint(complaintId?: string) {
     if (complaintId) {
       fetchComplaintById(complaintId);
     }
-    fetchUnits();
-  }, [complaintId]);
+    if (!options?.skipFetchUnits) {
+      fetchUnits();
+    }
+  }, [complaintId, options?.skipFetchUnits]);
 
   return {
     complaints,

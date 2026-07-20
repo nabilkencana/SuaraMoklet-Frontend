@@ -16,51 +16,51 @@ import { Button } from "@/components/ui/button";
 const DEMO_USERS = [
   {
     roleLabel: "Siswa",
-    email: "demo@student.moklet.org",
-    password: "demo12345",
+    email: "siswa@student.smktelkom-mlg.sch.id",
+    password: "Password@123",
     account: {
-      id: "demo-user-001",
-      name: "Demo Siswa",
-      email: "demo@student.moklet.org",
+      id: "siswa-id",
+      name: "Ahmad Siswa Moklet",
+      email: "siswa@student.smktelkom-mlg.sch.id",
       role: "USER" as const,
     },
-    token: "demo-access-token-user-2026",
+    token: "real-api-login",
   },
   {
     roleLabel: "Super Admin",
-    email: "superadmin@moklet.org",
-    password: "superadmin123",
+    email: "admin@moklet.sch.id",
+    password: "SuperAdmin@2026",
     account: {
-      id: "demo-superadmin-001",
+      id: "admin-id",
       name: "Super Admin",
-      email: "superadmin@moklet.org",
+      email: "admin@moklet.sch.id",
       role: "SUPERADMIN" as const,
     },
-    token: "demo-access-token-superadmin-2026",
+    token: "real-api-login",
   },
   {
     roleLabel: "ISO Officer",
-    email: "iso@moklet.org",
-    password: "iso12345",
+    email: "superpic@moklet.sch.id",
+    password: "Password@123",
     account: {
-      id: "demo-iso-001",
-      name: "ISO Officer",
-      email: "iso@moklet.org",
+      id: "superpic-id",
+      name: "Koordinator ISO / Umum",
+      email: "superpic@moklet.sch.id",
       role: "SUPER_PIC" as const,
     },
-    token: "demo-access-token-iso-2026",
+    token: "real-api-login",
   },
   {
     roleLabel: "PIC Sarpras",
-    email: "pic_sarpras@moklet.org",
-    password: "sarpras123",
+    email: "pic.sarpra@moklet.sch.id",
+    password: "Password@123",
     account: {
-      id: "demo-pic-001",
-      name: "PIC Sarpras",
-      email: "pic_sarpras@moklet.org",
+      id: "pic-sarpra-id",
+      name: "PIC Unit Sarpras",
+      email: "pic.sarpra@moklet.sch.id",
       role: "UNIT_PIC" as const,
     },
-    token: "demo-access-token-pic-2026",
+    token: "real-api-login",
   },
 ];
 
@@ -129,32 +129,6 @@ export default function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-
-    // ─── Dummy accounts bypass (no backend required) ───────────────────────────
-    const matchedDemo = DEMO_USERS.find(
-      (demo) =>
-        data.email.trim() === demo.email &&
-        data.password === demo.password
-    );
-    if (matchedDemo) {
-      await new Promise((r) => setTimeout(r, 700)); // simulate network delay
-      login(matchedDemo.account, matchedDemo.token);
-      toast.success(`Selamat datang, ${matchedDemo.account.name}!`, {
-        description: `Anda masuk sebagai ${matchedDemo.roleLabel} (akun demo).`,
-      });
-      setIsLoading(false);
-      
-      let finalRedirect = redirectUrl;
-      const roleStr = matchedDemo.account.role as string;
-      const isUnitOrAdmin = roleStr === "UNIT_PIC" || roleStr === "UNIT_MEMBER" || roleStr === "SUPERADMIN" || roleStr === "SUPER_PIC";
-      if (isUnitOrAdmin && (redirectUrl === "/dashboard" || redirectUrl === "/complaints" || redirectUrl === "/unit" || redirectUrl === "/unit/complaints" || redirectUrl === "/")) {
-        finalRedirect = "/";
-      }
-      
-      router.push(finalRedirect);
-      router.refresh();
-      return;
-    }
 
     // ─── Real API login ───────────────────────────────────────────────────────
     try {

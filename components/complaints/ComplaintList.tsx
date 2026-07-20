@@ -41,7 +41,7 @@ const STATUS_CONFIG: Record<ComplaintStatus, { label: string; classes: string }>
 export default function ComplaintList() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { complaints, isLoading, fetchOwnComplaints } = useComplaint();
+  const { complaints, isLoading, fetchOwnComplaints } = useComplaint(undefined, { skipFetchUnits: true });
 
   // Search & Filter State — pre-populate from URL ?q= param
   const [search, setSearch] = useState(() => searchParams.get("q") || "");

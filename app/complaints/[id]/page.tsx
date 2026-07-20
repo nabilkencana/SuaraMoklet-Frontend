@@ -73,7 +73,7 @@ export default function ComplaintDetailPage() {
   const complaintId = params.id as string;
 
   const { isAuthenticated, user } = useAuthStore();
-  const { currentComplaint, isLoading, fetchComplaintById, supportComplaint } = useComplaint(complaintId);
+  const { currentComplaint, isLoading, fetchComplaintById, supportComplaint } = useComplaint(complaintId, { skipFetchUnits: true });
   const [mounted, setMounted] = useState(false);
   const [notFound, setNotFound] = useState(false);
 

@@ -35,157 +35,7 @@ import {
 import { useAuthStore } from "@/app/store/auth.store";
 import { Complaint, ComplaintStatus } from "@/types/complaint";
 import { cn } from "@/lib/utils";
-
-// Real Unsplash image URLs for premium looking petitions
-const PUBLIC_COMPLAINTS: (Complaint & { category?: string; location?: string })[] = [
-  {
-    id: "demo-001",
-    title: "AC Laboratorium RPL 2 Sering Mati",
-    description:
-      "Kami siswa kelas XII RPL 2 sering mengalami kendala serius saat praktikum di laboratorium komputer lantai 3. Dua unit AC di ruangan tersebut sering mati mendadak atau tidak terasa dingin sama sekali, terutama pada jam 10.00–13.00 saat suhu di luar sangat panas.",
-    expectedOutput:
-      "Kami memohon agar unit AC di Laboratorium RPL 2 segera diperiksa oleh teknisi berpengalaman. Jika kerusakan bersifat minor, harap segera diperbaiki.",
-    unit: "Sarpras",
-    status: "IN_PROGRESS",
-    isAnonymous: false,
-    evidenceUrl: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&auto=format&fit=crop&q=80",
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    supports: 342,
-    targetSupports: 500,
-    isSupported: false,
-    reporter: { id: "demo-user-001", name: "Andi Maulana" },
-    category: "Fasilitas",
-    location: "Gedung A, Lantai 3",
-  },
-  {
-    id: "demo-002",
-    title: "Jadwal Ekskul Basket Bentrok dengan Pramuka",
-    description:
-      "Jadwal ekstrakurikuler basket dan pramuka yang ditetapkan oleh Kesiswaan seringkali terjadi pada hari dan jam yang sama, yaitu setiap Rabu pukul 15.00–17.00 WIB. Kondisi ini sangat menyulitkan siswa yang ingin aktif di kedua bidang tersebut.",
-    expectedOutput:
-      "Mohon kepada pihak Kesiswaan untuk meninjau kembali jadwal ekstrakurikuler dan memisahkan jadwal basket dan pramuka ke hari yang berbeda.",
-    unit: "Kesiswaan",
-    status: "OPEN",
-    isAnonymous: true,
-    evidenceUrl: "https://images.unsplash.com/photo-1544698310-74ea9d1c8258?w=600&auto=format&fit=crop&q=80",
-    createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-    supports: 88,
-    targetSupports: 200,
-    isSupported: false,
-    reporter: null,
-    category: "Kesiswaan",
-    location: "Lapangan Olahraga",
-  },
-  {
-    id: "demo-003",
-    title: "Keran Air Toilet Gedung C Bocor",
-    description:
-      "Keran air di toilet lantai 2 Gedung C terus menerus mengeluarkan air walaupun sudah diputar penuh ke posisi tertutup. Kebocoran ini menyebabkan air tergenang di lantai toilet yang membuat kondisi menjadi licin dan berisiko.",
-    expectedOutput:
-      "Harap segera dilakukan perbaikan atau penggantian keran air yang bocor oleh teknisi dari Unit Sarpras.",
-    unit: "Sarpras",
-    status: "CLOSED",
-    isAnonymous: false,
-    evidenceUrl: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&auto=format&fit=crop&q=80",
-    createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
-    supports: 121,
-    targetSupports: 200,
-    isSupported: false,
-    reporter: { id: "demo-user-002", name: "Rina Astuti" },
-    category: "Fasilitas",
-    location: "Gedung C, Toilet Lantai 2",
-  },
-  {
-    id: "search-004",
-    title: "Renovasi Lapangan Basket & Futsal yang Retak-Retak",
-    description:
-      "Lapangan olahraga utama sekolah di area tengah mengalami retak serius di semen permukaannya, membahayakan siswa saat berolahraga atau bermain futsal pada jam istirahat. Banyak lubang kecil yang membuat bola memantul tidak teratur.",
-    expectedOutput: "Dilakukan plester semen ulang dan pengecatan kembali garis lapangan agar aman digunakan.",
-    unit: "Sarpras",
-    status: "OPEN",
-    isAnonymous: false,
-    evidenceUrl: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600&auto=format&fit=crop&q=80",
-    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    supports: 194,
-    targetSupports: 300,
-    isSupported: false,
-    reporter: { id: "user-004", name: "Budi Setyawan" },
-    category: "Fasilitas",
-    location: "Area Tengah Sekolah",
-  },
-  {
-    id: "search-005",
-    title: "Penyediaan Dispenser Air Minum Gratis di Koridor Kelas",
-    description:
-      "Siswa sering kehabisan air minum saat cuaca panas dan terpaksa harus terus membeli air mineral kemasan plastik sekali pakai di kantin. Penyediaan dispenser air bersih gratis di koridor akan menghemat pengeluaran siswa dan mengurangi sampah plastik.",
-    expectedOutput: "Disediakan dispenser air galon bersih di setiap lantai koridor kelas utama.",
-    unit: "Sarpras",
-    status: "IN_PROGRESS",
-    isAnonymous: false,
-    evidenceUrl: "https://images.unsplash.com/photo-1523362628745-0c100150b504?w=600&auto=format&fit=crop&q=80",
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    supports: 1437,
-    targetSupports: 2000,
-    isSupported: false,
-    reporter: { id: "user-005", name: "Rina Astuti" },
-    category: "Pendidikan",
-    location: "Koridor Kelas Utama",
-  },
-  {
-    id: "search-006",
-    title: "Tolak Kenaikan Tarif Parkir Sepeda Motor Siswa",
-    description:
-      "Kenaikan tarif parkir harian kendaraan roda dua siswa dari Rp 1.000 menjadi Rp 3.000 dinilai sangat memberatkan uang saku siswa harian. Perubahan tarif ini juga tidak didahului dengan perbaikan sistem pengamanan parkir.",
-    expectedOutput: "Kembalikan tarif parkir ke Rp 1.000 atau lakukan sosialisasi serta jaminan asuransi kehilangan barang di parkiran.",
-    unit: "Tata Usaha",
-    status: "WAITING_USER",
-    isAnonymous: false,
-    evidenceUrl: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600&auto=format&fit=crop&q=80",
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    supports: 821,
-    targetSupports: 1000,
-    isSupported: false,
-    reporter: { id: "user-006", name: "Rivaldo" },
-    category: "Umum (ISO)",
-    location: "Area Parkir Belakang",
-  },
-  {
-    id: "search-007",
-    title: "Tambahkan Kelas Pemrograman Mobile & AI di Jurusan RPL",
-    description:
-      "Kurikulum Rekayasa Perangkat Lunak (RPL) saat ini dinilai kurang adaptif dengan kebutuhan industri startup modern yang mencari keahlian React Native, Flutter, dan integrasi API Artificial Intelligence. Kelas materi ini perlu dimasukkan.",
-    expectedOutput: "Penyelenggaraan materi pemrograman mobile secara intensif di semester ganjil kelas XI dan XII.",
-    unit: "Kurikulum",
-    status: "OPEN",
-    isAnonymous: false,
-    evidenceUrl: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=600&auto=format&fit=crop&q=80",
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    supports: 499,
-    targetSupports: 500,
-    isSupported: false,
-    reporter: { id: "user-007", name: "Nabil Kencana" },
-    category: "Pendidikan",
-    location: "Lab Komputer RPL",
-  },
-  {
-    id: "search-008",
-    title: "Hapus Penggunaan Styrofoam Sekali Pakai di Kantin",
-    description:
-      "Kantin sekolah masih banyak menyajikan makanan menggunakan wadah styrofoam sekali pakai yang merusak lingkungan sekolah dan berbahaya bagi kesehatan siswa jika terkena makanan panas.",
-    expectedOutput: "Kantin wajib beralih ke piring melamin cuci ulang atau pembungkus ramah lingkungan.",
-    unit: "Umum (ISO)",
-    status: "CLOSED",
-    isAnonymous: false,
-    evidenceUrl: "https://images.unsplash.com/photo-1532634922-8fe0b757fb13?w=600&auto=format&fit=crop&q=80",
-    createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-    supports: 288,
-    targetSupports: 300,
-    isSupported: false,
-    reporter: { id: "user-008", name: "Alissa" },
-    category: "Lingkungan",
-    location: "Area Kantin",
-  },
-];
+import { apiClient } from "@/lib/api";
 
 const TOPICS = [
   "Semua Topik",
@@ -250,6 +100,9 @@ export default function SearchContent() {
   const [selectedStatus, setSelectedStatus] = useState(statusParam);
   const [sortBy, setSortBy] = useState(sortParam);
 
+  const [complaints, setComplaints] = useState<(Complaint & { category?: string; location?: string })[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     setMounted(true);
     setSearchVal(query);
@@ -257,6 +110,34 @@ export default function SearchContent() {
     setSortBy(sortParam);
     setSelectedTopic(topicParam);
   }, [query, statusParam, sortParam, topicParam]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadComplaints() {
+      try {
+        setIsLoading(true);
+        const data = await apiClient.complaints.getPublic({ limit: 100 });
+        if (active) {
+          const mapped = data.map((item) => ({
+            ...item,
+            category: item.unit,
+            location: (item as any).location || "Gedung Sekolah",
+          }));
+          setComplaints(mapped);
+        }
+      } catch (error) {
+        console.error("Failed to load complaints from API:", error);
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    }
+    loadComplaints();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -276,7 +157,7 @@ export default function SearchContent() {
   // Show results view when there's a query OR an active filter
   const isResultsView = !!query || statusParam !== "ALL" || sortParam !== "POPULAR" || topicParam !== "Semua Topik";
 
-  const filteredResults = PUBLIC_COMPLAINTS.filter((item) => {
+  const filteredResults = complaints.filter((item) => {
     const queryNormalized = query.toLowerCase();
     const titleMatch = item.title.toLowerCase().includes(queryNormalized);
     const descMatch = item.description.toLowerCase().includes(queryNormalized);
@@ -437,78 +318,99 @@ export default function SearchContent() {
                 Petisi dipromosikan oleh pengguna lain SuaraMoklet
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {PUBLIC_COMPLAINTS.slice(0, 6).map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-all group relative"
+              {isLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
+                  <p className="text-xs text-slate-400 mt-2">Memuat petisi...</p>
+                </div>
+              ) : complaints.length === 0 ? (
+                <div className="text-center py-12 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                  <Compass className="h-10 w-10 text-slate-300 mx-auto" />
+                  <h4 className="text-sm font-bold text-slate-700">Belum ada petisi atau keluhan</h4>
+                  <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                    Jadilah yang pertama menuliskan keluhan atau aspirasi Anda demi sekolah yang lebih baik!
+                  </p>
+                  <Link
+                    href="/complaints/create"
+                    className="inline-flex h-9 px-4 items-center justify-center rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all"
                   >
-                    {/* Entire card clickable overlay link */}
-                    <Link href={`/complaints/${item.id}`} className="absolute inset-0 z-10" />
+                    Buat Keluhan Baru
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {complaints.slice(0, 6).map((item) => (
+                    <div 
+                      key={item.id} 
+                      className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-all group relative"
+                    >
+                      {/* Entire card clickable overlay link */}
+                      <Link href={`/complaints/${item.id}`} className="absolute inset-0 z-10" />
 
-                    {/* Image Header with hover overlay button */}
-                    <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden shrink-0">
-                      {item.evidenceUrl ? (
-                        <img 
-                          src={item.evidenceUrl} 
-                          alt={item.title} 
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103" 
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-tr from-red-500/10 to-amber-500/10 flex items-center justify-center">
-                          <Building2 className="h-12 w-12 text-red-500/20" />
-                        </div>
-                      )}
-                      
-                      {/* Change.org style circular overlay arrow button */}
-                      <Link 
-                        href={`/complaints/${item.id}`} 
-                        className="absolute right-3.5 top-3.5 h-8.5 w-8.5 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 hover:bg-black/80 transition-all shadow shadow-black/20 z-20"
-                      >
-                        <ArrowRight className="h-4.5 w-4.5" />
-                      </Link>
-                    </div>
-
-                    {/* Content Details */}
-                    <div className="p-5 flex-1 flex flex-col justify-between gap-4 relative z-20">
-                      <div className="space-y-2">
-                        {/* Reporter/Promoter info line */}
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                          {item.isAnonymous ? "diajukan oleh anonim" : `promosikan oleh ${item.reporter?.name || "Siswa"}`}
-                        </div>
+                      {/* Image Header with hover overlay button */}
+                      <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden shrink-0">
+                        {item.evidenceUrl ? (
+                          <img 
+                            src={item.evidenceUrl} 
+                            alt={item.title} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103" 
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-tr from-red-500/10 to-amber-500/10 flex items-center justify-center">
+                            <Building2 className="h-12 w-12 text-red-500/20" />
+                          </div>
+                        )}
                         
-                        {/* Title link */}
-                        <Link href={`/complaints/${item.id}`} className="block relative z-20">
-                          <h4 className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-2 hover:text-red-600 hover:underline transition-colors">
-                            {item.title}
-                          </h4>
-                        </Link>
-                        
-                        {/* Description brief snippet */}
-                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                          {item.description}
-                        </p>
-                      </div>
-
-                      {/* Supports and Button Section */}
-                      <div className="space-y-4 pt-3 border-t border-slate-100">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-red-600">
-                          <PenTool className="h-4 w-4" />
-                          <span>{item.supports.toLocaleString("id-ID")} dukungan</span>
-                        </div>
-                        
-                        {/* Tandatangani Petisi Button */}
-                        <Link
-                          href={`/complaints/${item.id}`}
-                          className="w-full h-10 rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-[0.98] text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1.5 relative z-20"
+                        {/* Change.org style circular overlay arrow button */}
+                        <Link 
+                          href={`/complaints/${item.id}`} 
+                          className="absolute right-3.5 top-3.5 h-8.5 w-8.5 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 hover:bg-black/80 transition-all shadow shadow-black/20 z-20"
                         >
-                          <PenTool className="h-4 w-4" /> Beri dukungan
+                          <ArrowRight className="h-4.5 w-4.5" />
                         </Link>
                       </div>
+
+                      {/* Content Details */}
+                      <div className="p-5 flex-1 flex flex-col justify-between gap-4 relative z-20">
+                        <div className="space-y-2">
+                          {/* Reporter/Promoter info line */}
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            {item.isAnonymous ? "diajukan oleh anonim" : `promosikan oleh ${item.reporter?.name || "Siswa"}`}
+                          </div>
+                          
+                          {/* Title link */}
+                          <Link href={`/complaints/${item.id}`} className="block relative z-20">
+                            <h4 className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-2 hover:text-red-600 hover:underline transition-colors">
+                              {item.title}
+                            </h4>
+                          </Link>
+                          
+                          {/* Description brief snippet */}
+                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                            {item.description}
+                          </p>
+                        </div>
+
+                        {/* Supports and Button Section */}
+                        <div className="space-y-4 pt-3 border-t border-slate-100">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-red-600">
+                            <PenTool className="h-4 w-4" />
+                            <span>{item.supports.toLocaleString("id-ID")} dukungan</span>
+                          </div>
+                          
+                          {/* Tandatangani Petisi Button */}
+                          <Link
+                            href={`/complaints/${item.id}`}
+                            className="w-full h-10 rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-[0.98] text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1.5 relative z-20"
+                          >
+                            <PenTool className="h-4 w-4" /> Beri dukungan
+                          </Link>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
           </section>
