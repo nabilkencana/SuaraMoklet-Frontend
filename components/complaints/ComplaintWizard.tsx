@@ -31,12 +31,39 @@ const complaintSchema = z.object({
   isAnonymous: z.boolean(),
 });
 
+const UNIT_DETAILS = [
+  {
+    name: "Umum (ISO)" as const,
+    desc: "Kebijakan mutu pelayanan, kritik operasional umum, tata kelola, dan koordinasi sekolah.",
+  },
+  {
+    name: "Sarpras" as const,
+    desc: "Kerusakan sarana prasarana sekolah, fasilitas kelas, AC/listrik, kebersihan, dan gedung.",
+  },
+  {
+    name: "Kurikulum" as const,
+    desc: "Proses pembelajaran kelas, jadwal pelajaran, kegiatan akademis, ujian/tes, dan rapor.",
+  },
+  {
+    name: "Kesiswaan" as const,
+    desc: "Tata tertib, kedisiplinan siswa, beasiswa, ekstrakurikuler, OSIS/MPK, dan pembinaan karakter.",
+  },
+  {
+    name: "Hubin" as const,
+    desc: "Kerjasama luar, program magang/PKL, kunjungan industri, dan hubungan alumni/karir.",
+  },
+  {
+    name: "Tata Usaha" as const,
+    desc: "Surat-menyurat, legalisir ijazah/rapor, kartu pelajar, keuangan, dan dokumen administrasi.",
+  },
+];
+
 type ComplaintFormData = z.infer<typeof complaintSchema>;
 
 export default function ComplaintWizard() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
-  const { createComplaint } = useComplaint();
+  const { createComplaint } = useComplaint(undefined, { skipFetchUnits: true });
 
   // File Upload State
   const [file, setFile] = useState<File | null>(null);
@@ -285,22 +312,29 @@ export default function ComplaintWizard() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                {(["Umum (ISO)", "Sarpras", "Kurikulum", "Kesiswaan", "Hubin", "Tata Usaha"] as const).map((unit) => (
+                {UNIT_DETAILS.map((item) => (
                   <label 
-                    key={unit}
-                    className={`flex items-center gap-3 p-3.5 rounded-xl border-2 cursor-pointer select-none transition-all ${
-                      watchedUnit === unit 
-                        ? "border-red-600 bg-red-50/50 text-red-700" 
+                    key={item.name}
+                    className={`flex items-start gap-3.5 p-4 rounded-2xl border-2 cursor-pointer select-none transition-all ${
+                      watchedUnit === item.name 
+                        ? "border-red-650 bg-red-50/50 text-red-750 shadow-xs" 
                         : "border-slate-100 hover:border-slate-200 bg-slate-50/50 text-slate-700"
                     }`}
                   >
                     <input 
                       type="radio" 
-                      value={unit} 
-                      className="text-red-600 focus:ring-red-500/20"
+                      value={item.name} 
+                      className="mt-1 text-red-600 focus:ring-red-550/20 cursor-pointer"
                       {...register("unit")}
                     />
-                    <span className="text-sm font-semibold">{unit}</span>
+                    <div className="space-y-1">
+                      <span className="text-sm font-bold block">{item.name}</span>
+                      <span className={`text-[10px] leading-relaxed block transition-colors ${
+                        watchedUnit === item.name ? "text-red-700/80 font-medium" : "text-slate-400"
+                      }`}>
+                        {item.desc}
+                      </span>
+                    </div>
                   </label>
                 ))}
               </div>
