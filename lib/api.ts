@@ -266,6 +266,22 @@ export const complaintsApi = {
     return rawList.map(mapBackendComplaintToFrontend);
   },
 
+  getUnitComplaints: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    unitId?: string;
+  }): Promise<{ meta: any; stats: Record<string, number>; data: Complaint[] }> => {
+    const response = await api.get<any>("/complaints/unit", { params });
+    const rawData = Array.isArray(response.data?.data) ? response.data.data : [];
+    return {
+      meta: response.data?.meta || {},
+      stats: response.data?.stats || {},
+      data: rawData.map(mapBackendComplaintToFrontend),
+    };
+  },
+
   getPublic: async (params?: any): Promise<Complaint[]> => {
     const response = await api.get<any>("/complaints/public", { params });
     const rawList = Array.isArray(response.data)
@@ -287,7 +303,7 @@ export const complaintsApi = {
   },
 
   getById: async (id: string): Promise<Complaint> => {
-    const response = await api.get<any>(`/complaints/${id}`);
+    const response = await api.get<any>(`/complaint/${id}`);
     return mapBackendComplaintToFrontend(response.data);
   },
 
@@ -491,6 +507,13 @@ export const notificationsApi = {
   },
 };
 
+export const usersApi = {
+  getAll: async (): Promise<any[]> => {
+    const response = await api.get<any[]>("/users");
+    return response.data;
+  },
+};
+
 export const apiClient = {
   auth: authApi,
   profile: profileApi,
@@ -500,6 +523,7 @@ export const apiClient = {
   upload: uploadApi,
   stats: statsApi,
   notifications: notificationsApi,
+  users: usersApi,
 };
 
 export default apiClient;

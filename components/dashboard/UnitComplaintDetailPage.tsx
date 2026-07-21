@@ -411,30 +411,21 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
               </div>
 
               {/* Card 3: Attachments */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lampiran (2)</span>
+              {complaint.evidenceUrl && (
+                <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lampiran Bukti</span>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="h-40 rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden shadow-3xs group cursor-pointer">
+                  <div className="max-w-md h-56 rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden shadow-3xs group cursor-pointer">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src="/images/lab_ac_rusak.png"
-                      alt="Lab computer"
+                      src={complaint.evidenceUrl}
+                      alt="Lampiran Bukti"
                       className="h-full w-full object-cover group-hover:scale-102 transition-transform duration-300"
-                      onClick={() => window.open("/images/lab_ac_rusak.png", "_blank")}
-                    />
-                  </div>
-                  <div className="h-40 rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden shadow-3xs group cursor-pointer">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src="/images/ac_indoor.png"
-                      alt="AC indoor unit"
-                      className="h-full w-full object-cover group-hover:scale-102 transition-transform duration-300"
-                      onClick={() => window.open("/images/ac_indoor.png", "_blank")}
+                      onClick={() => window.open(complaint.evidenceUrl, "_blank")}
                     />
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Card 4: Discussion & Responses */}
               <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-5">

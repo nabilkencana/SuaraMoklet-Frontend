@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils";
 
 interface UnitSidebarProps {
   activeTab: "dashboard" | "keluhan";
+  onTabChange?: (tab: "dashboard" | "keluhan") => void;
 }
 
-export default function UnitSidebar({ activeTab }: UnitSidebarProps) {
+export default function UnitSidebar({ activeTab, onTabChange }: UnitSidebarProps) {
   const router = useRouter();
   const { logout } = useAuthStore();
 
@@ -45,7 +46,7 @@ export default function UnitSidebar({ activeTab }: UnitSidebarProps) {
         <nav className="p-4 space-y-1.5">
           {/* Dashboard Tab */}
           <button
-            onClick={() => router.push("/unit")}
+            onClick={() => onTabChange ? onTabChange("dashboard") : router.push("/unit")}
             className={cn(
               "relative w-full flex items-center gap-3.5 px-4 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer",
               activeTab === "dashboard"
@@ -61,7 +62,7 @@ export default function UnitSidebar({ activeTab }: UnitSidebarProps) {
           </button>
 
           <button
-            onClick={() => router.push("/unit/complaints")}
+            onClick={() => onTabChange ? onTabChange("keluhan") : router.push("/unit/complaints")}
             className={cn(
               "relative w-full flex items-center gap-3.5 px-4 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer",
               activeTab === "keluhan"

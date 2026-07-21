@@ -43,7 +43,7 @@ import {
   House
 } from "lucide-react";
 import { toast } from "sonner";
-import { apiClient } from "@/lib/api";
+import { apiClient, mapBackendUnitToFrontend } from "@/lib/api";
 import { Complaint, ComplaintUnit, UnitModel, ComplaintVisibility } from "@/types/complaint";
 import { cn } from "@/lib/utils";
 
@@ -86,15 +86,10 @@ const getUnitDescription = (unit: UnitModel) => {
 const getInitials = (name: string) => {
   return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
 };
-
 const getUnitPIC = (unitId: string, unitName: string, unitMembers: UnitMember[]) => {
   const pic = unitMembers.find((m) => m.unitId === unitId && m.isPic);
   if (pic) return pic;
-  const norm = unitName.toLowerCase();
-  if (norm.includes("kurikulum")) return { name: "Ahmad Santoso", email: "ahmad@moklet.org", initials: "AS" };
-  if (norm.includes("kesiswaan")) return { name: "Budi Mulyono", email: "budi@moklet.org", initials: "BM" };
-  if (norm.includes("humas") || norm.includes("hubinkom")) return { name: "Dian Ratnasari", email: "dian@moklet.org", initials: "DR" };
-  return { name: "Eko Prasetyo", email: "eko@moklet.org", initials: "EP" };
+  return { name: "Belum Ditunjuk", email: "-", initials: "BD" };
 };
 
 export default function AdminDashboard() {
@@ -108,6 +103,9 @@ export default function AdminDashboard() {
   const [units, setUnits] = useState<UnitModel[]>([]);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [unitMembers, setUnitMembers] = useState<UnitMember[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [allDbUsers, setAllDbUsers] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   // Filtering states
   const [tableTab, setTableTab] = useState<"all" | "urgent" | "unit">("all");
@@ -169,8 +167,8 @@ export default function AdminDashboard() {
       // 3. Dynamic members from fetched units
       const dbMembers: any[] = [];
       loadedUnits.forEach((u: any) => {
-        if (Array.isArray(u.memberships)) {
-          u.memberships.forEach((m: any) => {
+        if (Array.isArray(u.members)) {
+          u.members.forEach((m: any) => {
             if (m.user) {
               dbMembers.push({
                 id: m.user.id,
@@ -186,13 +184,36 @@ export default function AdminDashboard() {
         }
       });
       setUnitMembers(dbMembers);
+
+      // 4. Fetch stats
+      try {
+        const statsData = await apiClient.stats.getStats();
+        setStats(statsData);
+      } catch (err) {
+        console.error("Failed to fetch stats:", err);
+      }
+
+      // 5. Fetch all users for User Management
+      try {
+        const usersData = await apiClient.users.getAll();
+        setAllDbUsers(Array.isArray(usersData) ? usersData : []);
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
+      }
+
+      // 6. Fetch recent notifications for timeline
+      try {
+        const notifData = await apiClient.notifications.getAll({ limit: 5 });
+        setNotifications(Array.isArray(notifData) ? notifData : []);
+      } catch (err) {
+        console.error("Failed to fetch notifications:", err);
+      }
     } catch (e) {
       toast.error("Gagal Memuat Data");
     } finally {
       setIsLoading(false);
     }
   };
-
   // Set mounted
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
@@ -389,24 +410,41 @@ export default function AdminDashboard() {
     return matchesName || matchesDesc || matchesPIC;
   });
 
-  const figmaUsers = [
-    { id: "fallback-u1", name: "Budi Santoso", email: "budi.s@student.edu", phone: "+62 812-3456-7890", role: "Siswa", unitName: "Class 10-A", status: "Active", memberId: "2024001" },
-    { id: "fallback-u2", name: "Ani Darmawan", email: "ani.d@teacher.edu", phone: "+62 856-1122-3344", role: "Guru", unitName: "PIC: Science Dept", status: "Active", memberId: "GUR092" },
-    { id: "fallback-u3", name: "Siti Rohmah", email: "siti.r@parents.edu", phone: "-", role: "Orangtua", unitName: "Unassigned", status: "Inactive", memberId: "ORT551" }
-  ];
+  const dynamicUsers = allDbUsers.map((u) => {
+    // Map role name
+    let roleName = "User";
+    if (u.role === "SUPERADMIN") roleName = "Superadmin";
+    else if (u.role === "SUPER_PIC") roleName = "Super PIC";
+    else if (u.role === "UNIT_PIC") roleName = "PIC Unit";
+    else if (u.role === "UNIT_MEMBER") roleName = "Anggota Unit";
+    else if (u.role === "USER") {
+      if (u.userType === "SISWA") roleName = "Siswa";
+      else if (u.userType === "GURU") roleName = "Guru";
+      else if (u.userType === "ORANGTUA") roleName = "Orangtua";
+      else if (u.userType === "KARYAWAN") roleName = "Karyawan";
+    }
 
-  const dynamicUsers = unitMembers.map((m) => ({
-    id: m.id,
-    name: m.name,
-    email: m.email,
-    phone: "+62 813-9988-7766",
-    role: m.isPic ? "PIC Unit" : "Anggota Unit",
-    unitName: m.unitName || "Umum",
-    status: "Active",
-    memberId: `USR-${m.id.substring(0, 4).toUpperCase()}`
-  }));
+    // Map unit name
+    let unitName = "Umum";
+    if (u.unitMemberships && u.unitMemberships.length > 0) {
+      unitName = u.unitMemberships.map((m: any) => m.unit?.name).join(", ");
+    } else if (u.role === "SUPERADMIN" || u.role === "SUPER_PIC") {
+      unitName = "ISO";
+    }
 
-  const allUsers = [...figmaUsers, ...dynamicUsers];
+    return {
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      phone: u.phoneNumber || u.phone_number || "-",
+      role: roleName,
+      unitName: unitName,
+      status: u.isActive ? "Active" : "Inactive",
+      memberId: `USR-${u.id.substring(0, 4).toUpperCase()}`
+    };
+  });
+
+  const allUsers = dynamicUsers;
 
   const filteredUsers = allUsers.filter((u) => {
     const normSearch = userSearchQuery.toLowerCase();
@@ -600,13 +638,10 @@ export default function AdminDashboard() {
                     <div className="bg-[#fdf2f2] p-2.5 rounded-xl border border-[#fee2e2] text-[#b61722]">
                       <MessageSquare className="h-5 w-5" />
                     </div>
-                    <span className="text-[11px] font-semibold text-[#16a34a] bg-[#f0fdf4] px-2 py-0.5 rounded-full border border-[#dcfce7]">
-                      +12%
-                    </span>
                   </div>
                   <div className="space-y-1">
                     <span className="block text-[13px] font-medium text-slate-500">Total Keluhan</span>
-                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">5</span>
+                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">{stats?.totalCount ?? complaints.length}</span>
                   </div>
                 </div>
 
@@ -616,13 +651,10 @@ export default function AdminDashboard() {
                     <div className="bg-[#eff6ff] p-2.5 rounded-xl border border-[#dbeafe] text-[#2563eb]">
                       <Zap className="h-5 w-5 fill-[#2563eb]" />
                     </div>
-                    <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
-                      Avg
-                    </span>
                   </div>
                   <div className="space-y-1">
-                    <span className="block text-[13px] font-medium text-slate-500">Rata-rata Respon</span>
-                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">4.2h</span>
+                    <span className="block text-[13px] font-medium text-slate-500">Rata-rata Rating</span>
+                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">{stats?.averageRating ? `${stats.averageRating} ★` : "0 ★"}</span>
                   </div>
                 </div>
 
@@ -632,13 +664,10 @@ export default function AdminDashboard() {
                     <div className="bg-[#fdf2f2] p-2.5 rounded-xl border border-[#fee2e2] text-[#b61722]">
                       <AlertTriangle className="h-5 w-5" />
                     </div>
-                    <span className="text-[11px] font-semibold text-[#ba1a1a] bg-[#ffdad6] px-2 py-0.5 rounded-full border border-[#ffb4ab]">
-                      CRITICAL
-                    </span>
                   </div>
                   <div className="space-y-1">
-                    <span className="block text-[13px] font-medium text-slate-500">Belum Di Tangani &gt; 48h</span>
-                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">28</span>
+                    <span className="block text-[13px] font-medium text-slate-500">Belum Ditangani</span>
+                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">{stats?.pendingCount ?? complaints.filter(c => c.status === "NEW").length}</span>
                   </div>
                 </div>
 
@@ -648,16 +677,14 @@ export default function AdminDashboard() {
                     <div className="bg-[#f0fdf4] p-2.5 rounded-xl border border-[#dcfce7] text-[#16a34a]">
                       <CheckCircle className="h-5 w-5" />
                     </div>
-                    <span className="text-[11px] font-semibold text-[#16a34a] bg-[#f0fdf4] px-2 py-0.5 rounded-full border border-[#dcfce7]">
-                      94%
-                    </span>
                   </div>
                   <div className="space-y-1">
                     <span className="block text-[13px] font-medium text-slate-500">Terselesaikan</span>
-                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">892</span>
+                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">{stats?.resolvedCount ?? complaints.filter(c => c.status === "CLOSED").length}</span>
                   </div>
                 </div>
               </div>
+
 
               {/* Global Complaint List Table Card */}
               <div className="bg-white rounded-2xl border border-[rgba(228,190,186,0.3)] shadow-sm p-6 space-y-6">
@@ -732,15 +759,7 @@ export default function AdminDashboard() {
                         const isClosed = c.status === "CLOSED";
                         const isInProgress = c.status === "IN_PROGRESS";
 
-                        // Map complaint info details
-                        let infoDetail = `#REQ-${c.id.substring(0, 4).toUpperCase()} • Disubmit ${new Date(c.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`;
-                        if (c.id === "complaint-1" || c.title.includes("Pipa")) {
-                          infoDetail = "#REQ-8291 • Disubmit 3 hari lalu";
-                        } else if (c.id === "complaint-2" || c.title.includes("Kurikulum")) {
-                          infoDetail = "#REQ-8302 • Disubmit 4 jam lalu";
-                        } else if (c.id === "complaint-3" || c.title.includes("AC")) {
-                          infoDetail = "#REQ-8114 • Disubmit 5 hari lalu";
-                        }
+                        const infoDetail = `#REQ-${c.id.substring(0, 8).toUpperCase()} • Disubmit ${new Date(c.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`;
 
                         return (
                           <tr key={c.id} className="text-slate-700 text-sm hover:bg-slate-50/50 transition-all align-middle">
@@ -874,49 +893,32 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="space-y-5">
-                    {/* Row 1 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm font-semibold text-slate-700">
-                        <span>Kesiswaan</span>
-                        <span className="text-[#16a34a]">88% Efisien</span>
-                      </div>
-                      <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-[#16a34a] rounded-full" style={{ width: "88%" }} />
-                      </div>
-                    </div>
+                    {units.length > 0 ? (
+                      units.map((unit) => {
+                        const unitStats = stats?.byUnit?.find((u: any) => u.unitId === unit.id || u.unitName === unit.name);
+                        const total = unitStats?.totalComplaints ?? 0;
+                        const rating = unitStats?.averageRating ?? 0;
+                        const resolvedCount = complaints.filter(c => (c.unit === unit.name || mapBackendUnitToFrontend(unit.name) === c.unit) && c.status === "CLOSED").length;
+                        const totalCount = complaints.filter(c => (c.unit === unit.name || mapBackendUnitToFrontend(unit.name) === c.unit)).length;
+                        const rate = totalCount > 0 ? Math.round((resolvedCount / totalCount) * 100) : 0;
 
-                    {/* Row 2 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm font-semibold text-slate-700">
-                        <span>Sarpras</span>
-                        <span className="text-[#ba1a1a]">42% (Rendah)</span>
-                      </div>
-                      <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-[#b61722] rounded-full" style={{ width: "42%" }} />
-                      </div>
-                    </div>
-
-                    {/* Row 3 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm font-semibold text-slate-700">
-                        <span>Kurikulum</span>
-                        <span className="text-[#d97706]">76% Efisien</span>
-                      </div>
-                      <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-[#d97706] rounded-full" style={{ width: "76%" }} />
-                      </div>
-                    </div>
-
-                    {/* Row 4 */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm font-semibold text-slate-700">
-                        <span>Security</span>
-                        <span className="text-[#16a34a]">95% Efisien</span>
-                      </div>
-                      <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-[#16a34a] rounded-full" style={{ width: "95%" }} />
-                      </div>
-                    </div>
+                        return (
+                          <div key={unit.id} className="space-y-2">
+                            <div className="flex justify-between text-sm font-semibold text-slate-700">
+                              <span>{unit.name}</span>
+                              <span className={cn(rate >= 70 ? "text-[#16a34a]" : rate >= 40 ? "text-[#d97706]" : "text-[#ba1a1a]")}>
+                                {rate}% Efisien ({total} Keluhan, Rating: {rating ? `${rating} ★` : "-"})
+                              </span>
+                            </div>
+                            <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                              <div className={cn("h-full rounded-full", rate >= 70 ? "bg-[#16a34a]" : rate >= 40 ? "bg-[#d97706]" : "bg-[#b61722]")} style={{ width: `${rate}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-slate-400 text-xs py-4 text-center">Belum ada unit kerja terdaftar.</div>
+                    )}
                   </div>
 
                   <div className="pt-5 border-t border-slate-100 flex items-center justify-between text-sm">
@@ -935,44 +937,22 @@ export default function AdminDashboard() {
                       <p className="text-slate-500 text-xs mt-1">Riwayat aktivitas pengawasan log sistem</p>
                     </div>
 
-                    {/* Audit timeline */}
                     <div className="space-y-4">
-                      {/* Item 1 */}
-                      <div className="flex gap-3 items-start">
-                        <div className="h-2 w-2 rounded-full bg-[#16a34a] mt-1.5 shrink-0" />
-                        <div className="space-y-0.5">
-                          <span className="block text-sm font-bold text-slate-800">Status Closed: #REQ-712</span>
-                          <span className="block text-xs text-slate-400 font-medium">Oleh Unit Kesiswaan • 2m lalu</span>
-                        </div>
-                      </div>
-
-                      {/* Item 2 */}
-                      <div className="flex gap-3 items-start">
-                        <div className="h-2 w-2 rounded-full bg-[#b61722] mt-1.5 shrink-0" />
-                        <div className="space-y-0.5">
-                          <span className="block text-sm font-bold text-slate-800">Forwarded: #REQ-8291</span>
-                          <span className="block text-xs text-slate-400 font-medium">Superadmin ➔ Sarpras • 15m lalu</span>
-                        </div>
-                      </div>
-
-                      {/* Item 3 */}
-                      <div className="flex gap-3 items-start">
-                        <div className="h-2 w-2 rounded-full bg-[#d97706] mt-1.5 shrink-0" />
-                        <div className="space-y-0.5">
-                          <span className="block text-sm font-bold text-slate-800">Visibility Changed</span>
-                          <span className="block text-xs text-slate-400 font-medium">Public ➔ Private (#REQ-901) • 1h lalu</span>
-                        </div>
-                      </div>
-
-                      {/* Item 4 */}
-                      <div className="flex gap-3 items-start">
-                        <div className="h-2 w-2 rounded-full bg-[#2563eb] mt-1.5 shrink-0" />
-                        <div className="space-y-0.5">
-                          <span className="block text-sm font-bold text-slate-800">New Report Logged</span>
-                          <span className="block text-xs text-slate-400 font-medium">User: Student-X • 3h lalu</span>
-                        </div>
-                      </div>
+                      {notifications.length > 0 ? (
+                        notifications.map((n) => (
+                          <div key={n.id} className="flex gap-3 items-start">
+                            <div className="h-2 w-2 rounded-full bg-[#b61722] mt-1.5 shrink-0" />
+                            <div className="space-y-0.5">
+                              <span className="block text-sm font-bold text-slate-800">{n.title}</span>
+                              <span className="block text-xs text-slate-400 font-medium">{n.description} • {new Date(n.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-slate-400 text-xs py-4 text-center">Belum ada log aktivitas baru.</div>
+                      )}
                     </div>
+
                   </div>
 
                   <button className="w-full h-10 border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer">
@@ -1061,15 +1041,7 @@ export default function AdminDashboard() {
                         const isWaiting = c.status === "WAITING_USER";
                         const isClosed = c.status === "CLOSED";
                         const isInProgress = c.status === "IN_PROGRESS";
-
-                        let infoDetail = `#REQ-${c.id.substring(0, 4).toUpperCase()} • Disubmit ${new Date(c.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`;
-                        if (c.id === "complaint-1" || c.title.includes("Pipa")) {
-                          infoDetail = "#REQ-8291 • Disubmit 3 hari lalu";
-                        } else if (c.id === "complaint-2" || c.title.includes("Kurikulum")) {
-                          infoDetail = "#REQ-8302 • Disubmit 4 jam lalu";
-                        } else if (c.id === "complaint-3" || c.title.includes("AC")) {
-                          infoDetail = "#REQ-8114 • Disubmit 5 hari lalu";
-                        }
+                        const infoDetail = `#REQ-${c.id.substring(0, 8).toUpperCase()} • Disubmit ${new Date(c.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`;
 
                         return (
                           <tr key={c.id} className="text-slate-700 text-sm hover:bg-slate-50/50 transition-all align-middle">
@@ -1236,12 +1208,9 @@ export default function AdminDashboard() {
                       const iconBg = getUnitIconBg(unit.name);
                       const desc = getUnitDescription(unit);
 
-                      // Calculate dynamic values
-                      const dynamicMembersCount = unitMembers.filter((m) => m.unitId === unit.id).length;
-                      const membersCount = dynamicMembersCount || (unit.name.includes("Kurikulum") ? 12 : unit.name.includes("Kesiswaan") ? 8 : unit.name.includes("Humas") || unit.name.includes("Hubinkom") ? 5 : 18);
-
-                      const dynamicIssuesCount = complaints.filter((c) => c.unit === unit.name && c.status !== "CLOSED").length;
-                      const activeIssuesCount = dynamicIssuesCount || (unit.name.includes("Kurikulum") ? 4 : unit.name.includes("Kesiswaan") ? 15 : unit.name.includes("Humas") || unit.name.includes("Hubinkom") ? 1 : 7);
+                      const membersCount = unitMembers.filter((m) => m.unitId === unit.id).length;
+                      const mappedUnitName = mapBackendUnitToFrontend(unit.name);
+                      const activeIssuesCount = complaints.filter((c) => c.unit === mappedUnitName && c.status !== "CLOSED").length;
 
                       const pic = getUnitPIC(unit.id, unit.name, unitMembers);
                       const picInitials = (pic as { initials?: string }).initials || getInitials(pic.name);
@@ -1323,18 +1292,9 @@ export default function AdminDashboard() {
 
                     const pic = getUnitPIC(activeUnit.id, activeUnit.name, unitMembers);
                     const picInitials = (pic as { initials?: string }).initials || getInitials(pic.name);
-
-                    // Filter members belonging to selected unit
                     const activeMembers = unitMembers.filter((m) => m.unitId === activeUnit.id);
-
-                    // Fallback members for visual mockup if empty
-                    const displayMembers = activeMembers.length > 0 ? activeMembers : [
-                      { id: "fallback-1", name: "Fitri Tanjung", email: "fitri@moklet.org", role: "Counselor", initials: "FT" },
-                      { id: "fallback-2", name: "Reza Yuliyanto", email: "reza@moklet.org", role: "Discipline Officer", initials: "RY" },
-                      { id: "fallback-3", name: "Nita Saputri", email: "nita@moklet.org", role: "Extracurricular Coordinator", initials: "NS" },
-                    ];
-
-                    const totalMembers = activeMembers.length || 8;
+                    const displayMembers = activeMembers;
+                    const totalMembers = activeMembers.length;
 
                     return (
                       <div className="bg-white rounded-3xl border border-[#b61722] shadow-md p-6 flex flex-col justify-between min-h-[580px]">
@@ -1422,20 +1382,22 @@ export default function AdminDashboard() {
                             </div>
 
                             <div className="space-y-3">
-                              {displayMembers.map((member) => (
-                                <div key={member.id} className="flex items-center gap-3">
-                                  <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center shrink-0">
-                                    {(member as { initials?: string }).initials || getInitials(member.name)}
+                              {displayMembers.length > 0 ? (
+                                displayMembers.map((member) => (
+                                  <div key={member.id} className="flex items-center gap-3">
+                                    <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center shrink-0">
+                                      {(member as { initials?: string }).initials || getInitials(member.name)}
+                                    </div>
+                                    <div className="space-y-0.5 leading-none">
+                                      <span className="block text-xs font-bold text-slate-800">{member.name}</span>
+                                      <span className="block text-[10px] text-slate-400 font-medium">{member.role || "Staff Member"}</span>
+                                    </div>
                                   </div>
-                                  <div className="space-y-0.5 leading-none">
-                                    <span className="block text-xs font-bold text-slate-800">{member.name}</span>
-                                    <span className="block text-[10px] text-slate-400 font-medium">{member.role || "Staff Member"}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-
-                            {totalMembers > 3 && (
+                                ))
+                              ) : (
+                                <div className="text-slate-400 text-xs text-center py-4">Belum ada anggota di unit ini.</div>
+                              )}
+                            </div>                            {totalMembers > 3 && (
                               <button
                                 onClick={() => setActiveTab("members")}
                                 className="block w-full text-center text-slate-400 hover:text-slate-600 text-[10px] font-bold uppercase tracking-wider pt-2"
