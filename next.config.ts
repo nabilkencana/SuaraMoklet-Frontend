@@ -7,6 +7,18 @@ const nextConfig: NextConfig = {
     // the parent-level package-lock.json and emit a workspace warning.
     root: path.resolve(__dirname),
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+      {
+        protocol: "http",
+        hostname: "**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;
