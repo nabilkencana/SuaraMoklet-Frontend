@@ -144,14 +144,14 @@ export default function Header() {
               <Link
                 href="/profile"
                 className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-lg text-slate-700 hover:text-red-650 hover:bg-slate-50 transition-all",
-                  pathname === "/profile" && "text-red-600 bg-slate-50"
+                  "flex items-center gap-2 px-2.5 py-1 rounded-full border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100 hover:border-slate-300 transition-all text-slate-700 select-none",
+                  pathname === "/profile" && "border-red-300 bg-red-50/60 text-red-600"
                 )}
               >
-                <div className="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-600 text-xs uppercase shadow-sm">
+                <div className="h-7 w-7 rounded-full bg-red-600 text-white flex items-center justify-center font-extrabold text-xs uppercase shadow-2xs shrink-0">
                   {user.name.charAt(0)}
                 </div>
-                <span className="text-xs font-bold text-slate-800">{user.name}</span>
+                <span className="text-xs font-bold text-slate-800 pr-1 truncate max-w-[120px]">{user.name}</span>
               </Link>
               <Button
                 variant="outline"

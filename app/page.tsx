@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Heart,
   ChevronRight,
+  ChevronLeft,
   FileText,
   Users,
   CheckCircle,
@@ -21,8 +22,9 @@ import {
   LogIn,
   LayoutDashboard,
   ChevronDown,
+  HelpCircle,
 } from "lucide-react";
-import { ComplaintCard, ComplaintCardData } from "@/components/shared/complaint-card";
+import { ComplaintCard, ComplaintCardData, LatestComplaintListItem } from "@/components/shared/complaint-card";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/app/store/auth.store";
 import { useRouter } from "next/navigation";
@@ -30,6 +32,31 @@ import { toast } from "sonner";
 import Header from "@/components/shared/Header";
 import Footer from "@/components/shared/Footer";
 import { apiClient } from "@/lib/api";
+
+function SectionEyebrow({
+  label,
+  icon: Icon,
+  variant = "default",
+}: {
+  label: string;
+  icon?: React.ElementType;
+  variant?: "default" | "light";
+}) {
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold tracking-wider uppercase mb-3",
+        variant === "light"
+          ? "bg-white/15 text-white border border-white/20 backdrop-blur-xs"
+          : "bg-red-50 text-red-650 border border-red-100"
+      )}
+    >
+      {Icon && <Icon className={cn("h-3.5 w-3.5", variant === "light" ? "text-white" : "text-red-600")} />}
+      <span>{label}</span>
+    </div>
+  );
+}
+
 const STEPS = [
   {
     num: 1,
@@ -47,8 +74,6 @@ const STEPS = [
     description: "Laporan dengan dukungan tinggi akan ditindaklanjuti oleh pihak tata kelola.",
   },
 ];
-
-// Local Navbar has been replaced by the unified Header component
 
 interface FaqItem {
   question: string;
@@ -80,7 +105,7 @@ const FAQ_DATA: FaqItem[] = [
 
 function FaqAccordionItem({ item, isOpen, onClick }: { item: FaqItem; isOpen: boolean; onClick: () => void }) {
   return (
-    <div className="border border-slate-200/80 rounded-2xl overflow-hidden bg-white shadow-sm hover:border-red-200 transition-all duration-300">
+    <div className="border border-slate-200/80 rounded-2xl overflow-hidden bg-white shadow-xs hover:border-red-200 transition-all duration-300">
       <button
         onClick={onClick}
         type="button"
@@ -124,6 +149,15 @@ export default function LandingPage() {
   const [isLoadingComplaints, setIsLoadingComplaints] = useState(true);
   const [summaryStats, setSummaryStats] = useState({ total: 0, resolved: 0, avgRating: 0 });
 
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const scrollCarousel = (direction: "left" | "right") => {
+    if (carouselRef.current) {
+      const scrollAmount = direction === "left" ? -380 : 380;
+      carouselRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
+  };
+
   const handleStartPetition = (e: React.FormEvent) => {
     e.preventDefault();
     const title = petitionTitle.trim();
@@ -132,7 +166,6 @@ export default function LandingPage() {
       return;
     }
 
-    // Read auth state fresh from the store at click-time to avoid stale closure
     const auth = useAuthStore.getState().isAuthenticated;
     const createUrl = `/complaints/create?title=${encodeURIComponent(title)}`;
     if (auth) {
@@ -187,8 +220,8 @@ export default function LandingPage() {
         }));
         setTrendingComplaints(trending);
 
-        // 2. Latest sorted by date or index
-        setLatestComplaints(mapped.slice(0, 3));
+        // 2. Latest sorted by date
+        setLatestComplaints(mapped.slice(0, 4));
 
         // 3. Compute summary stats from public data
         const resolved = mapped.filter((c) => (c.status as string) === "CLOSED").length;
@@ -217,16 +250,17 @@ export default function LandingPage() {
     return () => observer.disconnect();
   }, []);
 
+  const maxTrendingSupports = Math.max(...trendingComplaints.map((c) => c.supports), 10);
+
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans">
       {/* ── Navbar ───────────────────────────────────── */}
       <Header />
 
       {/* ── SECTION 1: Hero ──────────────────────────── */}
-      {/* ponytail: use min-h-[100dvh] and flex centering for simple full-viewport layout */}
       <section
         id="home"
-        className="relative min-h-[100dvh] flex items-center justify-center pt-28 pb-20 sm:pt-36 sm:pb-28 overflow-hidden bg-white"
+        className="relative min-h-[90vh] flex items-center justify-center pt-28 pb-16 sm:pt-36 sm:pb-24 overflow-hidden bg-white"
       >
         {/* Subtle grid background */}
         <div
@@ -238,7 +272,6 @@ export default function LandingPage() {
         />
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center animate-fade-in-up">
-
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] tracking-tight text-slate-900">
             Perubahan Sekolah{" "}
@@ -257,10 +290,8 @@ export default function LandingPage() {
           </p>
 
           {/* CTA Input */}
-          <div className="mt-16 sm:mt-20 max-w-2xl mx-auto">
+          <div className="mt-14 sm:mt-16 max-w-2xl mx-auto">
             <form onSubmit={handleStartPetition} className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:items-center sm:bg-white sm:rounded-2xl sm:border-2 sm:border-slate-200 sm:shadow-lg sm:shadow-slate-100 sm:hover:border-red-300 sm:focus-within:border-red-500 sm:focus-within:shadow-red-100/50 sm:focus-within:shadow-xl sm:transition-all sm:duration-300 sm:overflow-hidden sm:p-1.5">
-
-              {/* Input wrapper — bordered on mobile, borderless inside pill on desktop */}
               <div className="flex items-center gap-2.5 flex-1 bg-white border-2 border-slate-200 rounded-2xl px-4 py-3 focus-within:border-red-500 transition-all sm:border-0 sm:rounded-none sm:px-0 sm:py-0 sm:focus-within:border-0">
                 <Megaphone className="h-5 w-5 text-red-500 shrink-0 sm:ml-3" />
                 <input
@@ -268,14 +299,13 @@ export default function LandingPage() {
                   value={petitionTitle}
                   onChange={(e) => setPetitionTitle(e.target.value)}
                   placeholder="Apa yang ingin kamu ubah di sekolah?"
-                  className="flex-1 px-2 sm:px-3 text-sm sm:text-base text-slate-900 placeholder:text-slate-400 bg-transparent outline-none py-1 sm:py-3"
+                  className="flex-1 px-2 sm:px-3 text-sm sm:text-base text-slate-900 placeholder:text-slate-400 bg-transparent outline-none py-1 sm:py-3 font-medium"
                 />
               </div>
 
-              {/* Submit button — full width on mobile */}
               <button
                 type="submit"
-                className="w-full sm:w-auto sm:shrink-0 h-12 sm:h-11 px-6 rounded-2xl sm:rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.97] text-white text-sm font-bold transition-all shadow-md shadow-red-200/60 flex items-center justify-center gap-2"
+                className="w-full sm:w-auto sm:shrink-0 h-12 sm:h-11 px-6 rounded-2xl sm:rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.97] text-white text-sm font-bold transition-all shadow-md shadow-red-200/60 flex items-center justify-center gap-2 cursor-pointer"
               >
                 Mulai Petisi
                 <ArrowRight className="h-4 w-4" />
@@ -285,68 +315,97 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SECTION 2: Stats Summary ──────────────────── */}
-      <section ref={statsRef} className="py-10 bg-white border-y border-slate-100">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-3 gap-4 sm:gap-8 text-center">
-            {/* Total Keluhan */}
-            <div className="space-y-1">
-              <p className={`text-3xl sm:text-4xl font-extrabold text-red-600 transition-all duration-700 ${
-                statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              }`}>
-                {isLoadingComplaints ? "—" : summaryStats.total}
-              </p>
-              <p className="text-xs sm:text-sm font-semibold text-slate-500">Total Keluhan Publik</p>
-            </div>
-            {/* Diselesaikan */}
-            <div className="space-y-1">
-              <p className={`text-3xl sm:text-4xl font-extrabold text-red-600 transition-all duration-700 delay-100 ${
-                statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              }`}>
-                {isLoadingComplaints ? "—" : summaryStats.resolved}
-              </p>
-              <p className="text-xs sm:text-sm font-semibold text-slate-500">Sudah Diselesaikan</p>
-            </div>
-            {/* Rata-rata Dukungan */}
-            <div className="space-y-1">
-              <p className={`text-3xl sm:text-4xl font-extrabold text-red-600 transition-all duration-700 delay-200 ${
-                statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-              }`}>
-                {isLoadingComplaints ? "—" : `${summaryStats.avgRating}`}
-              </p>
-              <p className="text-xs sm:text-sm font-semibold text-slate-500">Rata-rata Dukungan</p>
+      {/* ── SECTION 2: Stats Summary (Wrapped Card Trust Bar) ──────────────────── */}
+      <section ref={statsRef} className="py-8 bg-white border-y border-slate-100">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-slate-50/80 rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
+            <div className="grid grid-cols-3 gap-4 sm:gap-8 text-center divide-x divide-slate-200/70">
+              {/* Total Keluhan */}
+              <div className="space-y-1 px-2">
+                <p className={`text-3xl sm:text-4xl font-extrabold text-red-600 transition-all duration-700 ${
+                  statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                }`}>
+                  {isLoadingComplaints ? "—" : summaryStats.total}
+                </p>
+                <p className="text-xs sm:text-sm font-bold text-slate-600">Total Keluhan Publik</p>
+              </div>
+              {/* Diselesaikan */}
+              <div className="space-y-1 px-2">
+                <p className={`text-3xl sm:text-4xl font-extrabold text-red-600 transition-all duration-700 delay-100 ${
+                  statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                }`}>
+                  {isLoadingComplaints ? "—" : summaryStats.resolved}
+                </p>
+                <p className="text-xs sm:text-sm font-bold text-slate-600">Sudah Diselesaikan</p>
+              </div>
+              {/* Rata-rata Dukungan */}
+              <div className="space-y-1 px-2">
+                <p className={`text-3xl sm:text-4xl font-extrabold text-red-600 transition-all duration-700 delay-200 ${
+                  statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                }`}>
+                  {isLoadingComplaints ? "—" : `${summaryStats.avgRating}`}
+                </p>
+                <p className="text-xs sm:text-sm font-bold text-slate-600">Rata-rata Dukungan</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── SECTION 3: Trending Reports ──────────────── */}
-      <section id="trending" className="py-16 sm:py-20 bg-slate-50">
+      {/* ── SECTION 3: Trending Reports (Horizontal Scroll Carousel + Progress Bar) ──────────────── */}
+      <section id="trending" className="py-16 sm:py-20 bg-slate-50/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Section header */}
-          <div className="flex items-center gap-3 mb-8">
-            <div className="h-9 w-9 rounded-xl bg-red-50 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-red-600" />
-            </div>
+          {/* Section header with Eyebrow Badge & Carousel Navigation */}
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
-                Trending & Dukungan Terbanyak
+              <SectionEyebrow label="Trending Minggu Ini" icon={TrendingUp} />
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                Trending &amp; Dukungan Terbanyak
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">Laporan paling banyak didukung minggu ini</p>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">Laporan dengan keterlibatan dan dukungan tertinggi dari warga sekolah</p>
+            </div>
+
+            {/* Navigation Arrows */}
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => scrollCarousel("left")}
+                aria-label="Scroll Kiri"
+                className="h-10 w-10 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-red-600 hover:border-red-200 hover:bg-red-50/50 transition-all flex items-center justify-center shadow-3xs cursor-pointer active:scale-95"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollCarousel("right")}
+                aria-label="Scroll Kanan"
+                className="h-10 w-10 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-red-600 hover:border-red-200 hover:bg-red-50/50 transition-all flex items-center justify-center shadow-3xs cursor-pointer active:scale-95"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Horizontal Carousel Container */}
+          <div
+            ref={carouselRef}
+            className="flex gap-6 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-none scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0"
+          >
             {isLoadingComplaints ? (
-              <div className="col-span-full py-12 flex justify-center text-slate-400">
+              <div className="w-full py-12 flex justify-center text-slate-400 font-medium">
                 Memuat data keluhan...
               </div>
             ) : trendingComplaints.length > 0 ? (
               trendingComplaints.map((complaint) => (
-                <ComplaintCard key={complaint.id} data={complaint} />
+                <div key={complaint.id} className="w-[300px] sm:w-[360px] shrink-0 snap-start">
+                  <ComplaintCard
+                    data={complaint}
+                    maxSupports={maxTrendingSupports}
+                  />
+                </div>
               ))
             ) : (
-              <div className="col-span-full py-12 text-center text-slate-400 font-medium">
+              <div className="w-full py-12 text-center text-slate-400 font-medium">
                 Belum ada keluhan publik saat ini.
               </div>
             )}
@@ -354,12 +413,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SECTION 3: How It Works ──────────────────── */}
+      {/* ── SECTION 4: How It Works ──────────────────── */}
       <section id="about" className="py-16 sm:py-24 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold mb-4">
-            Cara Kerja
-          </div>
+          <SectionEyebrow label="Cara Kerja" icon={Sparkles} />
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
             Bagaimana SuaraMoklet Bekerja
           </h2>
@@ -372,12 +429,11 @@ export default function LandingPage() {
             {/* Connector lines — desktop only */}
             <div className="hidden md:block absolute top-8 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-0.5 bg-gradient-to-r from-red-200 via-red-300 to-red-200" />
 
-            {STEPS.map((step, i) => (
+            {STEPS.map((step) => (
               <div key={step.num} className="relative flex flex-col items-center gap-4 px-4">
                 {/* Circle */}
                 <div className="relative z-10 h-16 w-16 rounded-full border-2 border-red-200 bg-white shadow-md shadow-red-100 flex items-center justify-center">
                   <span className="text-xl font-extrabold text-red-600">{step.num}</span>
-                  {/* Pulse ring */}
                   <div className="absolute inset-0 rounded-full border border-red-300 animate-ping opacity-20" />
                 </div>
                 <div>
@@ -390,34 +446,37 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SECTION 4: Latest Reports ─────────────────── */}
-      <section className="py-16 sm:py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">Suara Terbaru</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Laporan yang baru saja masuk</p>
+      {/* ── SECTION 5: Latest Reports (Compact Vertical Recency List) ─────────────────── */}
+      <section className="py-16 sm:py-20 bg-slate-50/60">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <SectionEyebrow label="Terbaru" icon={FileText} />
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Suara Terbaru</h2>
+                <p className="text-xs sm:text-sm text-slate-500 mt-1">Laporan dan aspirasi yang baru saja masuk ke sistem</p>
+              </div>
+              <Link
+                href="/search"
+                className="inline-flex items-center gap-1 text-xs sm:text-sm font-extrabold text-red-600 hover:text-red-700 transition-colors shrink-0"
+              >
+                Lihat Semua
+                <ChevronRight className="h-4 w-4" />
+              </Link>
             </div>
-            <a
-              href="#"
-              className="flex items-center gap-1 text-sm font-semibold text-red-600 hover:text-red-700 transition-colors"
-            >
-              Lihat Semua
-              <ChevronRight className="h-4 w-4" />
-            </a>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="space-y-3">
             {isLoadingComplaints ? (
-              <div className="col-span-full py-12 flex justify-center text-slate-400">
-                Memuat data keluhan...
+              <div className="py-12 flex justify-center text-slate-400 font-medium">
+                Memuat data keluhan terbaru...
               </div>
             ) : latestComplaints.length > 0 ? (
               latestComplaints.map((complaint) => (
-                <ComplaintCard key={complaint.id} data={complaint} />
+                <LatestComplaintListItem key={complaint.id} data={complaint} />
               ))
             ) : (
-              <div className="col-span-full py-12 text-center text-slate-400 font-medium">
+              <div className="py-12 text-center text-slate-400 font-medium">
                 Belum ada keluhan publik saat ini.
               </div>
             )}
@@ -429,6 +488,7 @@ export default function LandingPage() {
       <section id="faq" className="py-16 sm:py-24 bg-white border-t border-slate-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
+            <SectionEyebrow label="FAQ" icon={HelpCircle} />
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Pertanyaan yang Sering Diajukan
             </h2>
@@ -451,7 +511,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── SECTION 7: CTA Banner ────────────────────── */}
-      <section className="py-16 sm:py-24 bg-slate-50">
+      <section className="py-16 sm:py-24 bg-slate-50/60">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="relative bg-gradient-to-br from-red-600 to-red-700 rounded-3xl px-8 py-14 sm:py-20 overflow-hidden shadow-2xl shadow-red-200">
             {/* Decorative circles */}
@@ -460,34 +520,35 @@ export default function LandingPage() {
             <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-white/[0.03]" />
 
             <div className="relative z-10">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
+              <SectionEyebrow label="Ayo Beraksi" variant="light" />
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight mt-1">
                 Suaramu Bisa Membawa Perubahan
               </h2>
-              <p className="mt-4 text-red-100 text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
+              <p className="mt-4 text-red-100 text-sm sm:text-base max-w-lg mx-auto leading-relaxed font-medium">
                 Ayo mulai laporkan ide, masukan, atau permasalahan yang ada di sekolahmu dan jadilah bagian dari perubahan.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
                   href="/complaints/create"
-                  className="inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-white text-red-600 font-bold text-sm hover:bg-red-50 active:scale-[0.98] transition-all shadow-sm"
+                  className="inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-white text-red-650 font-extrabold text-sm hover:bg-red-50 active:scale-[0.98] transition-all shadow-sm"
                 >
                   <FileText className="h-4 w-4" />
                   Buat Laporan
                 </Link>
-                <a
+                <Link
                   href="/help"
                   className="inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/20 active:scale-[0.98] transition-all"
                 >
                   Pelajari Lebih Lanjut
                   <ArrowRight className="h-4 w-4" />
-                </a>
+                </Link>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── SECTION 7: Footer ─────────────────────────── */}
+      {/* ── SECTION 8: Footer ─────────────────────────── */}
       <Footer />
     </div>
   );

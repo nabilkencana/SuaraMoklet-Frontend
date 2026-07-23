@@ -43,13 +43,13 @@ export default function Footer() {
             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-4">Navigasi</h4>
             <ul className="space-y-3">
               {[
-                { name: "Home", href: "/" },
-                { name: "About", href: "/#about" },
-                { name: "Reports", href: "/search" },
-                { name: "FAQ", href: "/#faq" },
+                { name: "Beranda", href: "/" },
+                { name: "Jelajahi Laporan", href: "/search" },
+                { name: "Panduan", href: "/help" },
+                { name: "Buat Laporan", href: "/complaints/create" },
               ].map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-sm text-slate-500 hover:text-red-650 transition-colors">
+                  <Link href={item.href} className="text-sm font-medium text-slate-500 hover:text-red-650 transition-colors">
                     {item.name}
                   </Link>
                 </li>
@@ -62,42 +62,40 @@ export default function Footer() {
             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-4">Bantuan</h4>
             <ul className="space-y-3">
               {[
-                { name: "Panduan Penggunaan", href: "/help" },
-                { name: "Contact School", href: "https://smktelkom-mlg.sch.id" },
-                { name: "Support", href: "mailto:support@suaramoklet.id" },
-                { name: "Privacy Policy", href: "/privacy" },
+                { name: "Pusat Bantuan", href: "/help" },
+                { name: "Situs SMK Telkom Malang", href: "https://smktelkom-mlg.sch.id" },
+                { name: "Hubungi Pengelola", href: "mailto:info@smktelkom-mlg.sch.id" },
               ].map((item) => (
                 <li key={item.name}>
-                  <Link
+                  <a
                     href={item.href}
-                    className="text-sm text-slate-500 hover:text-red-650 transition-colors"
+                    target={item.href.startsWith("http") ? "_blank" : undefined}
+                    rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
+                    className="text-sm font-medium text-slate-500 hover:text-red-650 transition-colors"
                   >
                     {item.name}
-                  </Link>
+                  </a>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Col 4: Social Media */}
+          {/* Col 4: Kontak Sekolah */}
           <div>
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-4">Social Media</h4>
-            <ul className="space-y-3">
-              {socialMedia.map(({ label, path, url }) => (
-                <li key={label}>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-slate-500 hover:text-red-650 transition-colors"
-                  >
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
-                      <path d={path} />
-                    </svg>
-                    {label}
-                  </a>
-                </li>
-              ))}
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-4">Kontak Sekolah</h4>
+            <ul className="space-y-3 text-xs text-slate-500 font-medium">
+              <li className="flex items-start gap-2">
+                <span className="font-bold text-slate-700">Alamat:</span>
+                <span>Jl. Danau Ranau, Sawojajar, Malang</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="font-bold text-slate-700">Telepon:</span>
+                <span>(0341) 712500</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="font-bold text-slate-700">Email:</span>
+                <span>info@smktelkom-mlg.sch.id</span>
+              </li>
             </ul>
           </div>
         </div>

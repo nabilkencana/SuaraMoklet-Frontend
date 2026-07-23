@@ -42,11 +42,30 @@ export default function UnitDashboard() {
   });
   const [meta, setMeta] = useState({ totalKeluhan: 0, page: 1, limit: 20, totalPages: 1 });
 
-  // Modal balas
-  const [replyText, setReplyText] = useState("");
-  const [replyStatus, setReplyStatus] = useState<ComplaintStatus>("IN_PROGRESS");
-  const [isReplyModalOpen, setIsReplyModalOpen] = useState(false);
-  const [activeComplaintForReply, setActiveComplaintForReply] = useState<ExtendedComplaint | null>(null);
+  // Read complaints tracking
+  const [readIds, setReadIds] = useState<Set<string>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("read_complaint_ids");
+        if (stored) return new Set(JSON.parse(stored));
+      } catch {}
+    }
+    return new Set();
+  });
+
+  const handleOpenDetail = (id: string, hash: string = "") => {
+    setReadIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("read_complaint_ids", JSON.stringify(Array.from(next)));
+        } catch {}
+      }
+      return next;
+    });
+    router.push(`/complaints/${id}${hash}`);
+  };
 
   // Filter & pagination
   const [statusFilter, setStatusFilter] = useState("Semua Status");
@@ -126,30 +145,6 @@ export default function UnitDashboard() {
     }
   };
 
-  const handleOpenReplyModal = (complaint: ExtendedComplaint) => {
-    setActiveComplaintForReply(complaint);
-    setReplyText("");
-    setReplyStatus(complaint.status === "NEW" ? "IN_PROGRESS" : "CLOSED");
-    setIsReplyModalOpen(true);
-  };
-
-  const handleSendReply = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!replyText.trim() || !activeComplaintForReply) return;
-
-    toast.promise(
-      (async () => {
-        await apiClient.comments.create(activeComplaintForReply.id, { content: replyText });
-        setIsReplyModalOpen(false);
-        fetchComplaints();
-      })(),
-      {
-        loading: "Mengirim tanggapan...",
-        success: "Tanggapan berhasil dikirim!",
-        error: "Gagal mengirim tanggapan.",
-      }
-    );
-  };
 
   const handleLogoutClick = () => {
     logout();
@@ -303,10 +298,10 @@ export default function UnitDashboard() {
                           <td className="py-4 text-right pr-2">
                             <div className="inline-flex items-center gap-2 justify-end">
                               <button
-                                onClick={() => router.push(`/complaints/${c.id}`)}
+                                onClick={() => handleOpenDetail(c.id)}
                                 className="relative h-8 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-lg flex items-center gap-1 shadow-3xs transition-all cursor-pointer active:scale-[0.96]"
                               >
-                                {(c.status === "NEW" || c.status === "WAITING_RESPONSE") && (
+                                {(c.status === "NEW" || c.status === "WAITING_RESPONSE") && !readIds.has(c.id) && (
                                   <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-650" />
@@ -317,7 +312,7 @@ export default function UnitDashboard() {
                               </button>
                               {user?.role === "UNIT_PIC" && !isClosed && (
                                 <button
-                                  onClick={() => router.push(`/complaints/${c.id}#reply-form-section`)}
+                                  onClick={() => handleOpenDetail(c.id, "#reply-form-section")}
                                   className="h-8 px-3 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-lg flex items-center gap-1 shadow-xs transition-all cursor-pointer active:scale-[0.96] text-[10px]"
                                 >
                                   <Send className="h-3 w-3" />

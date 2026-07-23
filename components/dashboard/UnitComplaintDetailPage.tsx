@@ -27,7 +27,13 @@ import {
   X,
   Share2,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  BookOpen,
+  Users,
+  Briefcase,
+  FileText,
+  HeartHandshake,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
@@ -253,8 +259,6 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
               ]
             };
           });
-
-          setReplyStatus(nextStatus);
         } catch (err) {
           throw err;
         }
@@ -669,65 +673,188 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       {/* ─── FORWARD / DELEGASI MODAL ─── */}
       {isForwardModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
 
-            <div className="flex justify-between items-start">
-              <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">Teruskan / Delegasikan Laporan</h3>
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4 pb-1">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-2xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center shrink-0 shadow-3xs">
+                  <Share2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-base leading-tight">Teruskan / Delegasikan Laporan</h3>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">Pindahkan alokasi penanganan ke unit kerja yang sesuai</p>
+                </div>
+              </div>
               <button
+                type="button"
                 onClick={() => setIsForwardModalOpen(false)}
-                className="h-8 w-8 text-slate-400 hover:text-slate-655 hover:bg-slate-100 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl flex items-center justify-center cursor-pointer transition-colors shrink-0"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleForwardComplaint} className="space-y-4 pt-2">
+            {/* Complaint Context Summary */}
+            {complaint && (
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-xs">
+                <div className="space-y-0.5 min-w-0">
+                  <span className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">Judul Keluhan</span>
+                  <span className="block font-bold text-slate-800 truncate">{complaint.title}</span>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">ID Keluhan</span>
+                  <span className="inline-block px-2 py-0.5 bg-slate-200/70 text-slate-700 font-mono font-bold rounded-md text-[10px]">
+                    #{complaint.id.slice(0, 8)}
+                  </span>
+                </div>
+              </div>
+            )}
 
-              {/* Unit target */}
-              <div className="space-y-1.5">
-                <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Unit Kerja Tujuan</label>
-                <select
-                  required
-                  value={forwardUnitId}
-                  onChange={(e) => setForwardUnitId(e.target.value)}
-                  className="h-10 w-full rounded-xl border border-slate-250 bg-white px-3 text-xs font-bold text-slate-650 outline-none focus:border-red-500 cursor-pointer"
-                >
-                  <option value="">Pilih Unit Kerja</option>
-                  <option value="Kurikulum">Kurikulum</option>
-                  <option value="Kesiswaan">Kesiswaan</option>
-                  <option value="Hubin">Hubin / Humas</option>
-                  <option value="Sarpras">Sarana &amp; Prasarana (Sarpras)</option>
-                  <option value="Tata Usaha">Tata Usaha</option>
-                </select>
+            <form onSubmit={handleForwardComplaint} className="space-y-5">
+
+              {/* Unit Selection Grid */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
+                    Pilih Unit Kerja Tujuan <span className="text-red-500">*</span>
+                  </label>
+                  {forwardUnitId && (
+                    <span className="text-[10px] text-red-600 font-bold">Terpilih: {forwardUnitId}</span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {[
+                    {
+                      id: "Sarpras",
+                      name: "Sarana & Prasarana",
+                      description: "Gedung, peralatan & infrastruktur",
+                      icon: Building2,
+                    },
+                    {
+                      id: "Kesiswaan",
+                      name: "Kesiswaan",
+                      description: "Kedisiplinan, OSIS & kegiatan siswa",
+                      icon: Users,
+                    },
+                    {
+                      id: "Kurikulum",
+                      name: "Kurikulum",
+                      description: "Akademik, jadwal kelas & ujian",
+                      icon: BookOpen,
+                    },
+                    {
+                      id: "Hubin",
+                      name: "Hubin / Humas",
+                      description: "Hubungan industri & PKL",
+                      icon: Briefcase,
+                    },
+                    {
+                      id: "Tata Usaha",
+                      name: "Tata Usaha (TU)",
+                      description: "Administrasi & keuangan",
+                      icon: FileText,
+                    },
+                    {
+                      id: "BK",
+                      name: "Bimbingan Konseling",
+                      description: "Konseling & bimbingan siswa",
+                      icon: HeartHandshake,
+                    },
+                  ].map((unit) => {
+                    const IconComp = unit.icon;
+                    const isSelected = forwardUnitId === unit.id;
+                    return (
+                      <div
+                        key={unit.id}
+                        onClick={() => setForwardUnitId(unit.id)}
+                        className={cn(
+                          "p-3 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 relative select-none",
+                          isSelected
+                            ? "border-2 border-red-600 bg-red-50/40 shadow-xs"
+                            : "border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50/80"
+                        )}
+                      >
+                        <div className={cn(
+                          "h-8 w-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition-colors",
+                          isSelected ? "bg-red-600 text-white" : "bg-slate-100 text-slate-600"
+                        )}>
+                          <IconComp className="h-4 w-4" />
+                        </div>
+                        <div className="space-y-0.5 min-w-0 pr-4">
+                          <span className={cn("block text-xs font-bold leading-tight", isSelected ? "text-red-950" : "text-slate-800")}>
+                            {unit.name}
+                          </span>
+                          <span className="block text-[10px] text-slate-400 leading-snug line-clamp-2">
+                            {unit.description}
+                          </span>
+                        </div>
+                        {isSelected && (
+                          <div className="absolute top-2.5 right-2.5 h-4 w-4 rounded-full bg-red-600 text-white flex items-center justify-center shadow-3xs">
+                            <Check className="h-2.5 w-2.5 stroke-[3]" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Quick Reasons */}
+              <div className="space-y-2">
+                <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
+                  Alasan Pendelegasian (Pilih Cepat)
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    "Salah Alokasi Unit",
+                    "Membutuhkan Penanganan Khusus",
+                    "Eskalasi Lanjutan",
+                    "Koordinasi Lintas Unit",
+                  ].map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => setForwardNote((prev) => prev ? `${prev} | ${chip}` : chip)}
+                      className="px-3 py-1 bg-slate-100 hover:bg-red-50 hover:text-red-600 border border-slate-200/80 hover:border-red-200 text-slate-600 font-semibold text-[11px] rounded-lg transition-all cursor-pointer active:scale-95"
+                    >
+                      + {chip}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Note */}
               <div className="space-y-1.5">
-                <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Catatan Pendelegasian</label>
+                <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
+                  Catatan Tambahan untuk Unit Kerja Target
+                </label>
                 <textarea
                   rows={3}
-                  placeholder="Ketik catatan mengapa keluhan ini dialihkan ke unit tersebut..."
+                  placeholder="Instruksi khusus atau catatan mengapa laporan ini dialihkan..."
                   value={forwardNote}
                   onChange={(e) => setForwardNote(e.target.value)}
-                  className="w-full p-3 text-xs rounded-xl border border-slate-250 bg-white focus:outline-none focus:border-red-400 font-medium"
+                  className="w-full p-3.5 text-xs rounded-2xl border border-slate-250 bg-white focus:outline-none focus:border-red-500 font-medium"
                 />
               </div>
 
-              {/* Buttons */}
+              {/* Action Buttons */}
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsForwardModalOpen(false)}
-                  className="flex-1 h-10 border border-slate-200 hover:bg-slate-50 text-slate-655 font-bold rounded-xl transition-all text-xs cursor-pointer"
+                  className="flex-1 h-11 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-all text-xs cursor-pointer active:scale-[0.98]"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 h-10 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-xl transition-all text-xs cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                  disabled={!forwardUnitId}
+                  className="flex-1 h-11 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all text-xs cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
                 >
-                  <Send className="h-3.5 w-3.5" />
-                  <span>Delegasikan</span>
+                  <Share2 className="h-4 w-4" />
+                  <span>Konfirmasi Delegasikan</span>
                 </button>
               </div>
 
