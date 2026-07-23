@@ -300,7 +300,7 @@ export default function LandingPage() {
             </div>
             {/* Diselesaikan */}
             <div className="space-y-1">
-              <p className={`text-3xl sm:text-4xl font-extrabold text-emerald-600 transition-all duration-700 delay-100 ${
+              <p className={`text-3xl sm:text-4xl font-extrabold text-red-600 transition-all duration-700 delay-100 ${
                 statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}>
                 {isLoadingComplaints ? "—" : summaryStats.resolved}
@@ -309,7 +309,7 @@ export default function LandingPage() {
             </div>
             {/* Rata-rata Dukungan */}
             <div className="space-y-1">
-              <p className={`text-3xl sm:text-4xl font-extrabold text-blue-600 transition-all duration-700 delay-200 ${
+              <p className={`text-3xl sm:text-4xl font-extrabold text-red-600 transition-all duration-700 delay-200 ${
                 statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
               }`}>
                 {isLoadingComplaints ? "—" : `${summaryStats.avgRating}`}
@@ -475,7 +475,7 @@ export default function LandingPage() {
                   Buat Laporan
                 </Link>
                 <a
-                  href="#about"
+                  href="/help"
                   className="inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/20 active:scale-[0.98] transition-all"
                 >
                   Pelajari Lebih Lanjut

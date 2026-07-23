@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "@/components/shared/Header";
 import Footer from "@/components/shared/Footer";
 import {
@@ -20,12 +20,29 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/app/store/auth.store";
 
 type RoleTab = "user" | "unit" | "admin";
 
 export default function HelpPage() {
+  const { user, isAuthenticated } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<RoleTab>("user");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Determine effective tab based on user's logged-in role
+  const getEffectiveRole = (): RoleTab => {
+    if (!mounted || !isAuthenticated || !user) return activeTab;
+    if (user.role === "UNIT_PIC" || user.role === "UNIT_MEMBER") return "unit";
+    if (user.role === "SUPERADMIN" || user.role === "SUPER_PIC") return "admin";
+    return "user";
+  };
+
+  const currentRole = getEffectiveRole();
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index);
@@ -46,65 +63,67 @@ export default function HelpPage() {
             Panduan Penggunaan SuaraMoklet
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-            Petunjuk praktis pengoperasian platform pengaduan & aspirasi SMK Telkom Malang sesuai dengan peran akun Anda.
+            Petunjuk praktis pengoperasian platform pengaduan & aspirasi SMK Telkom Malang.
           </p>
         </div>
 
-        {/* Role Switcher Tabs */}
-        <div className="flex justify-center">
-          <div className="bg-slate-100 p-1.5 rounded-2xl flex items-center gap-1 border border-slate-200/60 max-w-md w-full">
-            <button
-              onClick={() => setActiveTab("user")}
-              className={cn(
-                "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer",
-                activeTab === "user"
-                  ? "bg-white text-slate-900 shadow-sm border border-slate-200/80"
-                  : "text-slate-500 hover:text-slate-800"
-              )}
-            >
-              <User className="h-4 w-4 text-blue-500" />
-              <span>Siswa / Pelapor</span>
-            </button>
+        {/* Role Switcher Tabs (Only shown when NOT logged in) */}
+        {mounted && !isAuthenticated && (
+          <div className="flex justify-center">
+            <div className="bg-slate-100 p-1.5 rounded-2xl flex items-center gap-1 border border-slate-200/60 max-w-md w-full">
+              <button
+                onClick={() => setActiveTab("user")}
+                className={cn(
+                  "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer",
+                  activeTab === "user"
+                    ? "bg-white text-red-600 shadow-sm border border-slate-200/80"
+                    : "text-slate-500 hover:text-slate-800"
+                )}
+              >
+                <User className="h-4 w-4" />
+                <span>Siswa / Pelapor</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab("unit")}
-              className={cn(
-                "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer",
-                activeTab === "unit"
-                  ? "bg-white text-slate-900 shadow-sm border border-slate-200/80"
-                  : "text-slate-500 hover:text-slate-800"
-              )}
-            >
-              <Building className="h-4 w-4 text-red-500" />
-              <span>PIC & Staf Unit</span>
-            </button>
+              <button
+                onClick={() => setActiveTab("unit")}
+                className={cn(
+                  "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer",
+                  activeTab === "unit"
+                    ? "bg-white text-red-600 shadow-sm border border-slate-200/80"
+                    : "text-slate-500 hover:text-slate-800"
+                )}
+              >
+                <Building className="h-4 w-4" />
+                <span>PIC & Staf Unit</span>
+              </button>
 
-            <button
-              onClick={() => setActiveTab("admin")}
-              className={cn(
-                "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer",
-                activeTab === "admin"
-                  ? "bg-white text-slate-900 shadow-sm border border-slate-200/80"
-                  : "text-slate-500 hover:text-slate-800"
-              )}
-            >
-              <Sliders className="h-4 w-4 text-purple-500" />
-              <span>Superadmin</span>
-            </button>
+              <button
+                onClick={() => setActiveTab("admin")}
+                className={cn(
+                  "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer",
+                  activeTab === "admin"
+                    ? "bg-white text-red-600 shadow-sm border border-slate-200/80"
+                    : "text-slate-500 hover:text-slate-800"
+                )}
+              >
+                <Sliders className="h-4 w-4" />
+                <span>Superadmin</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Tab Content 1: Siswa / Pelapor */}
-        {activeTab === "user" && (
+        {currentRole === "user" && (
           <div className="space-y-6 animate-in fade-in duration-200">
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-              <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <User className="h-5 w-5 text-blue-500" />
+              <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <User className="h-5 w-5 text-red-600" />
                 <span>Panduan untuk Siswa & Pelapor</span>
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-150 space-y-2">
                   <div className="flex items-center gap-2 font-bold text-xs text-slate-800">
                     <FileText className="h-4 w-4 text-red-600" />
                     <span>1. Membuat Keluhan Baru</span>
@@ -114,9 +133,9 @@ export default function HelpPage() {
                   </p>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-150 space-y-2">
                   <div className="flex items-center gap-2 font-bold text-xs text-slate-800">
-                    <EyeOff className="h-4 w-4 text-slate-600" />
+                    <EyeOff className="h-4 w-4 text-red-600" />
                     <span>2. Mode Opsi Anonim</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
@@ -124,9 +143,9 @@ export default function HelpPage() {
                   </p>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-150 space-y-2">
                   <div className="flex items-center gap-2 font-bold text-xs text-slate-800">
-                    <MessageCircle className="h-4 w-4 text-amber-500" />
+                    <MessageCircle className="h-4 w-4 text-red-600" />
                     <span>3. Memantau Status & Diskusi</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
@@ -134,9 +153,9 @@ export default function HelpPage() {
                   </p>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-150 space-y-2">
                   <div className="flex items-center gap-2 font-bold text-xs text-slate-800">
-                    <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                    <Star className="h-4 w-4 text-red-600" />
                     <span>4. Memberikan Rating Penanganan</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
@@ -149,18 +168,18 @@ export default function HelpPage() {
         )}
 
         {/* Tab Content 2: PIC & Staf Unit */}
-        {activeTab === "unit" && (
+        {currentRole === "unit" && (
           <div className="space-y-6 animate-in fade-in duration-200">
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-              <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Building className="h-5 w-5 text-red-500" />
+              <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <Building className="h-5 w-5 text-red-600" />
                 <span>Panduan untuk Staf & PIC Unit</span>
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-150 space-y-2">
                   <div className="flex items-center gap-2 font-bold text-xs text-slate-800">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <CheckCircle2 className="h-4 w-4 text-red-600" />
                     <span>1. Dashboard Unit</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
@@ -168,9 +187,9 @@ export default function HelpPage() {
                   </p>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-150 space-y-2">
                   <div className="flex items-center gap-2 font-bold text-xs text-slate-800">
-                    <MessageCircle className="h-4 w-4 text-blue-500" />
+                    <MessageCircle className="h-4 w-4 text-red-600" />
                     <span>2. Merespon Keluhan (PIC)</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
@@ -178,9 +197,9 @@ export default function HelpPage() {
                   </p>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-150 space-y-2">
                   <div className="flex items-center gap-2 font-bold text-xs text-slate-800">
-                    <Forward className="h-4 w-4 text-purple-500" />
+                    <Forward className="h-4 w-4 text-red-600" />
                     <span>3. Pendelegasian (Delegasi ISO)</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
@@ -188,9 +207,9 @@ export default function HelpPage() {
                   </p>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-150 space-y-2">
                   <div className="flex items-center gap-2 font-bold text-xs text-slate-800">
-                    <ShieldCheck className="h-4 w-4 text-slate-600" />
+                    <ShieldCheck className="h-4 w-4 text-red-600" />
                     <span>4. Perlindungan Data Anonim</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
@@ -203,18 +222,18 @@ export default function HelpPage() {
         )}
 
         {/* Tab Content 3: Superadmin */}
-        {activeTab === "admin" && (
+        {currentRole === "admin" && (
           <div className="space-y-6 animate-in fade-in duration-200">
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-              <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Sliders className="h-5 w-5 text-purple-500" />
+              <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                <Sliders className="h-5 w-5 text-red-600" />
                 <span>Panduan untuk Superadmin</span>
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-150 space-y-2">
                   <div className="flex items-center gap-2 font-bold text-xs text-slate-800">
-                    <Building className="h-4 w-4 text-[#b61722]" />
+                    <Building className="h-4 w-4 text-red-600" />
                     <span>1. Manajemen Unit & Anggota</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
@@ -222,9 +241,9 @@ export default function HelpPage() {
                   </p>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-150 space-y-2">
                   <div className="flex items-center gap-2 font-bold text-xs text-slate-800">
-                    <Eye className="h-4 w-4 text-emerald-600" />
+                    <Eye className="h-4 w-4 text-red-600" />
                     <span>2. Kontrol Visibility (Private/Public)</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
@@ -232,9 +251,9 @@ export default function HelpPage() {
                   </p>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-150 space-y-2">
                   <div className="flex items-center gap-2 font-bold text-xs text-slate-800">
-                    <Clock className="h-4 w-4 text-amber-600" />
+                    <Clock className="h-4 w-4 text-red-600" />
                     <span>3. Konfigurasi Auto-Close</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
@@ -242,9 +261,9 @@ export default function HelpPage() {
                   </p>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-150 space-y-2">
                   <div className="flex items-center gap-2 font-bold text-xs text-slate-800">
-                    <Sliders className="h-4 w-4 text-blue-600" />
+                    <Sliders className="h-4 w-4 text-red-600" />
                     <span>4. Analitik & Rata-rata Rating</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
@@ -258,7 +277,7 @@ export default function HelpPage() {
 
         {/* FAQ Section */}
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-          <h2 className="text-base font-extrabold text-slate-800 border-b border-slate-100 pb-3">
+          <h2 className="text-base font-extrabold text-slate-900 border-b border-slate-100 pb-3">
             Pertanyaan Sering Diajukan (FAQ)
           </h2>
 

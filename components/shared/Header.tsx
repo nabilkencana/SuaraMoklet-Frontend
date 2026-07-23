@@ -58,9 +58,6 @@ export default function Header() {
       { label: "Home", href: "/#home" },
       { label: "Jelajahi", href: "/search" },
       { label: "Panduan", href: "/help" },
-      { label: "Tentang", href: "/#about" },
-      { label: "Trending", href: "/#trending" },
-      { label: "FAQ", href: "/#faq" },
     ];
   }
 
