@@ -156,11 +156,8 @@ export function ComplaintCard({ data, className, maxSupports }: ComplaintCardPro
         {progressPercent !== null && (
           <div className="pt-2 border-t border-slate-100 space-y-1.5">
             <div className="flex items-center justify-between text-[10.5px] font-extrabold text-slate-600">
-              <span className="text-red-600 flex items-center gap-1">
-                <ThumbsUp className="h-3 w-3" />
-                {data.supports} Dukungan
-              </span>
-              <span className="text-slate-400 font-bold">{progressPercent}% Popularitas</span>
+              <span className="text-slate-500 font-bold">Popularitas</span>
+              <span className="text-slate-400 font-bold">{progressPercent}%</span>
             </div>
             <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/50">
               <div

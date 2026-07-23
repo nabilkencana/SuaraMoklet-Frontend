@@ -397,8 +397,8 @@ export default function SearchContent() {
                         {/* Supports and Button Section */}
                         <div className="space-y-4 pt-3 border-t border-slate-100">
                           <div className="flex items-center gap-1.5 text-xs font-bold text-red-600">
-                            <PenTool className="h-4 w-4" />
-                            <span>{item.supports.toLocaleString("id-ID")} dukungan</span>
+                            <ThumbsUp className="h-3.5 w-3.5" />
+                            <span>{item.supports.toLocaleString("id-ID")} Suka</span>
                           </div>
                           
                           {/* Tandatangani Petisi Button */}
@@ -490,7 +490,7 @@ export default function SearchContent() {
                     }}
                     className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs outline-none cursor-pointer text-slate-700 font-bold"
                   >
-                    <option value="POPULAR">Dukungan Terbanyak</option>
+                    <option value="POPULAR">Suka Terbanyak</option>
                     <option value="NEWEST">Terbaru</option>
                   </select>
                 </div>

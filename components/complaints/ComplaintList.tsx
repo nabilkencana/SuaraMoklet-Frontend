@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search, PenTool, Clock, Inbox, Plus, ArrowRight, Tag } from "lucide-react";
+import { Search, PenTool, Clock, Inbox, Plus, ArrowRight, Tag, ThumbsUp } from "lucide-react";
 import useComplaint from "@/hooks/useComplaint";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -173,8 +173,8 @@ export default function ComplaintList() {
                 <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
                   {/* Support */}
                   <div className="flex items-center gap-1.5 text-red-500 text-xs font-bold">
-                    <PenTool className="h-4 w-4" />
-                    <span>{complaint.supports} Dukungan</span>
+                    <ThumbsUp className="h-3.5 w-3.5" />
+                    <span>{complaint.supports} Suka</span>
                   </div>
                   {/* Date */}
                   <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-semibold">

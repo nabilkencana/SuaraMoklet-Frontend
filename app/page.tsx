@@ -65,7 +65,7 @@ const STEPS = [
   },
   {
     num: 2,
-    title: "Kumpulkan Dukungan",
+    title: "Kumpulkan Keluhan",
     description: "Bagikan laporanmu agar teman-teman lain ikut mendukung.",
   },
   {
@@ -338,14 +338,14 @@ export default function LandingPage() {
                 </p>
                 <p className="text-xs sm:text-sm font-bold text-slate-600">Sudah Diselesaikan</p>
               </div>
-              {/* Rata-rata Dukungan */}
+              {/* Rata-rata Suka */}
               <div className="space-y-1 px-2">
                 <p className={`text-3xl sm:text-4xl font-extrabold text-red-600 transition-all duration-700 delay-200 ${
                   statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
                 }`}>
                   {isLoadingComplaints ? "—" : `${summaryStats.avgRating}`}
                 </p>
-                <p className="text-xs sm:text-sm font-bold text-slate-600">Rata-rata Dukungan</p>
+                <p className="text-xs sm:text-sm font-bold text-slate-600">Rata-rata Suka</p>
               </div>
             </div>
           </div>
@@ -360,9 +360,9 @@ export default function LandingPage() {
             <div>
               <SectionEyebrow label="Trending Minggu Ini" icon={TrendingUp} />
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                Trending &amp; Dukungan Terbanyak
+                Trending &amp; Suka Terbanyak
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1">Laporan dengan keterlibatan dan dukungan tertinggi dari warga sekolah</p>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">Laporan dengan keterlibatan dan suka tertinggi dari warga sekolah</p>
             </div>
 
             {/* Navigation Arrows */}
