@@ -21,6 +21,7 @@ import {
   LayoutDashboard,
   Menu,
   PenTool,
+  ThumbsUp,
   MessageSquare,
   CheckCheck,
   Flame,
@@ -118,7 +119,9 @@ export default function SearchContent() {
         setIsLoading(true);
         const data = await apiClient.complaints.getPublic({ limit: 100 });
         if (active) {
-          const mapped = data.map((item) => ({
+          const dislikedIds = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("disliked_complaints") || "[]") : [];
+          const filtered = data.filter((item) => !dislikedIds.includes(item.id));
+          const mapped = filtered.map((item) => ({
             ...item,
             category: item.unit,
             location: (item as any).location || "Gedung Sekolah",
@@ -154,8 +157,8 @@ export default function SearchContent() {
     router.push(`/search?${params.toString()}`);
   };
 
-  // Show results view when there's a query OR an active filter
-  const isResultsView = !!query || statusParam !== "ALL" || sortParam !== "POPULAR" || topicParam !== "Semua Topik";
+  // Show results view when there's a query OR an active filter OR a sort parameter explicitly set in the URL
+  const isResultsView = !!query || statusParam !== "ALL" || searchParams.has("sort") || topicParam !== "Semua Topik";
 
   const filteredResults = complaints.filter((item) => {
     const queryNormalized = query.toLowerCase();
@@ -268,8 +271,8 @@ export default function SearchContent() {
                     <Flame className="h-5 w-5" />
                   </div>
                   <div>
-                    <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">Paling Didukung</h4>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Petisi dengan dukungan terbanyak</p>
+                    <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">Paling Banyak Disukai</h4>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Petisi dengan like terbanyak</p>
                   </div>
                 </button>
 
@@ -403,7 +406,7 @@ export default function SearchContent() {
                             href={`/complaints/${item.id}`}
                             className="w-full h-10 rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-[0.98] text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1.5 relative z-20"
                           >
-                            <PenTool className="h-4 w-4" /> Beri dukungan
+                            <PenTool className="h-4 w-4" /> Lihat Petisi
                           </Link>
                         </div>
                       </div>
@@ -467,7 +470,7 @@ export default function SearchContent() {
                       ? `Keluhan Terbaru (${filteredResults.length})`
                       : statusParam === "CLOSED"
                       ? `Berhasil Diselesaikan (${filteredResults.length})`
-                      : `Paling Didukung (${filteredResults.length})`}
+                      : `Paling Banyak Disukai (${filteredResults.length})`}
                   </h2>
                 </div>
 
@@ -599,8 +602,8 @@ export default function SearchContent() {
 
                         {/* Signature count */}
                         <div className="flex items-center gap-1.5 text-xs font-extrabold text-red-600 pt-1">
-                          <PenTool className="h-4 w-4" />
-                          <span>{item.supports.toLocaleString("id-ID")} dukungan</span>
+                          <ThumbsUp className="h-4 w-4" />
+                          <span>{item.supports.toLocaleString("id-ID")} Suka</span>
                         </div>
 
                         {/* Metadata line */}

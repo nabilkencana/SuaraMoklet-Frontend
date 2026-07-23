@@ -1,16 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Heart, Loader2, Check, LogIn } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { ThumbsUp, ThumbsDown, Loader2, LogIn, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/app/store/auth.store";
+import { toast } from "sonner";
 
 interface SupportWidgetProps {
   complaintId: string;
   supports: number;
-  targetSupports?: number;
   isSupported?: boolean;
   isOwner?: boolean;
   onSupport: (id: string, name?: string, comment?: string) => Promise<boolean>;
@@ -19,48 +18,151 @@ interface SupportWidgetProps {
 export default function SupportWidget({
   complaintId,
   supports,
-  targetSupports = 500,
   isSupported = false,
   isOwner = false,
   onSupport,
 }: SupportWidgetProps) {
   const { isAuthenticated } = useAuthStore();
-  const [name, setName] = useState("");
-  const [comment, setComment] = useState("");
+  const [localLiked, setLocalLiked] = useState<boolean>(false);
+  const [localDisliked, setLocalDisliked] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const percent = Math.min(Math.round((supports / targetSupports) * 100), 100);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
+      const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
+      setLocalLiked(likedList.includes(complaintId) || isSupported);
+      setLocalDisliked(dislikedList.includes(complaintId));
+    }
+  }, [complaintId, isSupported]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLike = async () => {
+    if (isOwner) {
+      toast.error("Anda tidak bisa menyukai aspirasi milik Anda sendiri.");
+      return;
+    }
+    if (!isAuthenticated) {
+      toast.error("Silakan login untuk menyukai aspirasi ini.");
+      return;
+    }
+    if (localLiked) return;
+
     setIsSubmitting(true);
-    const success = await onSupport(complaintId, name || undefined, comment || undefined);
+    const success = await onSupport(complaintId);
     if (success) {
-      setName("");
-      setComment("");
+      setLocalLiked(true);
+      setLocalDisliked(false);
+      const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
+      if (!likedList.includes(complaintId)) {
+        likedList.push(complaintId);
+        localStorage.setItem("liked_complaints", JSON.stringify(likedList));
+      }
+      const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
+      const updatedDisliked = dislikedList.filter((id: string) => id !== complaintId);
+      localStorage.setItem("disliked_complaints", JSON.stringify(updatedDisliked));
+      
+      toast.success("Aspirasi disukai!");
+      
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("local-disliked-change"));
+      }
     }
     setIsSubmitting(false);
   };
 
+  const handleDislike = () => {
+    if (isOwner) {
+      toast.error("Anda tidak bisa memberikan dislike pada aspirasi milik Anda sendiri.");
+      return;
+    }
+    if (!isAuthenticated) {
+      toast.error("Silakan login untuk memberikan dislike.");
+      return;
+    }
+
+    setLocalDisliked(true);
+    setLocalLiked(false);
+
+    const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
+    if (!dislikedList.includes(complaintId)) {
+      dislikedList.push(complaintId);
+      localStorage.setItem("disliked_complaints", JSON.stringify(dislikedList));
+    }
+    const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
+    const updatedLiked = likedList.filter((id: string) => id !== complaintId);
+    localStorage.setItem("liked_complaints", JSON.stringify(updatedLiked));
+
+    toast.info("Aspirasi disembunyikan karena dislike.");
+    
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("local-disliked-change"));
+    }
+  };
+
+  const handleUndoDislike = () => {
+    setLocalDisliked(false);
+    const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
+    const updatedDisliked = dislikedList.filter((id: string) => id !== complaintId);
+    localStorage.setItem("disliked_complaints", JSON.stringify(updatedDisliked));
+    
+    toast.success("Dislike dibatalkan.");
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("local-disliked-change"));
+    }
+  };
+
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
-      {/* Metric details */}
-      <div className="space-y-2">
-        <div className="flex items-baseline gap-1">
-          <span className="text-3xl font-extrabold text-slate-800">{supports}</span>
-          <span className="text-xs text-slate-400 font-medium">dukungan terkumpul dari target {targetSupports}</span>
+      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div>
+          <span className="block text-2xl font-extrabold text-slate-800 leading-none">
+            {supports}
+          </span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1.5 block">
+            Jumlah Suka
+          </span>
         </div>
 
-        {/* Progress Bar */}
-        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-red-600 rounded-full transition-all duration-500" 
-            style={{ width: `${percent}%` }}
-          />
+        <div className="flex gap-2">
+          {/* Like Button */}
+          <button
+            onClick={handleLike}
+            disabled={isSubmitting || localLiked}
+            className={`h-11 px-4 rounded-xl flex items-center justify-center gap-2 border text-xs font-bold uppercase tracking-wider transition-all select-none cursor-pointer ${
+              localLiked
+                ? "bg-red-50 border-red-200 text-red-650"
+                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {isSubmitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ThumbsUp className={`h-4 w-4 ${localLiked ? "fill-red-600" : ""}`} />
+            )}
+            <span>Like</span>
+          </button>
+
+          {/* Dislike Button */}
+          {localDisliked ? (
+            <button
+              onClick={handleUndoDislike}
+              className="h-11 px-4 rounded-xl flex items-center justify-center gap-2 border text-xs font-bold uppercase tracking-wider transition-all bg-slate-100 border-slate-200 text-slate-800 cursor-pointer"
+            >
+              <ThumbsDown className="h-4 w-4 fill-slate-700" />
+              <span>Undo Dislike</span>
+            </button>
+          ) : (
+            <button
+              onClick={handleDislike}
+              className="h-11 px-4 rounded-xl flex items-center justify-center gap-2 border text-xs font-bold uppercase tracking-wider transition-all bg-white border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+            >
+              <ThumbsDown className="h-4 w-4" />
+              <span>Dislike</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Owner banner — shown when the logged-in user owns this complaint */}
       {isOwner ? (
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-start gap-3">
           <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0 mt-0.5">
@@ -69,20 +171,19 @@ export default function SupportWidget({
           <div>
             <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Aspirasi Anda</h5>
             <p className="text-xs text-slate-500 leading-relaxed mt-0.5">
-              Ini adalah aspirasi yang Anda buat. Anda tidak dapat mendukung aspirasi milik Anda sendiri.
+              Ini adalah aspirasi yang Anda buat sendiri.
             </p>
           </div>
         </div>
-      ) : !isAuthenticated ? (
-        /* Login gate for unauthenticated users */
+      ) : !isAuthenticated && (
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
               <LogIn className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-700">Ingin mendukung?</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Login terlebih dahulu untuk memberikan dukungan.</p>
+              <p className="text-xs font-bold text-slate-700">Ingin merespon?</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Login untuk menyukai atau menyembunyikan aspirasi.</p>
             </div>
           </div>
           <Link
@@ -93,69 +194,6 @@ export default function SupportWidget({
             Login
           </Link>
         </div>
-      ) : isSupported ? (
-        <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4 flex items-start gap-2.5 text-emerald-700">
-          <div className="h-5 w-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0 mt-0.5">
-            <Check className="h-3 w-3" />
-          </div>
-          <div>
-            <h5 className="text-xs font-bold uppercase tracking-wider">Anda Mendukung Keluhan Ini</h5>
-            <p className="text-xs text-emerald-600 leading-relaxed mt-0.5">
-              Terima kasih! Dukungan Anda sangat berarti untuk mempercepat tindak lanjut laporan ini oleh pihak tata kelola sekolah.
-            </p>
-          </div>
-        </div>
-      ) : (
-        /* Action Form */
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1">
-            <label htmlFor="supportName" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              Nama <span className="text-slate-400">(Opsional, bisa Anonim)</span>
-            </label>
-            <Input
-              id="supportName"
-              type="text"
-              placeholder="Masukkan nama..."
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={isSubmitting}
-              className="h-9 text-xs"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label htmlFor="supportComment" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              Pesan Dukungan <span className="text-slate-400">(Opsional)</span>
-            </label>
-            <textarea
-              id="supportComment"
-              rows={3}
-              placeholder="Tuliskan mengapa keluhan ini penting..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              disabled={isSubmitting}
-              className="flex w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:border-red-500/80 focus:ring-4 focus:ring-red-500/10"
-            />
-          </div>
-
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full bg-red-600 hover:bg-red-700 text-xs font-bold uppercase tracking-wider h-10 shadow-sm shadow-red-200"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                <span>Mengirim...</span>
-              </>
-            ) : (
-              <>
-                <Heart className="h-4 w-4 mr-2 fill-white/10" />
-                <span>Dukung Keluhan Ini</span>
-              </>
-            )}
-          </Button>
-        </form>
       )}
     </div>
   );

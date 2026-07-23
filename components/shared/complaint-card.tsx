@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { PenTool, Clock, User } from "lucide-react";
+import { ThumbsUp, Clock, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type ComplaintStatus = "OPEN" | "IN_PROGRESS" | "CLOSED";
@@ -141,10 +141,9 @@ export function ComplaintCard({ data, className }: ComplaintCardProps) {
       <div className="px-4 pb-4 flex items-center justify-between">
         {/* Support count */}
         <div className="flex items-center gap-1.5 text-xs font-semibold text-red-500 group-hover:text-red-600 transition-colors">
-          <PenTool className="h-3.5 w-3.5" />
-          <span>{data.supports.toLocaleString("id-ID")} Dukungan</span>
+          <ThumbsUp className="h-3.5 w-3.5" />
+          <span>{data.supports.toLocaleString("id-ID")} Suka</span>
         </div>
-
         {/* Reporter */}
         <div className="flex items-center gap-1.5">
           <div className="h-6 w-6 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-[10px] font-bold text-slate-600">
