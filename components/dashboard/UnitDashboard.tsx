@@ -317,7 +317,7 @@ export default function UnitDashboard() {
                               </button>
                               {user?.role === "UNIT_PIC" && !isClosed && (
                                 <button
-                                  onClick={() => handleOpenReplyModal(c)}
+                                  onClick={() => router.push(`/complaints/${c.id}#reply-form-section`)}
                                   className="h-8 px-3 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-lg flex items-center gap-1 shadow-xs transition-all cursor-pointer active:scale-[0.96] text-[10px]"
                                 >
                                   <Send className="h-3 w-3" />
@@ -366,74 +366,6 @@ export default function UnitDashboard() {
     ) : (
       <UnitComplaintsList hideSidebar={true} />
     )}
-
-      {/* ─── REPLY MODAL ─── */}
-      {isReplyModalOpen && activeComplaintForReply && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex justify-between items-start">
-              <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">Tanggapi Resmi Laporan</h3>
-              <button
-                onClick={() => setIsReplyModalOpen(false)}
-                className="h-8 w-8 text-slate-400 hover:text-slate-655 hover:bg-slate-100 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="space-y-1">
-              <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">Judul Keluhan</span>
-              <span className="block font-bold text-slate-800 text-xs">{activeComplaintForReply.title}</span>
-            </div>
-
-            <form onSubmit={handleSendReply} className="space-y-4 pt-2">
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-slate-455 uppercase tracking-wider">
-                  Tanggapan Resmi Unit Kerja
-                </label>
-                <textarea
-                  required
-                  rows={4}
-                  placeholder="Ketik tanggapan resmi dari perwakilan unit terkait penanganan keluhan ini..."
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  className="w-full p-3 text-xs rounded-xl border border-slate-250 bg-white focus:outline-none focus:border-red-500 font-medium"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold text-slate-455 uppercase tracking-wider">
-                  Ubah Status Keluhan Menjadi
-                </label>
-                <select
-                  value={replyStatus}
-                  onChange={(e) => setReplyStatus(e.target.value as ComplaintStatus)}
-                  className="h-10 w-full rounded-xl border border-slate-250 bg-white px-3 text-xs font-bold text-slate-650 outline-none focus:border-red-500 cursor-pointer"
-                >
-                  <option value="IN_PROGRESS">Sedang Diproses (Penanganan)</option>
-                  <option value="CLOSED">Selesai (Ditutup &amp; Selesai)</option>
-                </select>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsReplyModalOpen(false)}
-                  className="flex-1 h-10 border border-slate-200 hover:bg-slate-50 text-slate-655 font-bold rounded-xl transition-all text-xs cursor-pointer active:scale-[0.98] flex items-center justify-center"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 h-10 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-xl transition-all text-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1 shadow-xs"
-                >
-                  <Send className="h-3.5 w-3.5" />
-                  <span>Kirim</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }

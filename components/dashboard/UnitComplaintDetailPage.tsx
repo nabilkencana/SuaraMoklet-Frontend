@@ -11,16 +11,19 @@ import {
   User as UserIcon,
   Calendar,
   MoreVertical,
-  PlusCircle,
-  Folder,
-  Bell,
+  MessageSquare,
+  Building2,
+  RefreshCw,
+  Clock,
   LayoutDashboard,
   HelpCircle,
   Settings as SettingsIcon,
   LogOut,
   Send,
+  PlusCircle,
+  Folder,
+  Bell,
   Upload,
-  RefreshCw,
   X,
   Share2,
   CheckCircle,
@@ -59,7 +62,6 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   const [complaint, setComplaint] = useState<ExtendedComplaint | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [replyText, setReplyText] = useState("");
-  const [replyStatus, setReplyStatus] = useState<ComplaintStatus>("IN_PROGRESS");
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
 
   // Forward Modal State
@@ -114,7 +116,6 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       }
 
       setComplaint(activeDetail);
-      setReplyStatus(activeDetail.status);
 
       // Load comments
       let loadedComments: Comment[] = [];
@@ -148,6 +149,21 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     }
   }, [mounted, isAuthenticated, complaintId]);
 
+  // Auto-scroll to reply form if hash #reply-form-section is present
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash === "#reply-form-section" && !isLoading) {
+      const timer = setTimeout(() => {
+        const replyEl = document.getElementById("reply-form-section");
+        if (replyEl) {
+          replyEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          const textarea = replyEl.querySelector("textarea");
+          if (textarea) textarea.focus();
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
+
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyText.trim() || !complaint) return;
@@ -180,17 +196,18 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
           setComments((prev) => [...prev, newComment]);
 
-          // Update complaint status locally
+          setComments((prev) => [...prev, newComment]);
+
+          // Append timeline event for response
           setComplaint((prev) => {
             if (!prev) return null;
             return {
               ...prev,
-              status: replyStatus,
               timeline: [
                 {
                   id: `t-local-${Date.now()}`,
-                  title: "Unit Sarpras Memberi Respon",
-                  description: `Tanggapan resmi dikirim. Status berubah menjadi ${replyStatus}.`,
+                  title: "Unit Memberi Respon",
+                  description: "Tanggapan resmi dikirim oleh unit.",
                   createdAt: new Date().toISOString()
                 },
                 ...(prev.timeline || [])
@@ -421,6 +438,9 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                       src={complaint.evidenceUrl}
                       alt="Lampiran Bukti"
                       className="h-full w-full object-cover group-hover:scale-102 transition-transform duration-300"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
                       onClick={() => window.open(complaint.evidenceUrl, "_blank")}
                     />
                   </div>
@@ -481,35 +501,17 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                    {/* Status Update */}
-                    <div className="space-y-1.5">
-                      <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Update Status</label>
-                      <select
-                        value={replyStatus}
-                        onChange={(e) => setReplyStatus(e.target.value as ComplaintStatus)}
-                        className="h-10 w-full rounded-xl border border-slate-250 bg-white px-3.5 text-xs font-bold text-slate-650 outline-none focus:border-red-500 cursor-pointer"
-                      >
-                        <option value="IN_PROGRESS">IN_PROGRESS (Sedang Ditangani)</option>
-                        <option value="CLOSED">CLOSED (Ditutup &amp; Selesai)</option>
-                        <option value="WAITING_RESPONSE">WAITING_RESPONSE (Menunggu Respon)</option>
-                      </select>
-                    </div>
-
-                    {/* Attachment upload */}
-                    <div className="space-y-1.5">
-                      <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Lampiran Pendukung (Opsional)</label>
-                      <button
-                        type="button"
-                        onClick={() => toast.info("Mengunggah foto bukti...")}
-                        className="h-10 w-full border border-dashed border-slate-350 hover:bg-slate-50 text-slate-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-                      >
-                        <Upload className="h-4 w-4" />
-                        <span>Upload Foto/Dokumen Bukti</span>
-                      </button>
-                    </div>
-
+                  {/* Attachment upload */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Lampiran Pendukung (Opsional)</label>
+                    <button
+                      type="button"
+                      onClick={() => toast.info("Mengunggah foto bukti...")}
+                      className="h-10 w-full border border-dashed border-slate-350 hover:bg-slate-50 text-slate-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                    >
+                      <Upload className="h-4 w-4" />
+                      <span>Upload Foto/Dokumen Bukti</span>
+                    </button>
                   </div>
 
                   <div className="flex justify-end pt-2">
@@ -537,34 +539,41 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                 {/* Status Block */}
                 {(() => {
                   let displayStatus = "BARU";
-                  let statusColorClass = "text-sky-400";
+                  let bgClass = "bg-sky-50 border-sky-200/80 text-sky-700";
+                  let dotClass = "bg-sky-500";
                   if (complaint.status === "WAITING_RESPONSE") {
                     displayStatus = "BELUM DIRESPON";
-                    statusColorClass = "text-rose-400";
+                    bgClass = "bg-rose-50 border-rose-200/80 text-rose-700";
+                    dotClass = "bg-rose-500";
                   } else if (complaint.status === "IN_PROGRESS") {
                     displayStatus = "SEDANG DIPROSES";
-                    statusColorClass = "text-amber-500";
+                    bgClass = "bg-amber-50 border-amber-200/80 text-amber-800";
+                    dotClass = "bg-amber-500 animate-pulse";
                   } else if (complaint.status === "CLOSED") {
                     displayStatus = "SELESAI";
-                    statusColorClass = "text-emerald-500";
+                    bgClass = "bg-emerald-50 border-emerald-200/80 text-emerald-800";
+                    dotClass = "bg-emerald-500";
                   }
 
                   return (
-                    <div className="bg-[#0B0F19] rounded-2xl p-5 text-center shadow-inner relative overflow-hidden">
-                      <span className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">Status Saat Ini</span>
-                      <span className={cn("block text-base font-black tracking-widest mt-1.5", statusColorClass)}>
-                        {displayStatus}
-                      </span>
+                    <div className={cn("rounded-2xl p-4 border text-center relative overflow-hidden transition-all", bgClass)}>
+                      <span className="block text-[9px] font-bold uppercase tracking-widest opacity-70">Status Saat Ini</span>
+                      <div className="flex items-center justify-center gap-2 mt-1">
+                        <span className={cn("h-2 w-2 rounded-full shrink-0", dotClass)} />
+                        <span className="text-sm font-extrabold tracking-wider uppercase">
+                          {displayStatus}
+                        </span>
+                      </div>
                     </div>
                   );
                 })()}
 
                 {/* PIC Info */}
-                <div className="space-y-2 pt-2 border-t border-slate-50">
+                <div className="space-y-2 pt-2 border-t border-slate-100">
                   <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">PIC Unit Bertanggung Jawab</span>
 
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-red-50 text-[#b61722] border border-red-100 flex items-center justify-center font-extrabold text-xs shrink-0 select-none shadow-3xs">
+                    <div className="h-9 w-9 rounded-full bg-red-50 text-red-600 border border-red-100 flex items-center justify-center font-extrabold text-xs shrink-0 select-none shadow-3xs">
                       RH
                     </div>
                     <div className="space-y-0.5">
@@ -575,30 +584,30 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                 </div>
 
                 {/* Action Controls */}
-                <div className="space-y-2 pt-3 border-t border-slate-50">
+                <div className="space-y-2.5 pt-3 border-t border-slate-100">
                   <button
                     disabled={complaint.status === "IN_PROGRESS" || complaint.status === "CLOSED"}
                     onClick={() => handleStatusTransition("IN_PROGRESS")}
-                    className="w-full h-11 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-3xs cursor-pointer active:scale-[0.98]"
+                    className="w-full h-11 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer active:scale-[0.98]"
                   >
-                    <RefreshCw className="h-4 w-4 text-slate-400 animate-spin-slow" />
-                    <span>Update Status</span>
+                    <RefreshCw className="h-4 w-4" />
+                    <span>Proses Laporan</span>
                   </button>
 
                   <button
                     onClick={() => setIsForwardModalOpen(true)}
-                    className="w-full h-11 bg-neutral-900 hover:bg-neutral-850 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-[0.98]"
+                    className="w-full h-11 bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-bold rounded-xl border border-slate-200/80 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
                   >
-                    <Share2 className="h-4 w-4 text-[#b61722]" />
+                    <Share2 className="h-4 w-4 text-slate-500" />
                     <span>Teruskan (Forward)</span>
                   </button>
 
                   <button
                     disabled={complaint.status === "CLOSED"}
                     onClick={() => handleStatusTransition("CLOSED")}
-                    className="w-full h-11 bg-white hover:bg-red-50/50 disabled:opacity-50 disabled:cursor-not-allowed border border-red-200 text-[#b61722] text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-3xs cursor-pointer active:scale-[0.98]"
+                    className="w-full h-11 bg-white hover:bg-red-50/50 disabled:opacity-40 disabled:cursor-not-allowed border border-red-200 text-red-600 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
                   >
-                    <CheckCircle className="h-4 w-4" />
+                    <CheckCircle className="h-4 w-4 text-red-600" />
                     <span>Tutup Keluhan</span>
                   </button>
                 </div>
@@ -731,3 +740,8 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     </div>
   );
 }
+
+function setReplyStatus(nextStatus: string) {
+  throw new Error("Function not implemented.");
+}
+

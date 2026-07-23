@@ -278,7 +278,14 @@ export default function ComplaintDetailPage() {
         <div className="hidden lg:flex relative border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white min-h-[280px] flex-col justify-end">
           <div className="absolute inset-0 bg-slate-100">
             {currentComplaint.evidenceUrl ? (
-              <img src={currentComplaint.evidenceUrl} alt={currentComplaint.title} className="w-full h-full object-cover" />
+              <img
+                src={currentComplaint.evidenceUrl}
+                alt={currentComplaint.title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
             ) : (
               <div className="w-full h-full bg-gradient-to-tr from-red-500/10 to-amber-500/10 flex items-center justify-center">
                 <Building2 className="h-16 w-16 text-red-500/20" />
