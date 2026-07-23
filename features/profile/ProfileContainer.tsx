@@ -1,144 +1,69 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
+import React from "react";
+import { User, Mail, Phone, ShieldCheck, Clock } from "lucide-react";
 import useProfile from "@/hooks/useProfile";
-import ProfileHeader from "@/components/profile/ProfileHeader";
-import ProfileForm from "@/components/profile/ProfileForm";
-import ChangePasswordCard from "@/components/profile/ChangePasswordCard";
-import ProfileActions from "@/components/profile/ProfileActions";
 
-// Validation schema mapping all profile and change password fields
-const profileFormSchema = z
-  .object({
-    name: z.string().min(3, "Nama lengkap wajib diisi (minimal 3 karakter)"),
-    phone: z.string().min(10, "Nomor telepon tidak valid (minimal 10 digit)"),
-    currentPassword: z.string().optional().or(z.literal("")),
-    newPassword: z.string().optional().or(z.literal("")),
-    confirmPassword: z.string().optional().or(z.literal("")),
-  })
-  .refine(
-    (data) => {
-      // Require current password if new password is filled
-      if (data.newPassword && data.newPassword.length > 0) {
-        return !!data.currentPassword && data.currentPassword.length > 0;
-      }
-      return true;
-    },
-    {
-      message: "Password saat ini wajib diisi untuk mengganti password",
-      path: ["currentPassword"],
-    }
-  )
-  .refine(
-    (data) => {
-      // Enforce new password strength rules
-      if (data.newPassword && data.newPassword.length > 0) {
-        const hasUpper = /[A-Z]/.test(data.newPassword);
-        const hasLower = /[a-z]/.test(data.newPassword);
-        const hasNumber = /[0-9]/.test(data.newPassword);
-        const hasSpecial = /[^A-Za-z0-9]/.test(data.newPassword);
-        return data.newPassword.length >= 8 && hasUpper && hasLower && hasNumber && hasSpecial;
-      }
-      return true;
-    },
-    {
-      message: "Password baru harus minimal 8 karakter dengan kombinasi huruf besar, huruf kecil, angka, dan karakter khusus",
-      path: ["newPassword"],
-    }
-  )
-  .refine(
-    (data) => {
-      // Ensure confirmation password matches the new password
-      if (data.newPassword && data.newPassword.length > 0) {
-        return data.newPassword === data.confirmPassword;
-      }
-      return true;
-    },
-    {
-      message: "Konfirmasi password baru harus cocok",
-      path: ["confirmPassword"],
-    }
+const ROLE_LABEL: Record<string, string> = {
+  USER: "Siswa",
+  UNIT_MEMBER: "Anggota Unit",
+  UNIT_PIC: "PIC Unit",
+  SUPER_PIC: "Super PIC",
+  SUPERADMIN: "Super Admin",
+};
+
+const ROLE_COLOR: Record<string, string> = {
+  USER: "bg-blue-50 text-blue-600 border border-blue-200",
+  UNIT_MEMBER: "bg-amber-50 text-amber-600 border border-amber-200",
+  UNIT_PIC: "bg-red-50 text-red-600 border border-red-200",
+  SUPER_PIC: "bg-purple-50 text-purple-600 border border-purple-200",
+  SUPERADMIN: "bg-slate-800 text-white border border-slate-700",
+};
+
+function InfoRow({ icon: Icon, label, value }: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value?: string | null;
+}) {
+  return (
+    <div className="flex items-start gap-4 py-4 border-b border-slate-100 last:border-0">
+      <div className="h-9 w-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+        <Icon className="h-4 w-4 text-slate-500" />
+      </div>
+      <div className="space-y-0.5 min-w-0">
+        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
+        <p className="text-sm font-semibold text-slate-800 break-all">
+          {value || <span className="text-slate-400 italic font-normal">Tidak tersedia</span>}
+        </p>
+      </div>
+    </div>
   );
-
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
+}
 
 export default function ProfileContainer() {
-  const {
-    profile,
-    isLoading,
-    isUpdating,
-    updateProfile,
-    uploadAvatar,
-    changePassword,
-  } = useProfile();
+  const { profile, isLoading } = useProfile();
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    reset,
-    formState: { errors, isDirty },
-  } = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
-    defaultValues: {
-      name: "",
-      phone: "",
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    },
-  });
-
-  // Sync profile data dynamically on successful fetch
-  useEffect(() => {
-    if (profile) {
-      reset({
-        name: profile.user.name,
-        phone: profile.phone || "",
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-    }
-  }, [profile, reset]);
-
-  // Loading skeleton state
+  // Loading skeleton
   if (isLoading || !profile) {
     return (
-      <div className="max-w-4xl mx-auto space-y-8 animate-pulse bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 pb-6 border-b border-slate-200">
-          <div className="h-28 w-28 rounded-full bg-slate-100 shrink-0" />
-          <div className="space-y-2 w-full pt-2 flex flex-col items-center sm:items-start">
-            <div className="h-6 bg-slate-100 rounded w-1/3" />
-            <div className="h-3.5 bg-slate-100 rounded w-1/5" />
-            <div className="h-7 bg-slate-100 rounded w-1/4 pt-1" />
+      <div className="max-w-2xl mx-auto space-y-4 animate-pulse">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-5 pb-6 border-b border-slate-100">
+            <div className="h-20 w-20 rounded-full bg-slate-100 shrink-0" />
+            <div className="space-y-2 flex-1">
+              <div className="h-5 bg-slate-100 rounded w-1/2" />
+              <div className="h-3.5 bg-slate-100 rounded w-1/3" />
+              <div className="h-6 bg-slate-100 rounded w-24" />
+            </div>
           </div>
-        </div>
-        
-        <div className="space-y-6 pt-6">
-          <div className="h-4 bg-slate-100 rounded w-24" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4 pt-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="space-y-2">
-                <div className="h-3 bg-slate-100 rounded w-20" />
-                <div className="h-10 bg-slate-100 rounded-xl" />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-6 pt-6 border-t border-slate-200">
-          <div className="h-4 bg-slate-100 rounded w-24" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="space-y-2">
-                <div className="h-3 bg-slate-100 rounded w-20" />
-                <div className="h-10 bg-slate-100 rounded-xl" />
+              <div key={i} className="flex items-center gap-4">
+                <div className="h-9 w-9 rounded-xl bg-slate-100 shrink-0" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="h-2.5 bg-slate-100 rounded w-16" />
+                  <div className="h-4 bg-slate-100 rounded w-40" />
+                </div>
               </div>
             ))}
           </div>
@@ -147,91 +72,69 @@ export default function ProfileContainer() {
     );
   }
 
-  const handleCancel = () => {
-    reset({
-      name: profile.user.name,
-      phone: profile.phone || "",
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
-    toast.info("Perubahan dibatalkan.");
-  };
+  const initials = profile.user.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
-  const handleAvatarUpload = async (file: File) => {
-    return await uploadAvatar(file);
-  };
-
-  const onSubmit = async (values: ProfileFormValues) => {
-    let profileSuccess = true;
-    let passwordSuccess = true;
-
-    const isProfileChanged =
-      values.name !== profile.user.name || values.phone !== profile.phone;
-
-    // 1. Perform profile field updates
-    if (isProfileChanged) {
-      profileSuccess = await updateProfile({
-        name: values.name,
-        phone: values.phone,
-        avatarUrl: profile.avatarUrl,
-      });
-    }
-
-    // 2. Perform password update
-    if (values.newPassword && values.newPassword.length > 0) {
-      passwordSuccess = await changePassword({
-        currentPassword: values.currentPassword,
-        newPassword: values.newPassword,
-        confirmPassword: values.confirmPassword,
-      });
-      if (passwordSuccess) {
-        // Reset password fields upon successful submission
-        setValue("currentPassword", "");
-        setValue("newPassword", "");
-        setValue("confirmPassword", "");
-      }
-    }
-  };
+  const roleLabel = ROLE_LABEL[profile.user.role] || profile.user.role;
+  const roleColor = ROLE_COLOR[profile.user.role] || "bg-slate-100 text-slate-600 border border-slate-200";
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-sm space-y-8"
-      >
-        {/* Profile Header & Avatar controls */}
-        <ProfileHeader
-          userName={profile.user.name}
-          role={profile.user.role}
-          avatarUrl={profile.avatarUrl}
-          isUploading={isUpdating}
-          onUploadAvatar={handleAvatarUpload}
-        />
+    <div className="max-w-2xl mx-auto space-y-4">
 
-        {/* Personal Details Form Section */}
-        <ProfileForm
-          register={register}
-          errors={errors}
-          email={profile.user.email}
-          isSaving={isUpdating}
-        />
+      {/* Read-only notice */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
+        <ShieldCheck className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+        <p className="text-xs text-amber-700 leading-relaxed">
+          <span className="font-bold">Data profil bersifat read-only.</span>{" "}
+          Informasi akun disinkronkan dari sistem sekolah dan tidak dapat diubah melalui platform ini.
+        </p>
+      </div>
 
-        {/* Security Password Changes Section */}
-        <ChangePasswordCard
-          register={register}
-          errors={errors}
-          watch={watch}
-          isSaving={isUpdating}
-        />
+      {/* Profile Card */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
 
-        {/* Action Controls */}
-        <ProfileActions
-          onCancel={handleCancel}
-          isSaving={isUpdating}
-          isDirty={isDirty}
-        />
-      </form>
+        {/* Header */}
+        <div className="flex items-center gap-5 p-6 border-b border-slate-100">
+          {profile.avatarUrl ? (
+            <img
+              src={profile.avatarUrl}
+              alt={profile.user.name}
+              className="h-20 w-20 rounded-full object-cover border-2 border-slate-200 shadow-sm shrink-0"
+            />
+          ) : (
+            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white text-xl font-extrabold shrink-0 shadow-sm">
+              {initials}
+            </div>
+          )}
+          <div className="space-y-1.5 min-w-0">
+            <h2 className="text-xl font-extrabold text-slate-900 leading-tight truncate">{profile.user.name}</h2>
+            <p className="text-xs text-slate-400 font-medium">{profile.user.email}</p>
+            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${roleColor}`}>
+              {roleLabel}
+            </span>
+          </div>
+        </div>
+
+        {/* Info Rows */}
+        <div className="px-6">
+          <InfoRow icon={User} label="Nama Lengkap" value={profile.user.name} />
+          <InfoRow icon={Mail} label="Email" value={profile.user.email} />
+          <InfoRow icon={Phone} label="Nomor Telepon" value={profile.phone} />
+          <InfoRow icon={ShieldCheck} label="Role" value={roleLabel} />
+        </div>
+
+        {/* Footer note */}
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
+          <div className="flex items-center gap-2 text-[11px] text-slate-400">
+            <Clock className="h-3.5 w-3.5 shrink-0" />
+            <span>Data disinkronkan dari sistem sekolah. Untuk perubahan data, hubungi administrator.</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

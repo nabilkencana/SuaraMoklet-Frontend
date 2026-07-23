@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import NotificationBell from "@/components/notifications/NotificationBell";
+
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
@@ -46,6 +48,7 @@ export default function Header() {
   let links = [
     { label: "Home", href: "/" },
     { label: "Jelajahi", href: "/search" },
+    { label: "Panduan", href: "/help" },
   ];
 
   if (mounted && isAuthenticated) {
@@ -54,6 +57,7 @@ export default function Header() {
     links = [
       { label: "Home", href: "/#home" },
       { label: "Jelajahi", href: "/search" },
+      { label: "Panduan", href: "/help" },
       { label: "Tentang", href: "/#about" },
       { label: "Trending", href: "/#trending" },
       { label: "FAQ", href: "/#faq" },
@@ -138,7 +142,8 @@ export default function Header() {
           )}
 
           {mounted && isAuthenticated && user ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <NotificationBell />
               <Link
                 href="/profile"
                 className={cn(

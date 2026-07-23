@@ -135,6 +135,11 @@ export default function AdminDashboard() {
   const [userRoleFilter, setUserRoleFilter] = useState("All");
   const [userStatusFilter, setUserStatusFilter] = useState("All");
 
+  // Auto-close configuration state
+  const [isAutoCloseModalOpen, setIsAutoCloseModalOpen] = useState(false);
+  const [autoCloseDays, setAutoCloseDays] = useState(7);
+  const [isUpdatingAutoClose, setIsUpdatingAutoClose] = useState(false);
+
   // Fetch Data Function
   const fetchData = async () => {
     setIsLoading(true);
@@ -359,6 +364,27 @@ export default function AdminDashboard() {
     }
   };
 
+  // Auto-close configuration handler
+  const handleSaveAutoCloseConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (autoCloseDays < 1) {
+      toast.error("Jumlah hari minimal 1 hari");
+      return;
+    }
+
+    setIsUpdatingAutoClose(true);
+    try {
+      await apiClient.complaints.updateAutoCloseConfig(autoCloseDays);
+      toast.success(`Konfigurasi auto-close diperbarui (${autoCloseDays} hari)`);
+      setIsAutoCloseModalOpen(false);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Gagal memperbarui konfigurasi auto-close";
+      toast.error(msg);
+    } finally {
+      setIsUpdatingAutoClose(false);
+    }
+  };
+
   // Delegasi / Forward action
   const handleForwardComplaint = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -569,6 +595,14 @@ export default function AdminDashboard() {
               <Users className="h-4.5 w-4.5" />
               <span>Manajemen Pengguna</span>
             </button>
+
+            <button
+              onClick={() => setIsAutoCloseModalOpen(true)}
+              className="w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer text-[rgba(226,226,226,0.7)] hover:bg-[#1c1c1e]/50 hover:text-white"
+            >
+              <Clock className="h-4.5 w-4.5" />
+              <span>Auto-Close Config</span>
+            </button>
           </nav>
         </div>
 
@@ -624,10 +658,20 @@ export default function AdminDashboard() {
                   </p>
                 </div>
 
-                <button className="h-11 px-6 bg-[#b61722] hover:bg-[#a7151e] text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer active:scale-[0.98]">
-                  <PlusCircle className="h-5 w-5" />
-                  <span>Membuat Pemberintahuan</span>
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setIsAutoCloseModalOpen(true)}
+                    className="h-11 px-4 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+                  >
+                    <Clock className="h-4.5 w-4.5 text-slate-500" />
+                    <span>Auto-Close ({autoCloseDays} Hari)</span>
+                  </button>
+
+                  <button className="h-11 px-6 bg-[#b61722] hover:bg-[#a7151e] text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer active:scale-[0.98]">
+                    <PlusCircle className="h-5 w-5" />
+                    <span>Membuat Pemberintahuan</span>
+                  </button>
+                </div>
               </div>
 
               {/* 4 Stats Cards */}
@@ -1859,6 +1903,70 @@ export default function AdminDashboard() {
                 >
                   {isSubmitting && <Loader2 className="h-3 w-3 animate-spin" />}
                   <span>{memberIsPic ? "Simpan PIC" : "Tambah"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-Close Configuration Modal */}
+      {isAutoCloseModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-md border border-slate-200 shadow-xl space-y-5 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                  <Clock className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-800 text-sm">Konfigurasi Auto-Close</h3>
+                  <p className="text-[11px] text-slate-400">Atur batas hari penutupan otomatis keluhan</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAutoCloseModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              >
+                <X className="h-4.5 w-4.5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAutoCloseConfig} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">
+                  Batas Waktu Auto-Close (Hari)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={90}
+                  value={autoCloseDays}
+                  onChange={(e) => setAutoCloseDays(Number(e.target.value))}
+                  className="w-full h-11 px-3.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
+                  placeholder="Misal: 7"
+                  required
+                />
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Keluhan yang tidak ada aktivitas selama jumlah hari yang ditentukan akan ditutup otomatis (status CLOSED) oleh sistem.
+                </p>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAutoCloseModalOpen(false)}
+                  className="flex-1 h-10 border border-slate-200 hover:bg-slate-50 text-slate-600 font-extrabold rounded-xl transition-all text-xs cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdatingAutoClose}
+                  className="flex-1 h-10 bg-[#b61722] hover:bg-[#a7151e] text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
+                >
+                  {isUpdatingAutoClose && <Loader2 className="h-3 w-3 animate-spin" />}
+                  <span>Simpan Konfigurasi</span>
                 </button>
               </div>
             </form>

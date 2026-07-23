@@ -10,8 +10,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Complaint, ComplaintStatus } from "@/types/complaint";
 
-// Centralized status badge styling mapping
-const STATUS_CONFIG: Record<ComplaintStatus, { label: string; classes: string }> = {
+const STATUS_CONFIG: Record<ComplaintStatus | "FORWARDED", { label: string; classes: string }> = {
   OPEN: {
     label: "OPEN",
     classes: "bg-slate-100 text-slate-600 border border-slate-200 ring-1 ring-slate-100/50",
@@ -35,6 +34,10 @@ const STATUS_CONFIG: Record<ComplaintStatus, { label: string; classes: string }>
   CLOSED: {
     label: "CLOSED",
     classes: "bg-emerald-50 text-emerald-600 border border-emerald-200 ring-1 ring-emerald-100/50",
+  },
+  FORWARDED: {
+    label: "FORWARDED",
+    classes: "bg-purple-50 text-purple-600 border border-purple-200 ring-1 ring-purple-100/50",
   },
 };
 

@@ -62,19 +62,18 @@ export default function Footer() {
             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-4">Bantuan</h4>
             <ul className="space-y-3">
               {[
+                { name: "Panduan Penggunaan", href: "/help" },
                 { name: "Contact School", href: "https://smktelkom-mlg.sch.id" },
                 { name: "Support", href: "mailto:support@suaramoklet.id" },
                 { name: "Privacy Policy", href: "/privacy" },
               ].map((item) => (
                 <li key={item.name}>
-                  <a
+                  <Link
                     href={item.href}
-                    target={item.href.startsWith("http") ? "_blank" : undefined}
-                    rel="noopener noreferrer"
                     className="text-sm text-slate-500 hover:text-red-650 transition-colors"
                   >
                     {item.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

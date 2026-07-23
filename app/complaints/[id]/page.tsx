@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import SupportWidget from "@/components/complaints/SupportWidget";
 import Timeline from "@/components/complaints/Timeline";
+import RatingWidget from "@/components/complaints/RatingWidget";
 import CommentSection from "@/components/comments/CommentSection";
 import useComplaint from "@/hooks/useComplaint";
 import { useAuthStore } from "@/app/store/auth.store";
@@ -34,13 +35,14 @@ import UnitComplaintDetailPage from "@/components/dashboard/UnitComplaintDetailP
 
 // NAV_LINKS has been removed in favor of the unified Header component
 
-const STATUS_CONFIG: Record<ComplaintStatus, { label: string; classes: string }> = {
+const STATUS_CONFIG: Record<ComplaintStatus | "FORWARDED", { label: string; classes: string }> = {
   OPEN: { label: "OPEN", classes: "bg-slate-100 text-slate-600 border border-slate-200" },
   NEW: { label: "NEW", classes: "bg-red-50 text-red-650 border border-red-200" },
   WAITING_RESPONSE: { label: "WAITING RESPONSE", classes: "bg-amber-50 text-amber-600 border border-amber-200" },
   IN_PROGRESS: { label: "IN PROGRESS", classes: "bg-blue-50 text-blue-600 border border-blue-200" },
   WAITING_USER: { label: "WAITING USER", classes: "bg-amber-50 text-amber-650 border border-amber-200" },
   CLOSED: { label: "CLOSED", classes: "bg-emerald-50 text-emerald-600 border border-emerald-200" },
+  FORWARDED: { label: "FORWARDED", classes: "bg-purple-50 text-purple-600 border border-purple-200" },
 };
 
 function Accordion({ title, icon: Icon, children, defaultOpen = false }: {
@@ -160,6 +162,36 @@ export default function ComplaintDetailPage() {
       </div>
     );
   }
+
+  // Visibility guard: block unauthenticated users from PRIVATE complaints
+  if (!isAuthenticated && currentComplaint.visibility === "PRIVATE") {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] text-slate-800 pt-16">
+        <Header />
+        <main className="flex-grow flex items-center justify-center p-6 mt-8">
+          <div className="text-center space-y-5 max-w-sm">
+            <div className="h-16 w-16 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto">
+              <EyeOff className="h-8 w-8 text-slate-400" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-lg font-extrabold text-slate-800">Keluhan Ini Bersifat Privat</h2>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Keluhan ini hanya dapat dilihat oleh pengguna yang sudah masuk. Silakan login untuk melanjutkan.
+              </p>
+            </div>
+            <button
+              onClick={() => router.push(`/login?redirect=/complaints/${complaintId}`)}
+              className="inline-flex items-center gap-2 h-10 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold transition-colors"
+            >
+              <LogIn className="h-4 w-4" />
+              Masuk untuk Melihat
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
 
   const displayTimeline: TimelineEvent[] = currentComplaint.timeline || [
     {
@@ -398,7 +430,7 @@ export default function ComplaintDetailPage() {
             )}
           </div>
 
-          {/* Right Column: Support + Timeline */}
+          {/* Right Column: Support + Timeline + Rating */}
           <div className="lg:col-span-4 space-y-4 lg:space-y-6">
             <SupportWidget
               complaintId={currentComplaint.id}
@@ -408,6 +440,10 @@ export default function ComplaintDetailPage() {
               onSupport={supportComplaint}
             />
             <Timeline events={displayTimeline} />
+            {/* Rating: only show to complaint owner after CLOSED */}
+            {isOwner && currentComplaint.status === "CLOSED" && (
+              <RatingWidget complaintId={currentComplaint.id} />
+            )}
           </div>
 
         </div>

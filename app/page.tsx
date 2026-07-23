@@ -122,6 +122,7 @@ export default function LandingPage() {
   const [trendingComplaints, setTrendingComplaints] = useState<ComplaintCardData[]>([]);
   const [latestComplaints, setLatestComplaints] = useState<ComplaintCardData[]>([]);
   const [isLoadingComplaints, setIsLoadingComplaints] = useState(true);
+  const [summaryStats, setSummaryStats] = useState({ total: 0, resolved: 0, avgRating: 0 });
 
   const handleStartPetition = (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,6 +189,12 @@ export default function LandingPage() {
 
         // 2. Latest sorted by date or index
         setLatestComplaints(mapped.slice(0, 3));
+
+        // 3. Compute summary stats from public data
+        const resolved = mapped.filter((c) => (c.status as string) === "CLOSED").length;
+        const totalSupports = mapped.reduce((sum, c) => sum + (c.supports || 0), 0);
+        const avgRating = mapped.length > 0 ? Math.round((totalSupports / mapped.length) * 10) / 10 : 0;
+        setSummaryStats({ total: mapped.length, resolved, avgRating });
       } catch (err) {
         console.error("Failed to load public complaints:", err);
       } finally {
@@ -278,7 +285,42 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SECTION 2: Trending Reports ──────────────── */}
+      {/* ── SECTION 2: Stats Summary ──────────────────── */}
+      <section ref={statsRef} className="py-10 bg-white border-y border-slate-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-3 gap-4 sm:gap-8 text-center">
+            {/* Total Keluhan */}
+            <div className="space-y-1">
+              <p className={`text-3xl sm:text-4xl font-extrabold text-red-600 transition-all duration-700 ${
+                statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              }`}>
+                {isLoadingComplaints ? "—" : summaryStats.total}
+              </p>
+              <p className="text-xs sm:text-sm font-semibold text-slate-500">Total Keluhan Publik</p>
+            </div>
+            {/* Diselesaikan */}
+            <div className="space-y-1">
+              <p className={`text-3xl sm:text-4xl font-extrabold text-emerald-600 transition-all duration-700 delay-100 ${
+                statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              }`}>
+                {isLoadingComplaints ? "—" : summaryStats.resolved}
+              </p>
+              <p className="text-xs sm:text-sm font-semibold text-slate-500">Sudah Diselesaikan</p>
+            </div>
+            {/* Rata-rata Dukungan */}
+            <div className="space-y-1">
+              <p className={`text-3xl sm:text-4xl font-extrabold text-blue-600 transition-all duration-700 delay-200 ${
+                statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              }`}>
+                {isLoadingComplaints ? "—" : `${summaryStats.avgRating}`}
+              </p>
+              <p className="text-xs sm:text-sm font-semibold text-slate-500">Rata-rata Dukungan</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SECTION 3: Trending Reports ──────────────── */}
       <section id="trending" className="py-16 sm:py-20 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section header */}

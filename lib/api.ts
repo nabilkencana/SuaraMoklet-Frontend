@@ -194,8 +194,9 @@ export const authApi = {
 };
 
 export const profileApi = {
+  // GET /users/me — endpoint profil di backend
   getProfile: async (): Promise<{ user: User; phone?: string; avatarUrl?: string }> => {
-    const response = await api.get<any>("/users/profile");
+    const response = await api.get<any>("/users/me");
     const user = response.data;
     const mappedUser = {
       id: user.id,
@@ -211,47 +212,15 @@ export const profileApi = {
     };
   },
 
-  updateProfile: async (data: UpdateProfileRequest): Promise<{ user: User; phone?: string; avatarUrl?: string }> => {
-    const payload = {
-      name: data.name,
-      phone_number: data.phone,
-    };
-    const response = await api.patch<any>("/users/profile", payload);
-    const user = response.data;
-    const mappedUser = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      avatarUrl: user.profilePicture || undefined,
-    };
-    return {
-      user: mappedUser,
-      phone: user.phone_number || undefined,
-      avatarUrl: user.profilePicture || undefined,
-    };
+  // Read-only: profil tidak dapat diubah (data dari database eksternal)
+  updateProfile: async (_data: UpdateProfileRequest): Promise<{ user: User; phone?: string; avatarUrl?: string }> => {
+    throw new Error("Profil tidak dapat diubah.");
   },
-
-  updateAvatar: async (avatarUrl: string): Promise<{ user: User; phone?: string; avatarUrl?: string }> => {
-    const response = await api.patch<any>("/users/profile/avatar", { avatarUrl });
-    const user = response.data;
-    const mappedUser = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      avatarUrl: user.profilePicture || undefined,
-    };
-    return {
-      user: mappedUser,
-      phone: user.phone_number || undefined,
-      avatarUrl: user.profilePicture || undefined,
-    };
+  updateAvatar: async (_avatarUrl: string): Promise<{ user: User; phone?: string; avatarUrl?: string }> => {
+    throw new Error("Profil tidak dapat diubah.");
   },
-
-  changePassword: async (data: ChangePasswordRequest): Promise<{ message: string }> => {
-    await api.patch("/users/profile", { password: data.newPassword });
-    return { message: "Kata sandi berhasil diperbarui" };
+  changePassword: async (_data: ChangePasswordRequest): Promise<{ message: string }> => {
+    throw new Error("Password tidak dapat diubah.");
   },
 };
 
@@ -346,6 +315,17 @@ export const complaintsApi = {
     const response = await api.patch<any>(`/complaints/${id}/visibility`, { visibility });
     return mapBackendComplaintToFrontend(response.data);
   },
+
+  // ponytail: POST /complaints/:id/rating — only callable by complaint owner after CLOSED
+  postRating: async (id: string, score: number, note?: string): Promise<void> => {
+    await api.post(`/complaints/${id}/rating`, { score, note });
+  },
+
+  // PATCH /complaints/config/auto-close — set auto close threshold (daysToClose)
+  updateAutoCloseConfig: async (daysToClose: number): Promise<any> => {
+    const response = await api.patch<any>("/complaints/config/auto-close", { daysToClose });
+    return response.data;
+  },
 };
 
 export const commentsApi = {
@@ -423,6 +403,7 @@ export const unitsApi = {
 };
 
 export const uploadApi = {
+  // POST /upload — satu-satunya upload endpoint di backend (field name: "file")
   uploadFile: async (file: File): Promise<{ url: string }> => {
     const formData = new FormData();
     formData.append("file", file);
@@ -432,10 +413,12 @@ export const uploadApi = {
     return response.data;
   },
 
+  // NOTE: Backend tidak punya /upload/avatar endpoint terpisah.
+  // Gunakan endpoint /upload yang sama untuk semua file termasuk avatar.
   uploadAvatar: async (file: File): Promise<{ url: string }> => {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await api.post<{ url: string }>("/upload/avatar", formData, {
+    const response = await api.post<{ url: string }>("/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return response.data;
