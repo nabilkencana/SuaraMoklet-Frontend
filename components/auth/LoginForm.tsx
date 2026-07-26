@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, Sparkles, ClipboardCopy } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
@@ -12,57 +12,6 @@ import { useAuthStore } from "@/app/store/auth.store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-// ─── Dummy Accounts ───────────────────────────────────────────────────────────
-const DEMO_USERS = [
-  {
-    roleLabel: "Siswa",
-    email: "siswa@student.smktelkom-mlg.sch.id",
-    password: "Password@123",
-    account: {
-      id: "siswa-id",
-      name: "Ahmad Siswa Moklet",
-      email: "siswa@student.smktelkom-mlg.sch.id",
-      role: "USER" as const,
-    },
-    token: "real-api-login",
-  },
-  {
-    roleLabel: "Super Admin",
-    email: "admin@moklet.sch.id",
-    password: "SuperAdmin@2026",
-    account: {
-      id: "admin-id",
-      name: "Super Admin",
-      email: "admin@moklet.sch.id",
-      role: "SUPERADMIN" as const,
-    },
-    token: "real-api-login",
-  },
-  {
-    roleLabel: "ISO Officer",
-    email: "superpic@moklet.sch.id",
-    password: "Password@123",
-    account: {
-      id: "superpic-id",
-      name: "Koordinator ISO / Umum",
-      email: "superpic@moklet.sch.id",
-      role: "SUPER_PIC" as const,
-    },
-    token: "real-api-login",
-  },
-  {
-    roleLabel: "PIC Sarpras",
-    email: "pic.sarpra@moklet.sch.id",
-    password: "Password@123",
-    account: {
-      id: "pic-sarpra-id",
-      name: "PIC Unit Sarpras",
-      email: "pic.sarpra@moklet.sch.id",
-      role: "UNIT_PIC" as const,
-    },
-    token: "real-api-login",
-  },
-];
 
 const loginSchema = z.object({
   email: z.string().min(1, "Email wajib diisi").email("Format email tidak valid"),
@@ -79,7 +28,6 @@ export default function LoginForm() {
   const user = useAuthStore((state) => state.user);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedDemoIndex, setSelectedDemoIndex] = useState(0);
 
   const redirectUrl = searchParams.get("redirect") || "/";
 
@@ -117,15 +65,6 @@ export default function LoginForm() {
     );
   }
 
-  const fillDemo = (index: number) => {
-    const demo = DEMO_USERS[index];
-    setSelectedDemoIndex(index);
-    setValue("email", demo.email);
-    setValue("password", demo.password);
-    toast.info(`Kredensial ${demo.roleLabel} telah diisi!`, {
-      description: "Klik 'Masuk ke Akun' untuk melanjutkan.",
-    });
-  };
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
@@ -156,65 +95,9 @@ export default function LoginForm() {
     }
   };
 
-  const currentDemo = DEMO_USERS[selectedDemoIndex];
 
   return (
     <div className="space-y-5">
-      {/* Demo account selector card */}
-      <div className="relative rounded-2xl border border-dashed border-red-300 bg-red-50/60 p-4.5 space-y-3 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-red-600">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span className="text-[10px] font-extrabold uppercase tracking-widest">Akun Demo Multi-Role</span>
-          </div>
-          <span className="text-[9px] text-red-500/80 font-bold bg-red-100 px-2 py-0.5 rounded-full">
-            Pilih Peran
-          </span>
-        </div>
-
-        {/* Tabs for Roles */}
-        <div className="grid grid-cols-4 gap-1 p-1 bg-red-100/50 rounded-xl">
-          {DEMO_USERS.map((demo, idx) => (
-            <button
-              key={demo.roleLabel}
-              type="button"
-              onClick={() => {
-                setSelectedDemoIndex(idx);
-                setValue("email", demo.email);
-                setValue("password", demo.password);
-              }}
-              className={`py-1 px-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
-                selectedDemoIndex === idx
-                  ? "bg-red-600 text-white shadow-sm"
-                  : "text-red-700 hover:bg-red-200/50"
-              }`}
-            >
-              {demo.roleLabel.split(" ")[0]}
-            </button>
-          ))}
-        </div>
-
-        {/* Selected Credentials */}
-        <div className="grid grid-cols-2 gap-3 text-xs bg-white/70 p-3 rounded-xl border border-red-100">
-          <div className="space-y-0.5">
-            <span className="text-[9px] font-extrabold text-neutral-400 uppercase tracking-wider block">Email ({currentDemo.account.role})</span>
-            <code className="text-[10.5px] font-mono text-neutral-700 font-semibold truncate block">{currentDemo.email}</code>
-          </div>
-          <div className="space-y-0.5">
-            <span className="text-[9px] font-extrabold text-neutral-400 uppercase tracking-wider block">Password</span>
-            <code className="text-[10.5px] font-mono text-neutral-700 font-semibold block">{currentDemo.password}</code>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => fillDemo(selectedDemoIndex)}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 bg-white border border-red-200 text-[10px] font-extrabold uppercase tracking-wider text-red-600 hover:bg-red-50 active:scale-[0.98] transition-all rounded-xl shadow-xs cursor-pointer select-none"
-        >
-          <ClipboardCopy className="h-3 w-3" />
-          <span>Autofill Kredensial {currentDemo.roleLabel}</span>
-        </button>
-      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {/* Email Input */}

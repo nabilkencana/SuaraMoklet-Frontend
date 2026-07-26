@@ -316,9 +316,20 @@ export const complaintsApi = {
     return mapBackendComplaintToFrontend(response.data);
   },
 
+  updateStatus: async (id: string, status: string): Promise<Complaint> => {
+    const response = await api.patch<any>(`/complaints/${id}/status`, { status });
+    return mapBackendComplaintToFrontend(response.data);
+  },
+
   // ponytail: POST /complaints/:id/rating — only callable by complaint owner after CLOSED
   postRating: async (id: string, score: number, note?: string): Promise<void> => {
     await api.post(`/complaints/${id}/rating`, { score, note });
+  },
+
+  // GET /complaints/config/auto-close — get auto close threshold
+  getAutoCloseConfig: async (): Promise<{ daysToClose: number }> => {
+    const response = await api.get<{ daysToClose: number }>("/complaints/config/auto-close");
+    return response.data;
   },
 
   // PATCH /complaints/config/auto-close — set auto close threshold (daysToClose)
@@ -497,6 +508,33 @@ export const usersApi = {
   },
 };
 
+export const whatsappApi = {
+  getStatus: async (): Promise<any> => {
+    const res = await api.get('/whatsapp/status');
+    return res.data;
+  },
+  getQr: async (): Promise<any> => {
+    const res = await api.get('/whatsapp/qr');
+    return res.data;
+  },
+  getQrCode: async (): Promise<any> => {
+    const res = await api.get('/whatsapp/qrcode');
+    return res.data;
+  },
+  init: async (): Promise<any> => {
+    const res = await api.post('/whatsapp/init');
+    return res.data;
+  },
+  cancel: async (): Promise<any> => {
+    const res = await api.post('/whatsapp/cancel');
+    return res.data;
+  },
+  disconnect: async (): Promise<any> => {
+    const res = await api.post('/whatsapp/disconnect');
+    return res.data;
+  },
+};
+
 export const apiClient = {
   auth: authApi,
   profile: profileApi,
@@ -507,6 +545,7 @@ export const apiClient = {
   stats: statsApi,
   notifications: notificationsApi,
   users: usersApi,
+  whatsapp: whatsappApi,
 };
 
 export default apiClient;

@@ -203,7 +203,7 @@ export default function LandingPage() {
             id: c.id,
             title: c.title,
             description: c.description,
-            image: c.evidenceUrl || undefined,
+            image: c.evidenceUrl && (c.evidenceUrl.startsWith("http") || c.evidenceUrl.startsWith("/")) && c.evidenceUrl !== "<string>" ? c.evidenceUrl : undefined,
             category: c.unit as any,
             status: c.status as any,
             supports: c.supports || 0,

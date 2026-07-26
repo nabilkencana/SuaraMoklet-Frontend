@@ -42,22 +42,6 @@ import { Comment } from "@/types/comment";
 import { cn } from "@/lib/utils";
 import UnitSidebar from "@/components/dashboard/UnitSidebar";
 
-// ─── Extended Figma Mock Details ──────────────────────────────────────────────
-
-
-interface ExtendedComplaint extends Complaint {
-  priority: string;
-  category: string;
-  pic?: {
-    name: string;
-    role: string;
-    avatarUrl?: string;
-  };
-  attachments?: string[];
-  timeline?: TimelineEvent[];
-  comments?: Comment[];
-}
-
 export default function UnitComplaintDetailPage({ complaintId }: { complaintId: string }) {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -65,7 +49,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   const [isLoading, setIsLoading] = useState(true);
 
   // States
-  const [complaint, setComplaint] = useState<ExtendedComplaint | null>(null);
+  const [complaint, setComplaint] = useState<Complaint | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [replyText, setReplyText] = useState("");
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
@@ -78,39 +62,10 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   const loadComplaintData = async () => {
     setIsLoading(true);
     try {
-      let activeDetail: ExtendedComplaint | null = null;
+      let activeDetail: Complaint | null = null;
 
       try {
-        const raw = await apiClient.complaints.getById(complaintId);
-        const hash = raw.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const val = hash % 3;
-        const priority = val === 0 ? "Tinggi" : val === 1 ? "Sedang" : "Rendah";
-
-        activeDetail = {
-          ...raw,
-          priority,
-          category: raw.category || "Fasilitas Fisik",
-          pic: {
-            name: "Rahmat Hidayat",
-            role: "Teknisi Senior - Sarpras",
-            avatarUrl: "/images/rahmat_hidayat.png"
-          },
-          timeline: raw.timeline || [
-            {
-              id: "t1",
-              title: "Masuk ke Unit",
-              description: "Sistem meneruskan keluhan secara otomatis.",
-              createdAt: raw.createdAt
-            },
-            {
-              id: "t2",
-              title: "Keluhan Dibuat",
-              description: `ID Keluhan: #${raw.id.slice(0, 8)}`,
-              createdAt: raw.createdAt
-            }
-          ],
-          comments: []
-        };
+        activeDetail = await apiClient.complaints.getById(complaintId);
       } catch (err) {
         console.error("Failed to load complaint by ID:", err);
       }
@@ -177,49 +132,11 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     toast.promise(
       (async () => {
         try {
-          const isMock = complaintId.toLowerCase().includes("cmp-") || complaintId.toLowerCase().includes("req-") || complaintId.toLowerCase().includes("0892");
-
-          if (!isMock) {
-            await apiClient.comments.create(complaint.id, {
-              content: replyText,
-            });
-          }
-
-          // Append comment locally
-          const newComment: Comment = {
-            id: `local-c-${Date.now()}`,
-            complaintId: complaint.id,
+          await apiClient.comments.create(complaint.id, {
             content: replyText,
-            isPic: true,
-            createdAt: new Date().toISOString(),
-            user: {
-              id: user?.id || "pic-sarpras",
-              name: "Unit Sarpras",
-              email: user?.email || "pic_sarpras@moklet.org",
-              role: "UNIT_PIC",
-            }
-          };
-
-          setComments((prev) => [...prev, newComment]);
-
-          setComments((prev) => [...prev, newComment]);
-
-          // Append timeline event for response
-          setComplaint((prev) => {
-            if (!prev) return null;
-            return {
-              ...prev,
-              timeline: [
-                {
-                  id: `t-local-${Date.now()}`,
-                  title: "Unit Memberi Respon",
-                  description: "Tanggapan resmi dikirim oleh unit.",
-                  createdAt: new Date().toISOString()
-                },
-                ...(prev.timeline || [])
-              ]
-            };
           });
+
+          await loadComplaintData();
 
           setReplyText("");
           toast.success("Tanggapan resmi unit terkirim!");
@@ -240,25 +157,8 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     toast.promise(
       (async () => {
         try {
-          const isMock = complaintId.toLowerCase().includes("cmp-") || complaintId.toLowerCase().includes("req-") || complaintId.toLowerCase().includes("0892");
-
-          // Update local status mock in state
-          setComplaint((prev) => {
-            if (!prev) return null;
-            return {
-              ...prev,
-              status: nextStatus,
-              timeline: [
-                {
-                  id: `t-local-${Date.now()}`,
-                  title: nextStatus === "CLOSED" ? "Keluhan Ditutup" : "Status Diperbarui",
-                  description: `Status diubah oleh PIC menjadi ${nextStatus}.`,
-                  createdAt: new Date().toISOString()
-                },
-                ...(prev.timeline || [])
-              ]
-            };
-          });
+          await apiClient.complaints.updateStatus(complaint.id, nextStatus as any);
+          await loadComplaintData();
         } catch (err) {
           throw err;
         }
@@ -277,13 +177,10 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
     toast.promise(
       (async () => {
-        const isMock = complaintId.toLowerCase().includes("cmp-") || complaintId.toLowerCase().includes("req-") || complaintId.toLowerCase().includes("0892");
-        if (!isMock) {
-          await apiClient.complaints.forward(complaint.id, {
-            toUnitId: forwardUnitId,
-            forwardNote: forwardNote
-          });
-        }
+        await apiClient.complaints.forward(complaint.id, {
+          toUnitId: forwardUnitId,
+          forwardNote: forwardNote
+        });
         setIsForwardModalOpen(false);
         toast.success(`Keluhan berhasil diteruskan ke Unit ID: ${forwardUnitId}`);
         router.push("/unit/complaints");
