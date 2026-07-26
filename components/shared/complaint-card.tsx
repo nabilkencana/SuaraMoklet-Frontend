@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ThumbsUp, Clock, User, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ComplaintStatus = "OPEN" | "IN_PROGRESS" | "CLOSED" | "WAITING_RESPONSE";
+export type ComplaintStatus = "NEW" | "OPEN" | "DONE";
 export type ComplaintCategory =
   | "Sarpras"
   | "Kurikulum"
@@ -31,21 +31,17 @@ export interface ComplaintCardData {
 }
 
 export const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {
-  OPEN: {
-    label: "OPEN",
-    classes: "bg-emerald-50 text-emerald-700 border border-emerald-200/80 ring-1 ring-emerald-100",
+  NEW: {
+    label: "BARU",
+    classes: "bg-red-50 text-red-600 border border-red-200 ring-1 ring-red-100",
   },
-  IN_PROGRESS: {
-    label: "PROSES",
+  OPEN: {
+    label: "DIPROSES",
     classes: "bg-amber-50 text-amber-700 border border-amber-200/80 ring-1 ring-amber-100",
   },
-  WAITING_RESPONSE: {
-    label: "BELUM DIRESPON",
-    classes: "bg-rose-50 text-rose-700 border border-rose-200/80 ring-1 ring-rose-100",
-  },
-  CLOSED: {
+  DONE: {
     label: "SELESAI",
-    classes: "bg-slate-100 text-slate-600 border border-slate-200/80 ring-1 ring-slate-100",
+    classes: "bg-emerald-50 text-emerald-700 border border-emerald-200/80 ring-1 ring-emerald-100",
   },
 };
 

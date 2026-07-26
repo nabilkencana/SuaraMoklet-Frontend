@@ -75,7 +75,7 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState<ExtendedFeedComplaint | null>(null);
   const [replyText, setReplyText] = useState("");
-  const [replyStatus, setReplyStatus] = useState<ComplaintStatus>("IN_PROGRESS");
+  const [replyStatus, setReplyStatus] = useState<ComplaintStatus>("OPEN");
 
   const fetchComplaints = useCallback(async () => {
     setIsLoading(true);
@@ -107,9 +107,9 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
   const filteredComplaints = complaints.filter((c) => {
     const matchesTab =
       activeTab === "Semua" ||
-      (activeTab === "Baru" && (c.status === "NEW" || c.status === "WAITING_RESPONSE")) ||
-      (activeTab === "Diproses" && c.status === "IN_PROGRESS") ||
-      (activeTab === "Selesai" && c.status === "CLOSED");
+      (activeTab === "Baru" && c.status === "NEW") ||
+      (activeTab === "Diproses" && c.status === "OPEN") ||
+      (activeTab === "Selesai" && c.status === "DONE");
 
     const keyword = searchQuery.toLowerCase().trim();
     const matchesSearch =
@@ -123,14 +123,14 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
   });
 
   const countAll = complaints.length;
-  const countNew = complaints.filter((c) => c.status === "NEW" || c.status === "WAITING_RESPONSE").length;
-  const countProgress = complaints.filter((c) => c.status === "IN_PROGRESS").length;
-  const countClosed = complaints.filter((c) => c.status === "CLOSED").length;
+  const countNew = complaints.filter((c) => c.status === "NEW").length;
+  const countProgress = complaints.filter((c) => c.status === "OPEN").length;
+  const countClosed = complaints.filter((c) => c.status === "DONE").length;
 
   const handleOpenActionModal = (complaint: ExtendedFeedComplaint) => {
     setSelectedComplaint(complaint);
     setReplyText("");
-    setReplyStatus(complaint.status === "NEW" ? "IN_PROGRESS" : "CLOSED");
+    setReplyStatus(complaint.status === "NEW" ? "OPEN" : "DONE");
     setIsModalOpen(true);
   };
 
@@ -244,16 +244,14 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
               </div>
             ) : (
               filteredComplaints.slice(0, visibleCount).map((c) => {
-                const isNew = c.status === "NEW" || c.status === "WAITING_RESPONSE";
-                const isProgress = c.status === "IN_PROGRESS";
-                const isClosed = c.status === "CLOSED";
+                const isNew = c.status === "NEW";
+                const isProgress = c.status === "OPEN";
+                const isClosed = c.status === "DONE";
 
                 let statusBadgeClass = "bg-blue-50 text-blue-600 border border-blue-200";
                 let statusLabel = "Baru";
-                if (c.status === "WAITING_RESPONSE") { statusBadgeClass = "bg-rose-50 text-rose-600 border border-rose-200"; statusLabel = "Belum Direspon"; }
-                else if (c.status === "IN_PROGRESS") { statusBadgeClass = "bg-orange-50 text-orange-600 border border-orange-200"; statusLabel = "Diproses"; }
-                else if (c.status === "CLOSED") { statusBadgeClass = "bg-slate-100 text-slate-500 border border-slate-200"; statusLabel = "Selesai"; }
-                else if (c.status === "WAITING_USER") { statusBadgeClass = "bg-yellow-50 text-yellow-700 border border-yellow-200"; statusLabel = "Menunggu User"; }
+                if (c.status === "OPEN") { statusBadgeClass = "bg-orange-50 text-orange-600 border border-orange-200"; statusLabel = "Diproses"; }
+                else if (c.status === "DONE") { statusBadgeClass = "bg-slate-100 text-slate-500 border border-slate-200"; statusLabel = "Selesai"; }
 
                 let priorityClass = "border-slate-200 text-slate-500 bg-slate-50/50";
                 if (c.priority === "Tinggi") priorityClass = "border-red-200 text-red-600 bg-red-50/30";
@@ -421,8 +419,8 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
                   onChange={(e) => setReplyStatus(e.target.value as ComplaintStatus)}
                   className="h-10 w-full rounded-xl border border-slate-250 bg-white px-3 text-xs font-bold text-slate-650 outline-none focus:border-red-500 cursor-pointer"
                 >
-                  <option value="IN_PROGRESS">Sedang Diproses (Penanganan)</option>
-                  <option value="CLOSED">Selesai (Ditutup &amp; Selesai)</option>
+                  <option value="OPEN">Sedang Diproses (Penanganan)</option>
+                  <option value="DONE">Selesai (Ditutup &amp; Selesai)</option>
                 </select>
               </div>
               <div className="flex gap-3 pt-2">

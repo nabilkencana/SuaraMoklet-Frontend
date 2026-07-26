@@ -1,4 +1,4 @@
-export type ComplaintStatus = "NEW" | "WAITING_RESPONSE" | "WAITING_USER" | "IN_PROGRESS" | "CLOSED" | "OPEN";
+export type ComplaintStatus = "NEW" | "OPEN" | "DONE";
 
 export type ComplaintUnit =
   | "Umum (ISO)"

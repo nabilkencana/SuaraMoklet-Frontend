@@ -51,8 +51,8 @@ import { toast } from "sonner";
 import { apiClient, mapBackendUnitToFrontend } from "@/lib/api";
 import { Complaint, ComplaintUnit, UnitModel, ComplaintVisibility } from "@/types/complaint";
 import { cn } from "@/lib/utils";
-
-
+import AdminSidebar from "@/components/dashboard/AdminSidebar";
+import WhatsAppManager from "@/components/dashboard/WhatsAppManager";
 
 interface UnitMember {
   id: string;
@@ -101,7 +101,12 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "complaints" | "units" | "members" | "whatsapp">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "complaints" | "units" | "members" | "whatsapp">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("adminActiveTab") as "dashboard" | "complaints" | "units" | "members" | "whatsapp") || "dashboard";
+    }
+    return "dashboard";
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   // States
@@ -111,9 +116,10 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [allDbUsers, setAllDbUsers] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
   // Filtering states
-  const [tableTab, setTableTab] = useState<"all" | "urgent" | "unit">("all");
+  const [tableTab, setTableTab] = useState<"ALL" | "NEW" | "OPEN" | "DONE">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
   // CRUD modal/form states
@@ -153,22 +159,71 @@ export default function AdminDashboard() {
   const [autoCloseDays, setAutoCloseDays] = useState(7);
   const [isUpdatingAutoClose, setIsUpdatingAutoClose] = useState(false);
 
-  // Sync activeTab with localStorage to persist on refresh
-  const [isTabLoaded, setIsTabLoaded] = useState(false);
 
-  useEffect(() => {
-    const savedTab = localStorage.getItem("adminActiveTab");
-    if (savedTab) {
-      setActiveTab(savedTab as any);
+  // Detail Modal states
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [detailModalData, setDetailModalData] = useState<any>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+
+  const handleOpenDetailModal = async (id: string) => {
+    setIsDetailModalOpen(true);
+    setIsDetailLoading(true);
+    try {
+      const data = await apiClient.complaints.getAdminDetail(id);
+      setDetailModalData(data);
+    } catch(err) {
+      toast.error("Gagal memuat detail");
+      setIsDetailModalOpen(false);
+    } finally {
+      setIsDetailLoading(false);
     }
-    setIsTabLoaded(true);
-  }, []);
+  };
 
+  const handleDownloadLogs = async () => {
+    try {
+      const auditData = await apiClient.auditLogs.getAll({ limit: 1000 });
+      const logs = auditData?.data || [];
+      if (logs.length === 0) {
+        toast.error("Tidak ada log untuk diunduh");
+        return;
+      }
+      
+      const csvRows = [
+        ["ID", "Waktu", "Aksi", "Tipe Entitas", "Oleh", "Role"],
+        ...logs.map((log: any) => [
+          log.id,
+          new Date(log.createdAt).toLocaleString('id-ID'),
+          log.action,
+          log.entityType,
+          log.user?.name || "Sistem",
+          log.user?.role || "-"
+        ])
+      ];
+      
+      const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `iso_audit_trail_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("Log berhasil diunduh");
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal mengunduh log");
+    }
+  };
+
+
+
+  // Sync activeTab with localStorage to persist on refresh
   useEffect(() => {
-    if (isTabLoaded) {
+    if (typeof window !== "undefined") {
       localStorage.setItem("adminActiveTab", activeTab);
     }
-  }, [activeTab, isTabLoaded]);
+  }, [activeTab]);
 
   // Fetch Data Function
   const fetchData = async () => {
@@ -192,7 +247,7 @@ export default function AdminDashboard() {
       // 2. Fetch complaints
       let loadedComplaints: Complaint[] = [];
       try {
-        const raw = await apiClient.complaints.getAll();
+        const raw = await apiClient.complaints.getAll({ limit: 1000 });
         loadedComplaints = Array.isArray(raw) ? raw : [];
       } catch (err) {
         console.error("Failed to fetch complaints:", err);
@@ -249,6 +304,14 @@ export default function AdminDashboard() {
         const configData = await apiClient.complaints.getAutoCloseConfig();
         if (configData && configData.daysToClose) setAutoCloseDays(configData.daysToClose);
       } catch (err) {}
+
+      // 8. Fetch audit logs for ISO Audit Trail
+      try {
+        const auditData = await apiClient.auditLogs.getAll({ limit: 5 });
+        setAuditLogs(auditData?.data || []);
+      } catch (err) {
+        console.error("Failed to fetch audit logs:", err);
+      }
     } catch (e) {
       toast.error("Gagal Memuat Data");
     } finally {
@@ -299,64 +362,7 @@ export default function AdminDashboard() {
   };
 
   // WhatsApp Bot Handlers
-  const [waStatus, setWaStatus] = useState<string>("Memuat...");
-  const [waQrCode, setWaQrCode] = useState<string>("");
-  const [isWaLoading, setIsWaLoading] = useState(false);
-
-  useEffect(() => {
-    if (activeTab === "whatsapp") {
-      fetchWaStatus();
-    }
-  }, [activeTab]);
-
-  const fetchWaStatus = async () => {
-    try {
-      const data = await apiClient.whatsapp.getStatus();
-      setWaStatus(data?.status || "Tidak Terhubung");
-    } catch (e) {
-      setWaStatus("Error / Tidak Terhubung");
-    }
-  };
-
-  const handleWaInit = async () => {
-    setIsWaLoading(true);
-    try {
-      toast.success("Memulai inisialisasi, tunggu sebentar...");
-      await apiClient.whatsapp.init();
-      // wait a bit for qr to be generated by backend
-      setTimeout(async () => {
-        try {
-          const data = await apiClient.whatsapp.getQrCode();
-          if (data.qrCodeDataUrl) {
-            setWaQrCode(data.qrCodeDataUrl);
-            toast.success("QR Code berhasil dimuat");
-          }
-          fetchWaStatus();
-        } catch (err) {}
-        setIsWaLoading(false);
-      }, 3000);
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || "Gagal inisialisasi bot");
-      setIsWaLoading(false);
-    }
-  };
-
-  const handleWaDisconnect = async () => {
-    setIsWaLoading(true);
-    try {
-      await apiClient.whatsapp.disconnect();
-      toast.success("Bot terputus");
-      setWaQrCode("");
-      setWaStatus("disconnected");
-      setTimeout(() => {
-        fetchWaStatus();
-      }, 2000);
-    } catch (e: any) {
-      toast.error("Gagal disconnect bot");
-    } finally {
-      setIsWaLoading(false);
-    }
-  };
+  // WA Logic moved to WhatsAppManager component
 
   // Create Unit
   const handleCreateUnit = async (e: React.FormEvent) => {
@@ -503,7 +509,7 @@ export default function AdminDashboard() {
       setComplaints((prev) =>
         prev.map((c) =>
           c.id === selectedComplaintForForward.id
-            ? { ...c, unit: (targetUnit?.name || "Sarpras") as ComplaintUnit, status: "WAITING_RESPONSE" }
+            ? { ...c, unit: (targetUnit?.name || "Sarpras") as ComplaintUnit, status: "OPEN" }
             : c
         )
       );
@@ -514,8 +520,11 @@ export default function AdminDashboard() {
   };
 
   const filteredComplaints = complaints.filter((c) => {
-    if (tableTab === "urgent" && c.status !== "NEW") return false;
+    if (tableTab === "NEW" && c.status !== "NEW") return false;
+    if (tableTab === "OPEN" && c.status !== "OPEN") return false;
+    if (tableTab === "DONE" && c.status !== "DONE") return false;
     if (searchQuery.trim()) {
+
       const q = searchQuery.toLowerCase();
       return (
         c.title.toLowerCase().includes(q) ||
@@ -603,117 +612,7 @@ export default function AdminDashboard() {
     <div className="h-screen w-screen overflow-hidden bg-[#f9f9f9] flex font-sans antialiased text-slate-800">
 
       {/* ─── 1. LEFT SIDEBAR (Dark UI) ─── */}
-      <aside className="w-70 h-full bg-[#000000] flex flex-col justify-between p-6 text-zinc-300 border-r border-zinc-900 shrink-0 overflow-y-auto relative">
-        <div className="space-y-8">
-
-          {/* Logo & Portal Branding */}
-          <div className="flex flex-col gap-1 border-b border-zinc-800/40 pb-5 pl-2">
-            <div className="flex items-center gap-2.5">
-              <img src="/logo.png" alt="Logo" className="h-7 w-7 object-contain" />
-              <span className="font-bold text-white text-lg tracking-tight">SuaraMoklet</span>
-            </div>
-            <span className="text-[10px] font-bold text-[#b61722] tracking-wider uppercase">
-              GOVERNANCE PORTAL
-            </span>
-          </div>
-
-          {/* Navigation Links */}
-          <nav className="space-y-1 relative">
-
-            {/* Top Sidebar items */}
-            <div className="mb-10">
-              <button
-                onClick={() => router.push("/")}
-                className="w-full h-11 bg-[#b61722] hover:bg-[#a7151e] text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
-              >
-                <House className="h-5 w-5" />
-                <span>Kembali Beranda</span>
-              </button>
-            </div>
-
-            <button
-              onClick={() => setActiveTab("dashboard")}
-              className={cn(
-                "w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer relative",
-                activeTab === "dashboard"
-                  ? "bg-[#1c1c1e] text-white"
-                  : "text-[rgba(226,226,226,0.7)] hover:bg-[#1c1c1e]/50 hover:text-white"
-              )}
-            >
-              {activeTab === "dashboard" && (
-                <div className="absolute left-[-24px] top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
-              )}
-              <LayoutDashboard className="h-4.5 w-4.5" />
-              <span>Dashboard</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("complaints")}
-              className={cn(
-                "w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer relative",
-                activeTab === "complaints"
-                  ? "bg-[#1c1c1e] text-white"
-                  : "text-[rgba(226,226,226,0.7)] hover:bg-[#1c1c1e]/50 hover:text-white"
-              )}
-            >
-              {activeTab === "complaints" && (
-                <div className="absolute left-[-24px] top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
-              )}
-              <MessageSquare className="h-4.5 w-4.5" />
-              <span>Keluhan</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("units")}
-              className={cn(
-                "w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer relative",
-                activeTab === "units"
-                  ? "bg-[#1c1c1e] text-white"
-                  : "text-[rgba(226,226,226,0.7)] hover:bg-[#1c1c1e]/50 hover:text-white"
-              )}
-            >
-              {activeTab === "units" && (
-                <div className="absolute left-[-24px] top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
-              )}
-              <Building className="h-4.5 w-4.5" />
-              <span>Units</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("members")}
-              className={cn(
-                "w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer relative",
-                activeTab === "members"
-                  ? "bg-[#1c1c1e] text-white"
-                  : "text-[rgba(226,226,226,0.7)] hover:bg-[#1c1c1e]/50 hover:text-white"
-              )}
-            >
-              {activeTab === "members" && (
-                <div className="absolute left-[-24px] top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
-              )}
-              <Users className="h-4.5 w-4.5" />
-              <span>Manajemen Pengguna</span>
-            </button>
-            <button
-              onClick={() => setActiveTab("whatsapp")}
-              className={cn(
-                "w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer relative",
-                activeTab === "whatsapp"
-                  ? "bg-[#1c1c1e] text-white"
-                  : "text-[rgba(226,226,226,0.7)] hover:bg-[#1c1c1e]/50 hover:text-white"
-              )}
-            >
-              {activeTab === "whatsapp" && (
-                <div className="absolute left-[-24px] top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
-              )}
-              <Bot className="h-4.5 w-4.5" />
-              <span>WhatsApp Bot</span>
-            </button>
-          </nav>
-        </div>
-
-
-      </aside>
+      <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* ─── 2. MAIN CONTAINER ─── */}
       <div className="flex-grow h-full flex flex-col min-w-0 overflow-hidden bg-[#f9f9f9]">
@@ -816,7 +715,7 @@ export default function AdminDashboard() {
                   </div>
                   <div className="space-y-1">
                     <span className="block text-[13px] font-medium text-slate-500">Terselesaikan</span>
-                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">{stats?.resolvedCount ?? complaints.filter(c => c.status === "CLOSED").length}</span>
+                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">{stats?.resolvedCount ?? complaints.filter(c => c.status === "DONE").length}</span>
                   </div>
                 </div>
               </div>
@@ -832,31 +731,40 @@ export default function AdminDashboard() {
 
                     <div className="flex items-center gap-2 bg-[#f9f9f9] p-1 rounded-full border border-slate-200/60">
                       <button
-                        onClick={() => setTableTab("all")}
+                        onClick={() => setTableTab("ALL")}
                         className={cn(
                           "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "all" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
+                          tableTab === "ALL" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
                         )}
                       >
-                        Open
+                        Semua
                       </button>
                       <button
-                        onClick={() => setTableTab("urgent")}
+                        onClick={() => setTableTab("NEW")}
                         className={cn(
                           "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "urgent" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
+                          tableTab === "NEW" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
                         )}
                       >
-                        Dalam Pengerjaan
+                        Baru
                       </button>
                       <button
-                        onClick={() => setTableTab("unit")}
+                        onClick={() => setTableTab("OPEN")}
                         className={cn(
                           "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "unit" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
+                          tableTab === "OPEN" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
                         )}
                       >
-                        Tutup
+                        Diproses
+                      </button>
+                      <button
+                        onClick={() => setTableTab("DONE")}
+                        className={cn(
+                          "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
+                          tableTab === "DONE" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
+                        )}
+                      >
+                        Selesai
                       </button>
                     </div>
                   </div>
@@ -895,9 +803,9 @@ export default function AdminDashboard() {
 
                         // Check status badges
                         const isNew = c.status === "NEW";
-                        const isWaiting = c.status === "WAITING_USER";
-                        const isClosed = c.status === "CLOSED";
-                        const isInProgress = c.status === "IN_PROGRESS";
+                        const isWaiting = false;
+                        const isClosed = c.status === "DONE";
+                        const isInProgress = c.status === "OPEN";
 
                         const infoDetail = `#REQ-${c.id.substring(0, 8).toUpperCase()} • Disubmit ${new Date(c.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`;
 
@@ -978,18 +886,12 @@ export default function AdminDashboard() {
                                   <span>Teruskan</span>
                                 </button>
 
-                                {isNew && (
-                                  <button
-                                    onClick={() => {
-                                      toast.success("Instruksi Dikirim ke Unit!", {
-                                        description: "Instruksi pengerjaan darurat telah diteruskan ke unit pelaksana terkait."
-                                      });
-                                    }}
-                                    className="inline-flex items-center justify-center px-4 py-1.5 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-lg text-xs shadow-sm transition-all cursor-pointer"
-                                  >
-                                    Kirim Instruksi
-                                  </button>
-                                )}
+                                <button
+                                  onClick={() => handleOpenDetailModal(c.id)}
+                                  className="inline-flex items-center justify-center px-4 py-1.5 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-lg text-xs shadow-sm transition-all cursor-pointer"
+                                >
+                                  Detail Informasi
+                                </button>
 
                                 <button
                                   onClick={() => router.push(`/complaints/${c.id}`)}
@@ -1047,7 +949,7 @@ export default function AdminDashboard() {
                         const unitStats = stats?.byUnit?.find((u: any) => u.unitId === unit.id || u.unitName === unit.name);
                         const total = unitStats?.totalComplaints ?? 0;
                         const rating = unitStats?.averageRating ?? 0;
-                        const resolvedCount = complaints.filter(c => (c.unit === unit.name || mapBackendUnitToFrontend(unit.name) === c.unit) && c.status === "CLOSED").length;
+                        const resolvedCount = complaints.filter(c => (c.unit === unit.name || mapBackendUnitToFrontend(unit.name) === c.unit) && c.status === "DONE").length;
                         const totalCount = complaints.filter(c => (c.unit === unit.name || mapBackendUnitToFrontend(unit.name) === c.unit)).length;
                         const rate = totalCount > 0 ? Math.round((resolvedCount / totalCount) * 100) : 0;
 
@@ -1073,21 +975,40 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* ISO Audit Trail Card (1/3 width) */}
-                <div className="bg-white rounded-2xl border border-[rgba(228,190,186,0.3)] p-6 shadow-sm space-y-6 flex flex-col justify-between">
-                  <div className="space-y-5">
-                    <div>
+                <div className="relative h-[500px] lg:h-auto">
+                  <div className="lg:absolute inset-0 bg-white rounded-2xl border border-[rgba(228,190,186,0.3)] p-6 shadow-sm flex flex-col h-full max-h-full">
+                    <div className="flex flex-col flex-1 min-h-0">
+                    <div className="shrink-0">
                       <h3 className="font-bold text-slate-900 text-lg tracking-tight">ISO Audit Trail</h3>
                       <p className="text-slate-500 text-xs mt-1">Riwayat aktivitas pengawasan log sistem</p>
                     </div>
 
-                    <div className="space-y-4">
-                      {notifications.length > 0 ? (
-                        notifications.map((n) => (
-                          <div key={n.id} className="flex gap-3 items-start">
-                            <div className="h-2 w-2 rounded-full bg-[#b61722] mt-1.5 shrink-0" />
-                            <div className="space-y-0.5">
-                              <span className="block text-sm font-bold text-slate-800">{n.title}</span>
-                              <span className="block text-xs text-slate-400 font-medium">{n.description} • {new Date(n.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                    <div className="space-y-4 flex-1 overflow-y-auto mt-5 pr-2 pb-4">
+                      {auditLogs.length > 0 ? (
+                        auditLogs.map((log) => (
+                          <div key={log.id} className="flex gap-3 items-start">
+                            <div className={cn("h-2 w-2 rounded-full mt-1.5 shrink-0", 
+                              log.action === 'FORWARDED' ? 'bg-amber-500' : 
+                              log.action === 'STATUS_CHANGED' ? 'bg-blue-500' : 'bg-[#b61722]')} />
+                            <div className="space-y-1 w-full text-left">
+                              <div className="flex justify-between items-start w-full">
+                                <span className="block text-sm font-bold text-slate-800">
+                                  {log.action.replace(/_/g, ' ')}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">#{log.id.substring(0, 8)}</span>
+                              </div>
+                              <div className="block text-xs text-slate-500 font-medium">
+                                <span className="text-slate-700 font-semibold">{log.user?.name || "Sistem"}</span> 
+                                {log.user?.role ? ` (${log.user.role})` : ""} melakukan aksi pada entitas <span className="font-semibold">{log.entityType}</span> (ID: <span className="font-mono text-[10px]">{log.entityId.substring(0, 8)}</span>)
+                              </div>
+                              <span className="block text-[10px] text-slate-400 font-medium">
+                                {new Date(log.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                              </span>
+                              {log.meta && Object.keys(log.meta).length > 0 && (
+                                <div className="mt-1 bg-slate-50 p-2 rounded border border-slate-100 text-[10px] font-mono text-slate-600 overflow-x-auto whitespace-pre-wrap break-all">
+                                  {JSON.stringify(log.meta, null, 2)}
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))
@@ -1095,13 +1016,13 @@ export default function AdminDashboard() {
                         <div className="text-slate-400 text-xs py-4 text-center">Belum ada log aktivitas baru.</div>
                       )}
                     </div>
-
                   </div>
 
-                  <button className="w-full h-10 border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer">
+                  <button onClick={handleDownloadLogs} className="w-full shrink-0 h-10 mt-4 border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer">
                     <Download className="h-4 w-4" />
                     <span>Download System Logs</span>
                   </button>
+                  </div>
                 </div>
 
               </div>
@@ -1124,31 +1045,40 @@ export default function AdminDashboard() {
 
                     <div className="flex items-center gap-2 bg-[#f9f9f9] p-1 rounded-full border border-slate-200/60">
                       <button
-                        onClick={() => setTableTab("all")}
+                        onClick={() => setTableTab("ALL")}
                         className={cn(
                           "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "all" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
+                          tableTab === "ALL" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
                         )}
                       >
-                        Open
+                        Semua
                       </button>
                       <button
-                        onClick={() => setTableTab("urgent")}
+                        onClick={() => setTableTab("NEW")}
                         className={cn(
                           "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "urgent" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
+                          tableTab === "NEW" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
                         )}
                       >
-                        Dalam Pengerjaan
+                        Baru
                       </button>
                       <button
-                        onClick={() => setTableTab("unit")}
+                        onClick={() => setTableTab("OPEN")}
                         className={cn(
                           "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "unit" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
+                          tableTab === "OPEN" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
                         )}
                       >
-                        Tutup
+                        Diproses
+                      </button>
+                      <button
+                        onClick={() => setTableTab("DONE")}
+                        className={cn(
+                          "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
+                          tableTab === "DONE" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
+                        )}
+                      >
+                        Selesai
                       </button>
                     </div>
                   </div>
@@ -1185,9 +1115,9 @@ export default function AdminDashboard() {
                         if (c.unit === "Sarpras") friendlyUnitName = "Sarana & Prasarana" as ComplaintUnit;
 
                         const isNew = c.status === "NEW";
-                        const isWaiting = c.status === "WAITING_USER";
-                        const isClosed = c.status === "CLOSED";
-                        const isInProgress = c.status === "IN_PROGRESS";
+                        const isWaiting = false;
+                        const isClosed = c.status === "DONE";
+                        const isInProgress = c.status === "OPEN";
                         const infoDetail = `#REQ-${c.id.substring(0, 8).toUpperCase()} • Disubmit ${new Date(c.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`;
 
                         return (
@@ -1262,18 +1192,12 @@ export default function AdminDashboard() {
                                   <span>Teruskan</span>
                                 </button>
 
-                                {isNew && (
-                                  <button
-                                    onClick={() => {
-                                      toast.success("Instruksi Dikirim ke Unit!", {
-                                        description: "Instruksi pengerjaan darurat telah diteruskan ke unit pelaksana terkait."
-                                      });
-                                    }}
-                                    className="inline-flex items-center justify-center px-4 py-1.5 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-lg text-xs shadow-sm transition-all cursor-pointer"
-                                  >
-                                    Kirim Instruksi
-                                  </button>
-                                )}
+                                <button
+                                  onClick={() => handleOpenDetailModal(c.id)}
+                                  className="inline-flex items-center justify-center px-4 py-1.5 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-lg text-xs shadow-sm transition-all cursor-pointer"
+                                >
+                                  Detail Informasi
+                                </button>
 
                                 <button
                                   onClick={() => router.push(`/complaints/${c.id}`)}
@@ -1366,7 +1290,7 @@ export default function AdminDashboard() {
 
                       const membersCount = unitMembers.filter((m) => m.unitId === unit.id).length;
                       const mappedUnitName = mapBackendUnitToFrontend(unit.name);
-                      const activeIssuesCount = complaints.filter((c) => c.unit === mappedUnitName && c.status !== "CLOSED").length;
+                      const activeIssuesCount = complaints.filter((c) => c.unit === mappedUnitName && c.status !== "DONE").length;
 
                       const pic = getUnitPIC(unit.id, unit.name, unitMembers);
                       const picInitials = (pic as { initials?: string }).initials || getInitials(pic.name);
@@ -1796,44 +1720,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           ) : activeTab === "whatsapp" ? (
-            <div className="space-y-8">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Integrasi WhatsApp Bot</h1>
-                  <p className="text-slate-500 text-xs mt-0.5 font-medium">Hubungkan dan kelola bot WhatsApp untuk notifikasi otomatis.</p>
-                </div>
-              </div>
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-8 shadow-sm flex flex-col items-center justify-center min-h-[400px] gap-6 text-center">
-                <div className="h-20 w-20 bg-green-50 rounded-full flex items-center justify-center border border-green-100">
-                  <Bot className="h-10 w-10 text-green-500" />
-                </div>
-                <div className="space-y-2 max-w-sm">
-                  <h3 className="text-lg font-bold text-slate-800">Status Bot: {waStatus}</h3>
-                  <p className="text-sm text-slate-500">
-                    {waStatus === "success" || waStatus === "connected" 
-                      ? "Bot telah berhasil terhubung ke sistem." 
-                      : "Scan QR Code untuk menghubungkan nomor WhatsApp sekolah ke sistem."}
-                  </p>
-                  {waQrCode && waStatus !== "success" && waStatus !== "connected" && (
-                    <div className="mt-4 flex justify-center">
-                      <img src={waQrCode} alt="WhatsApp QR Code" className="w-48 h-48 border border-slate-200 rounded-xl" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-3">
-                  {waStatus !== "success" && waStatus !== "connected" && (
-                    <button onClick={handleWaInit} disabled={isWaLoading} className="h-11 px-6 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
-                      <QrCode className="h-5 w-5" />
-                      <span>Scan QR Code</span>
-                    </button>
-                  )}
-                  <button onClick={handleWaDisconnect} disabled={isWaLoading} className="h-11 px-6 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
-                    <Smartphone className="h-5 w-5" />
-                    <span>Disconnect</span>
-                  </button>
-                </div>
-              </div>
-            </div>
+            <WhatsAppManager isActive={activeTab === "whatsapp"} />
           ) : null}
 
         </div>
@@ -2160,7 +2047,7 @@ export default function AdminDashboard() {
                   required
                 />
                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Keluhan yang tidak ada aktivitas selama jumlah hari yang ditentukan akan ditutup otomatis (status CLOSED) oleh sistem.
+                  Keluhan yang tidak ada aktivitas selama jumlah hari yang ditentukan akan ditutup otomatis (status DONE) oleh sistem.
                 </p>
               </div>
 
@@ -2341,6 +2228,115 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Detail Informasi Modal */}
+      {isDetailModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">Detail Informasi Komprehensif</h2>
+              <button 
+                onClick={() => { setIsDetailModalOpen(false); setDetailModalData(null); }}
+                className="h-8 w-8 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            
+            {/* Body */}
+            <div className="p-8 overflow-y-auto">
+              {isDetailLoading ? (
+                <div className="flex flex-col items-center justify-center h-48 space-y-4">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#b61722]" />
+                  <p className="text-sm font-medium text-slate-500">Memuat data komprehensif...</p>
+                </div>
+              ) : detailModalData ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Dibuat Pada</span>
+                      <span className="text-sm font-semibold text-slate-700">
+                        {new Date(detailModalData.complaint.createdAt).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Dibuat Oleh</span>
+                      <span className="text-sm font-semibold text-slate-700">
+                        {detailModalData.complaint.author?.name || "Anonim"}
+                      </span>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ditujukan Ke</span>
+                      <span className="text-sm font-semibold text-slate-700">
+                        {detailModalData.complaint.unit?.name || "Umum (ISO)"}
+                      </span>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Waktu Respon (Pertama)</span>
+                      <span className="text-sm font-semibold text-slate-700">
+                        {detailModalData.hasResponded ? `${Math.floor(detailModalData.responseTimeMs / 3600000)} Jam ${Math.floor((detailModalData.responseTimeMs % 3600000) / 60000)} Menit` : "Belum Direspon"}
+                      </span>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Rating Penyelesaian</span>
+                      <span className="text-sm font-semibold text-slate-700">
+                        {detailModalData.complaint.rating ? `${detailModalData.complaint.rating.score} ★` : "Belum Ada Rating"}
+                      </span>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Prioritas (SLA)</span>
+                      <span className={cn("text-sm font-semibold", detailModalData.otherInfo.prioritySLA.includes('Tinggi') ? 'text-red-600' : 'text-slate-700')}>
+                        {detailModalData.otherInfo.prioritySLA}
+                      </span>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Media Bukti</span>
+                      <span className="text-sm font-semibold text-slate-700">
+                        {detailModalData.otherInfo.hasAttachments ? "Ada Lampiran" : "Tidak Ada"}
+                      </span>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Update Terakhir</span>
+                      <span className="text-sm font-semibold text-slate-700">
+                        {new Date(detailModalData.otherInfo.lastUpdatedAt).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 mb-3">Histori Forward ({detailModalData.forwardCount} kali)</h3>
+                    {detailModalData.forwardCount > 0 ? (
+                      <div className="space-y-3">
+                        {detailModalData.forwardHistory.map((log: any, idx: number) => (
+                          <div key={idx} className="flex gap-3 text-sm bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <Forward className="h-4 w-4 text-slate-400 mt-0.5" />
+                            <div>
+                              <p className="font-semibold text-slate-700">Diteruskan pada {new Date(log.createdAt).toLocaleString('id-ID')}</p>
+                              <p className="text-slate-500 text-xs mt-1">Catatan: {log.meta?.note || "-"}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100">Belum pernah diteruskan.</p>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+            
+            {/* Footer */}
+            <div className="px-8 py-4 border-t border-slate-100 flex justify-end bg-slate-50/50">
+              <button
+                onClick={() => { setIsDetailModalOpen(false); setDetailModalData(null); }}
+                className="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition-all shadow-sm cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

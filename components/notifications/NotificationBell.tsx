@@ -79,8 +79,8 @@ export default function NotificationBell() {
       }
     }
     setIsOpen(false);
-    if (notification.complaintId) {
-      router.push(`/complaints/${notification.complaintId}`);
+    if (notification.link) {
+      router.push(notification.link);
     }
   };
 
@@ -185,7 +185,7 @@ export default function NotificationBell() {
                     </div>
 
                     <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                      {n.description}
+                      {n.message}
                     </p>
                   </div>
 

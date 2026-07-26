@@ -81,10 +81,9 @@ const TOPIC_CONFIGS = [
 
 const STATUSES = [
   { value: "ALL", label: "Semua Status" },
-  { value: "OPEN", label: "Baru Diajukan (OPEN)" },
-  { value: "IN_PROGRESS", label: "Sedang Diproses (IN PROGRESS)" },
-  { value: "WAITING_USER", label: "Menunggu Respon (WAITING USER)" },
-  { value: "CLOSED", label: "Selesai (CLOSED)" },
+  { value: "NEW", label: "Baru Diajukan (NEW)" },
+  { value: "OPEN", label: "Sedang Diproses (OPEN)" },
+  { value: "DONE", label: "Selesai (DONE)" },
 ];
 
 export default function SearchContent() {
@@ -250,7 +249,7 @@ export default function SearchContent() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Card 1: Keluhan Terbaru */}
                 <button
-                  onClick={() => router.push("/search?status=OPEN&sort=NEWEST")}
+                  onClick={() => router.push("/search?status=NEW&sort=NEWEST")}
                   className="bg-white border border-slate-200 rounded-2xl p-5 text-left hover:border-red-300 hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4 cursor-pointer group"
                 >
                   <div className="h-11 w-11 rounded-xl bg-red-50 group-hover:bg-red-100 flex items-center justify-center text-red-600 shrink-0 transition-colors">
@@ -278,7 +277,7 @@ export default function SearchContent() {
 
                 {/* Card 3: Berhasil Diselesaikan */}
                 <button
-                  onClick={() => router.push("/search?status=CLOSED")}
+                  onClick={() => router.push("/search?status=DONE")}
                   className="bg-white border border-slate-200 rounded-2xl p-5 text-left hover:border-emerald-300 hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-4 cursor-pointer group"
                 >
                   <div className="h-11 w-11 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 transition-colors">
@@ -466,9 +465,9 @@ export default function SearchContent() {
                   <h2 className="text-lg font-extrabold text-slate-800">
                     {query
                       ? `Hasil "${query}" (${filteredResults.length})`
-                      : statusParam === "OPEN"
+                      : statusParam === "NEW"
                       ? `Keluhan Terbaru (${filteredResults.length})`
-                      : statusParam === "CLOSED"
+                      : statusParam === "DONE"
                       ? `Berhasil Diselesaikan (${filteredResults.length})`
                       : `Paling Banyak Disukai (${filteredResults.length})`}
                   </h2>

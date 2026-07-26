@@ -149,7 +149,7 @@ export default function HelpPage() {
                     <span>3. Memantau Status & Diskusi</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    Buka halaman <strong>Keluhan Saya</strong> untuk memantau progres status keluhan (OPEN → IN PROGRESS → CLOSED) serta saling membalas tanggapan dengan unit.
+                    Buka halaman <strong>Keluhan Saya</strong> untuk memantau progres status keluhan (NEW → OPEN → DONE) serta saling membalas tanggapan dengan unit.
                   </p>
                 </div>
 
@@ -159,7 +159,7 @@ export default function HelpPage() {
                     <span>4. Memberikan Rating Penanganan</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    Setelah keluhan dinyatakan selesai (<strong>CLOSED</strong>), Anda dapat memberikan penilaian 1–5 bintang beserta ulasan terhadap pelayanan unit terkait.
+                    Setelah keluhan dinyatakan selesai (<strong>DONE</strong>), Anda dapat memberikan penilaian 1–5 bintang beserta ulasan terhadap pelayanan unit terkait.
                   </p>
                 </div>
               </div>
@@ -193,7 +193,7 @@ export default function HelpPage() {
                     <span>2. Merespon Keluhan (PIC)</span>
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    Sebagai PIC Unit, Anda dapat mengirim tanggapan resmi dengan label <strong>"PIC"</strong>, melampirkan foto bukti tindakan, dan mengubah status laporan ke <strong>IN_PROGRESS</strong> atau <strong>CLOSED</strong>.
+                    Sebagai PIC Unit, Anda dapat mengirim tanggapan resmi dengan label <strong>"PIC"</strong>, melampirkan foto bukti tindakan, dan mengubah status laporan ke <strong>OPEN</strong> atau <strong>DONE</strong>.
                   </p>
                 </div>
 
@@ -293,7 +293,7 @@ export default function HelpPage() {
               },
               {
                 q: "Siapa yang dapat memberikan rating bintang?",
-                a: "Rating 1–5 bintang hanya dapat diberikan oleh pelapor asli pemilik keluhan setelah status laporan diubah menjadi CLOSED.",
+                a: "Rating 1–5 bintang hanya dapat diberikan oleh pelapor asli pemilik keluhan setelah status laporan diubah menjadi DONE.",
               },
             ].map((faq, idx) => (
               <div key={idx} className="border border-slate-200/80 rounded-xl overflow-hidden">

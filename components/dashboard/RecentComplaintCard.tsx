@@ -10,28 +10,16 @@ interface RecentComplaintCardProps {
 }
 
 const STATUS_BADGE_CONFIG: Record<ComplaintStatus, { label: string; classes: string }> = {
-  OPEN: {
-    label: "OPEN",
-    classes: "bg-blue-50 text-blue-600 border border-blue-200/80",
-  },
   NEW: {
-    label: "NEW",
-    classes: "bg-red-50 text-red-650 border border-red-200/80",
+    label: "BARU",
+    classes: "bg-red-50 text-red-600 border border-red-200/80",
   },
-  WAITING_RESPONSE: {
-    label: "WAITING RESPONSE",
+  OPEN: {
+    label: "DIPROSES",
     classes: "bg-amber-50 text-amber-600 border border-amber-200/80",
   },
-  IN_PROGRESS: {
-    label: "IN PROGRESS",
-    classes: "bg-amber-50 text-amber-600 border border-amber-200/80",
-  },
-  WAITING_USER: {
-    label: "WAITING USER",
-    classes: "bg-yellow-50 text-yellow-600 border border-yellow-200/80",
-  },
-  CLOSED: {
-    label: "CLOSED",
+  DONE: {
+    label: "SELESAI",
     classes: "bg-emerald-50 text-emerald-600 border border-emerald-200/80",
   },
 };

@@ -22,6 +22,15 @@ export default function UnitSidebar({ activeTab, onTabChange }: UnitSidebarProps
     router.push("/");
   };
 
+  const handleTabClick = (tab: "dashboard" | "keluhan") => {
+    if (onTabChange) {
+      onTabChange(tab);
+    } else {
+      localStorage.setItem("unitActiveTab", tab);
+      router.push("/dashboard");
+    }
+  };
+
   return (
     <aside className="w-64 bg-[#000000] text-zinc-300 flex flex-col justify-between shrink-0 select-none h-full border-r border-zinc-900">
       {/* Brand Section */}
@@ -46,7 +55,7 @@ export default function UnitSidebar({ activeTab, onTabChange }: UnitSidebarProps
         <nav className="p-4 space-y-1.5">
           {/* Dashboard Tab */}
           <button
-            onClick={() => onTabChange ? onTabChange("dashboard") : router.push("/unit")}
+            onClick={() => handleTabClick("dashboard")}
             className={cn(
               "relative w-full flex items-center gap-3.5 px-4 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer",
               activeTab === "dashboard"
@@ -62,7 +71,7 @@ export default function UnitSidebar({ activeTab, onTabChange }: UnitSidebarProps
           </button>
 
           <button
-            onClick={() => onTabChange ? onTabChange("keluhan") : router.push("/unit/complaints")}
+            onClick={() => handleTabClick("keluhan")}
             className={cn(
               "relative w-full flex items-center gap-3.5 px-4 py-3 text-xs font-bold rounded-xl transition-all cursor-pointer",
               activeTab === "keluhan"

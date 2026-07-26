@@ -17,14 +17,14 @@ import {
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
 import { Complaint, ComplaintUnit, UnitModel } from "@/types/complaint";
-
-
+import WhatsAppManager from "@/components/dashboard/WhatsAppManager";
 
 export default function IsoDashboard() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"delegasi" | "whatsapp">("delegasi");
 
   // Data states
   const [complaints, setComplaints] = useState<Complaint[]>([]);
@@ -61,7 +61,7 @@ export default function IsoDashboard() {
       // Fetch complaints
       let loadedComplaints: Complaint[] = [];
       try {
-        const raw = await apiClient.complaints.getAll();
+        const raw = await apiClient.complaints.getAll({ limit: 1000 });
         loadedComplaints = Array.isArray(raw) ? raw : [];
       } catch (err) {
         console.error("Failed to fetch complaints:", err);
@@ -121,7 +121,7 @@ export default function IsoDashboard() {
           c.id === selectedComplaint.id
             ? {
                 ...c,
-                status: "WAITING_RESPONSE",
+                status: "OPEN",
                 unit: (targetUnit?.name || "Sarpras") as ComplaintUnit,
               }
             : c
@@ -179,15 +179,47 @@ export default function IsoDashboard() {
                   <span className="text-[10px] font-extrabold uppercase tracking-widest">ISO Officer Desk</span>
                 </div>
                 <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
-                  Delegasi & Forwarding Keluhan
+                  {activeTab === "delegasi" ? "Delegasi & Forwarding Keluhan" : "Manajemen WhatsApp Bot"}
                 </h1>
                 <p className="text-slate-500 text-sm mt-1 leading-relaxed">
-                  Tinjau keluhan baru yang masuk ke sekolah, tentukan unit tujuan koordinasi, dan teruskan untuk ditindaklanjuti.
+                  {activeTab === "delegasi" 
+                    ? "Tinjau keluhan baru yang masuk ke sekolah, tentukan unit tujuan koordinasi, dan teruskan untuk ditindaklanjuti."
+                    : "Kelola koneksi WhatsApp Bot untuk notifikasi otomatis."}
                 </p>
               </div>
 
-              {/* Filtering tabs */}
+              {/* Tab Navigation */}
               <div className="flex items-center gap-1.5 self-start md:self-auto bg-slate-100 p-1 rounded-2xl">
+                <button
+                  onClick={() => setActiveTab("delegasi")}
+                  className={`px-4 py-2 text-xs font-extrabold rounded-xl transition-all cursor-pointer ${
+                    activeTab === "delegasi"
+                      ? "bg-white text-red-600 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  Delegasi Keluhan
+                </button>
+                <button
+                  onClick={() => setActiveTab("whatsapp")}
+                  className={`px-4 py-2 text-xs font-extrabold rounded-xl transition-all cursor-pointer ${
+                    activeTab === "whatsapp"
+                      ? "bg-white text-red-600 shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  WhatsApp Bot
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {activeTab === "delegasi" ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* List of Complaints */}
+            <div className="lg:col-span-2 space-y-4">
+              {/* Internal Filtering Tabs */}
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl w-fit mb-4">
                 <button
                   onClick={() => setFilterType("new")}
                   className={`px-4 py-2 text-xs font-extrabold rounded-xl transition-all cursor-pointer ${
@@ -219,12 +251,7 @@ export default function IsoDashboard() {
                   Semua
                 </button>
               </div>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* List of Complaints */}
-            <div className="lg:col-span-2 space-y-4">
               {/* Search Bar */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -385,7 +412,10 @@ export default function IsoDashboard() {
                 </div>
               )}
             </div>
-          </div>
+            </div>
+          ) : activeTab === "whatsapp" ? (
+            <WhatsAppManager isActive={activeTab === "whatsapp"} />
+          ) : null}
 
         </div>
       </main>

@@ -19,8 +19,8 @@ export interface RecentActivity {
 export interface DashboardNotification {
   id: string;
   title: string;
-  description: string;
+  message: string;
   isRead: boolean;
   createdAt: string;
-  complaintId?: string;
+  link?: string;
 }

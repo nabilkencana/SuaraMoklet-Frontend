@@ -20,7 +20,7 @@ import {
   LayoutDashboard,
   Menu,
   X,
-  PenTool,
+  ThumbsUp,
 } from "lucide-react";
 import SupportWidget from "@/components/complaints/SupportWidget";
 import Timeline from "@/components/complaints/Timeline";
@@ -36,12 +36,9 @@ import UnitComplaintDetailPage from "@/components/dashboard/UnitComplaintDetailP
 // NAV_LINKS has been removed in favor of the unified Header component
 
 const STATUS_CONFIG: Record<ComplaintStatus | "FORWARDED", { label: string; classes: string }> = {
-  OPEN: { label: "OPEN", classes: "bg-slate-100 text-slate-600 border border-slate-200" },
-  NEW: { label: "NEW", classes: "bg-red-50 text-red-650 border border-red-200" },
-  WAITING_RESPONSE: { label: "WAITING RESPONSE", classes: "bg-amber-50 text-amber-600 border border-amber-200" },
-  IN_PROGRESS: { label: "IN PROGRESS", classes: "bg-blue-50 text-blue-600 border border-blue-200" },
-  WAITING_USER: { label: "WAITING USER", classes: "bg-amber-50 text-amber-650 border border-amber-200" },
-  CLOSED: { label: "CLOSED", classes: "bg-emerald-50 text-emerald-600 border border-emerald-200" },
+  NEW: { label: "BARU", classes: "bg-red-50 text-red-600 border border-red-200" },
+  OPEN: { label: "DIPROSES", classes: "bg-amber-50 text-amber-700 border border-amber-200" },
+  DONE: { label: "SELESAI", classes: "bg-emerald-50 text-emerald-700 border border-emerald-200" },
   FORWARDED: { label: "FORWARDED", classes: "bg-purple-50 text-purple-600 border border-purple-200" },
 };
 
@@ -113,7 +110,7 @@ export default function ComplaintDetailPage() {
     }
   }, [mounted, complaintId]);
 
-  if (isAuthenticated && (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER")) {
+  if (isAuthenticated && (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC")) {
     return <UnitComplaintDetailPage complaintId={complaintId} />;
   }
 
@@ -208,7 +205,7 @@ export default function ComplaintDetailPage() {
           createdAt: safeISO(currentComplaint.createdAt, 60 * 60 * 1000),
         }]
       : []),
-    ...(currentComplaint.status === "CLOSED"
+    ...(currentComplaint.status === "DONE"
       ? [{
           id: "closed",
           title: "Keluhan Diselesaikan",
@@ -253,7 +250,7 @@ export default function ComplaintDetailPage() {
           </h1>
           {/* Signature count */}
           <div className="flex items-center gap-1.5 text-xs font-bold text-red-600">
-            <PenTool className="h-4 w-4" />
+            <ThumbsUp className="h-4 w-4" />
             <span>{(currentComplaint.supports || 0).toLocaleString("id-ID")} Suka</span>
           </div>
           {/* Meta row */}
@@ -306,7 +303,7 @@ export default function ComplaintDetailPage() {
               {currentComplaint.title}
             </h1>
             <div className="flex items-center gap-1.5 text-sm font-bold text-red-300">
-              <PenTool className="h-4 w-4" />
+              <ThumbsUp className="h-4 w-4" />
               <span>{(currentComplaint.supports || 0).toLocaleString("id-ID")} Suka</span>
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-neutral-300">
@@ -432,7 +429,7 @@ export default function ComplaintDetailPage() {
                 </div>
 
                 {/* Comments — shown on both */}
-                <CommentSection complaintId={currentComplaint.id} isClosed={currentComplaint.status === "CLOSED"} />
+                <CommentSection complaintId={currentComplaint.id} isClosed={currentComplaint.status === "DONE"} />
               </>
             )}
           </div>
@@ -447,8 +444,8 @@ export default function ComplaintDetailPage() {
               onSupport={supportComplaint}
             />
             <Timeline events={displayTimeline} />
-            {/* Rating: only show to complaint owner after CLOSED */}
-            {isOwner && currentComplaint.status === "CLOSED" && (
+            {/* Rating: only show to complaint owner after DONE */}
+            {isOwner && currentComplaint.status === "DONE" && (
               <RatingWidget complaintId={currentComplaint.id} />
             )}
           </div>

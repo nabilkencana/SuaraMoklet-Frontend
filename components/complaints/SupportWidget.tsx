@@ -45,26 +45,33 @@ export default function SupportWidget({
       toast.error("Silakan login untuk menyukai aspirasi ini.");
       return;
     }
-    if (localLiked) return;
 
     setIsSubmitting(true);
     const success = await onSupport(complaintId);
     if (success) {
-      setLocalLiked(true);
-      setLocalDisliked(false);
-      const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
-      if (!likedList.includes(complaintId)) {
-        likedList.push(complaintId);
-        localStorage.setItem("liked_complaints", JSON.stringify(likedList));
-      }
-      const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
-      const updatedDisliked = dislikedList.filter((id: string) => id !== complaintId);
-      localStorage.setItem("disliked_complaints", JSON.stringify(updatedDisliked));
-      
-      toast.success("Aspirasi disukai!");
-      
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new Event("local-disliked-change"));
+      if (localLiked) {
+        setLocalLiked(false);
+        const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
+        const updatedLiked = likedList.filter((id: string) => id !== complaintId);
+        localStorage.setItem("liked_complaints", JSON.stringify(updatedLiked));
+        toast.success("Batal menyukai aspirasi.");
+      } else {
+        setLocalLiked(true);
+        setLocalDisliked(false);
+        const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
+        if (!likedList.includes(complaintId)) {
+          likedList.push(complaintId);
+          localStorage.setItem("liked_complaints", JSON.stringify(likedList));
+        }
+        const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
+        const updatedDisliked = dislikedList.filter((id: string) => id !== complaintId);
+        localStorage.setItem("disliked_complaints", JSON.stringify(updatedDisliked));
+        
+        toast.success("Aspirasi disukai!");
+        
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("local-disliked-change"));
+        }
       }
     }
     setIsSubmitting(false);
@@ -127,10 +134,10 @@ export default function SupportWidget({
           {/* Like Button */}
           <button
             onClick={handleLike}
-            disabled={isSubmitting || localLiked}
+            disabled={isSubmitting}
             className={`h-11 px-4 rounded-xl flex items-center justify-center gap-2 border text-xs font-bold uppercase tracking-wider transition-all select-none cursor-pointer ${
               localLiked
-                ? "bg-red-50 border-red-200 text-red-650"
+                ? "bg-red-50 border-red-200 text-red-650 hover:bg-red-100"
                 : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
             }`}
           >
@@ -139,7 +146,7 @@ export default function SupportWidget({
             ) : (
               <ThumbsUp className={`h-4 w-4 ${localLiked ? "fill-red-600" : ""}`} />
             )}
-            <span>Like</span>
+            <span>{localLiked ? "Unlike" : "Like"}</span>
           </button>
 
           {/* Dislike Button */}

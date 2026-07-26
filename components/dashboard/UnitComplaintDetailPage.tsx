@@ -41,6 +41,7 @@ import { Complaint, ComplaintStatus, TimelineEvent, ComplaintVisibility, Complai
 import { Comment } from "@/types/comment";
 import { cn } from "@/lib/utils";
 import UnitSidebar from "@/components/dashboard/UnitSidebar";
+import AdminSidebar from "@/components/dashboard/AdminSidebar";
 
 export default function UnitComplaintDetailPage({ complaintId }: { complaintId: string }) {
   const router = useRouter();
@@ -228,14 +229,23 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     }
   };
 
-  if (!mounted || !isAuthenticated || (user?.role !== "UNIT_PIC" && user?.role !== "UNIT_MEMBER" && user?.role !== "SUPERADMIN")) {
+  if (!mounted || !isAuthenticated || (user?.role !== "UNIT_PIC" && user?.role !== "UNIT_MEMBER" && user?.role !== "SUPERADMIN" && user?.role !== "SUPER_PIC")) {
     return null;
   }
 
   if (isLoading || !complaint) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-slate-50">
-        <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+      <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9]">
+        {/* ─── LEFT SIDEBAR (Dark UI) ─── */}
+        {user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC" ? (
+          <AdminSidebar activeTab="complaints" />
+        ) : (
+          <UnitSidebar activeTab="keluhan" />
+        )}
+        {/* ─── MAIN WORKSPACE ─── */}
+        <div className="flex-grow h-full flex flex-col min-w-0 overflow-hidden items-center justify-center bg-[#f9f9f9]">
+          <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+        </div>
       </div>
     );
   }
@@ -246,7 +256,11 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9]">
 
       {/* ─── LEFT SIDEBAR (Dark UI) ─── */}
-      <UnitSidebar activeTab="keluhan" />
+      {user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC" ? (
+        <AdminSidebar activeTab="complaints" />
+      ) : (
+        <UnitSidebar activeTab="keluhan" />
+      )}
 
       {/* ─── MAIN WORKSPACE ─── */}
       <div className="flex-grow h-full flex flex-col min-w-0 overflow-hidden bg-[#f9f9f9]">
@@ -256,9 +270,19 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
           {/* Breadcrumbs Row */}
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-            <button onClick={() => router.push("/dashboard")} className="hover:text-red-500 transition-colors">Dashboard Unit</button>
-            <span>&gt;</span>
-            <button onClick={() => router.push("/unit/complaints")} className="hover:text-red-500 transition-colors">Keluhan Masuk</button>
+            {user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC" ? (
+              <>
+                <button onClick={() => { localStorage.setItem("adminActiveTab", "dashboard"); router.push("/dashboard"); }} className="hover:text-red-500 transition-colors">Pusat Kontrol</button>
+                <span>&gt;</span>
+                <button onClick={() => { localStorage.setItem("adminActiveTab", "complaints"); router.push("/dashboard"); }} className="hover:text-red-500 transition-colors">Semua Aspirasi</button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => { localStorage.setItem("unitActiveTab", "dashboard"); router.push("/dashboard"); }} className="hover:text-red-500 transition-colors">Dashboard Unit</button>
+                <span>&gt;</span>
+                <button onClick={() => { localStorage.setItem("unitActiveTab", "keluhan"); router.push("/dashboard"); }} className="hover:text-red-500 transition-colors">Keluhan Masuk</button>
+              </>
+            )}
             <span>&gt;</span>
             <span className="text-slate-500">Detail Keluhan</span>
           </div>
@@ -386,47 +410,53 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
               </div>
 
               {/* Card 5: Action Reply Form */}
-              <div id="reply-form-section" className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-                <span className="block text-[10px] font-bold text-slate-455 uppercase tracking-wider">Kirim Tanggapan Unit</span>
+              {complaint.status === "DONE" ? (
+                <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 text-center text-xs text-slate-500 font-semibold shadow-xs">
+                  Keluhan telah ditutup. Diskusi dinonaktifkan.
+                </div>
+              ) : (
+                <div id="reply-form-section" className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+                  <span className="block text-[10px] font-bold text-slate-455 uppercase tracking-wider">Kirim Tanggapan Unit</span>
 
-                <form onSubmit={handleSendReply} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Tanggapan Unit</label>
-                    <textarea
-                      required
-                      rows={5}
-                      placeholder="Tuliskan respon atau update terbaru mengenai penanganan keluhan ini..."
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      className="w-full p-3.5 text-xs rounded-xl border border-slate-250 bg-white focus:outline-none focus:border-red-400 font-medium"
-                    />
-                  </div>
+                  <form onSubmit={handleSendReply} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Tanggapan Unit</label>
+                      <textarea
+                        required
+                        rows={5}
+                        placeholder="Tuliskan respon atau update terbaru mengenai penanganan keluhan ini..."
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        className="w-full p-3.5 text-xs rounded-xl border border-slate-250 bg-white focus:outline-none focus:border-red-400 font-medium"
+                      />
+                    </div>
 
-                  {/* Attachment upload */}
-                  <div className="space-y-1.5">
-                    <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Lampiran Pendukung (Opsional)</label>
-                    <button
-                      type="button"
-                      onClick={() => toast.info("Mengunggah foto bukti...")}
-                      className="h-10 w-full border border-dashed border-slate-350 hover:bg-slate-50 text-slate-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-                    >
-                      <Upload className="h-4 w-4" />
-                      <span>Upload Foto/Dokumen Bukti</span>
-                    </button>
-                  </div>
+                    {/* Attachment upload */}
+                    <div className="space-y-1.5">
+                      <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Lampiran Pendukung (Opsional)</label>
+                      <button
+                        type="button"
+                        onClick={() => toast.info("Mengunggah foto bukti...")}
+                        className="h-10 w-full border border-dashed border-slate-350 hover:bg-slate-50 text-slate-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                      >
+                        <Upload className="h-4 w-4" />
+                        <span>Upload Foto/Dokumen Bukti</span>
+                      </button>
+                    </div>
 
-                  <div className="flex justify-end pt-2">
-                    <button
-                      type="submit"
-                      className="h-11 px-6 bg-[#b61722] hover:bg-[#a7151e] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-[0.98]"
-                    >
-                      <Send className="h-4 w-4" />
-                      <span>Kirim Respon</span>
-                    </button>
-                  </div>
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="submit"
+                        className="h-11 px-6 bg-[#b61722] hover:bg-[#a7151e] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-[0.98]"
+                      >
+                        <Send className="h-4 w-4" />
+                        <span>Kirim Respon</span>
+                      </button>
+                    </div>
 
-                </form>
-              </div>
+                  </form>
+                </div>
+              )}
 
             </div>
 
@@ -442,15 +472,11 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                   let displayStatus = "BARU";
                   let bgClass = "bg-sky-50 border-sky-200/80 text-sky-700";
                   let dotClass = "bg-sky-500";
-                  if (complaint.status === "WAITING_RESPONSE") {
-                    displayStatus = "BELUM DIRESPON";
-                    bgClass = "bg-rose-50 border-rose-200/80 text-rose-700";
-                    dotClass = "bg-rose-500";
-                  } else if (complaint.status === "IN_PROGRESS") {
+                  if (complaint.status === "OPEN") {
                     displayStatus = "SEDANG DIPROSES";
                     bgClass = "bg-amber-50 border-amber-200/80 text-amber-800";
                     dotClass = "bg-amber-500 animate-pulse";
-                  } else if (complaint.status === "CLOSED") {
+                  } else if (complaint.status === "DONE") {
                     displayStatus = "SELESAI";
                     bgClass = "bg-emerald-50 border-emerald-200/80 text-emerald-800";
                     dotClass = "bg-emerald-500";
@@ -487,8 +513,8 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                 {/* Action Controls */}
                 <div className="space-y-2.5 pt-3 border-t border-slate-100">
                   <button
-                    disabled={complaint.status === "IN_PROGRESS" || complaint.status === "CLOSED"}
-                    onClick={() => handleStatusTransition("IN_PROGRESS")}
+                    disabled={complaint.status === "OPEN" || complaint.status === "DONE"}
+                    onClick={() => handleStatusTransition("OPEN")}
                     className="w-full h-11 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer active:scale-[0.98]"
                   >
                     <RefreshCw className="h-4 w-4" />
@@ -503,14 +529,24 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                     <span>Teruskan (Forward)</span>
                   </button>
 
-                  <button
-                    disabled={complaint.status === "CLOSED"}
-                    onClick={() => handleStatusTransition("CLOSED")}
-                    className="w-full h-11 bg-white hover:bg-red-50/50 disabled:opacity-40 disabled:cursor-not-allowed border border-red-200 text-red-600 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
-                  >
-                    <CheckCircle className="h-4 w-4 text-red-600" />
-                    <span>Tutup Keluhan</span>
-                  </button>
+                  {(user.role === "SUPERADMIN" || user.role === "SUPER_PIC") && complaint.status === "DONE" ? (
+                    <button
+                      onClick={() => handleStatusTransition("OPEN")}
+                      className="w-full h-11 bg-white hover:bg-amber-50/50 border border-amber-200 text-amber-600 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
+                    >
+                      <RefreshCw className="h-4 w-4 text-amber-600" />
+                      <span>Buka Lagi (Reopen)</span>
+                    </button>
+                  ) : (
+                    <button
+                      disabled={complaint.status === "DONE"}
+                      onClick={() => handleStatusTransition("DONE")}
+                      className="w-full h-11 bg-white hover:bg-red-50/50 disabled:opacity-40 disabled:cursor-not-allowed border border-red-200 text-red-600 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
+                    >
+                      <CheckCircle className="h-4 w-4 text-red-600" />
+                      <span>Tutup Keluhan</span>
+                    </button>
+                  )}
                 </div>
 
               </div>

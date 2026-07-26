@@ -24,7 +24,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (typeof window !== "undefined") {
+    const isSilent = (error.config as any)?.silent || false;
+    
+    if (typeof window !== "undefined" && !isSilent) {
       if (!error.response) {
         // Network connection error
         toast.error("Gagal terhubung ke server", {

@@ -337,6 +337,11 @@ export const complaintsApi = {
     const response = await api.patch<any>("/complaints/config/auto-close", { daysToClose });
     return response.data;
   },
+
+  getAdminDetail: async (id: string): Promise<any> => {
+    const response = await api.get<any>(`/complaints/${id}/detail-admin`);
+    return response.data;
+  }
 };
 
 export const commentsApi = {
@@ -510,15 +515,15 @@ export const usersApi = {
 
 export const whatsappApi = {
   getStatus: async (): Promise<any> => {
-    const res = await api.get('/whatsapp/status');
+    const res = await api.get('/whatsapp/status', { silent: true } as any);
     return res.data;
   },
   getQr: async (): Promise<any> => {
-    const res = await api.get('/whatsapp/qr');
+    const res = await api.get('/whatsapp/qr', { silent: true } as any);
     return res.data;
   },
   getQrCode: async (): Promise<any> => {
-    const res = await api.get('/whatsapp/qrcode');
+    const res = await api.get('/whatsapp/qrcode', { silent: true } as any);
     return res.data;
   },
   init: async (): Promise<any> => {
@@ -535,6 +540,13 @@ export const whatsappApi = {
   },
 };
 
+export const auditLogsApi = {
+  getAll: async (params?: { page?: number; limit?: number; action?: string; entityType?: string; userId?: string }): Promise<any> => {
+    const response = await api.get<any>("/audit-logs", { params });
+    return response.data;
+  }
+};
+
 export const apiClient = {
   auth: authApi,
   profile: profileApi,
@@ -546,6 +558,7 @@ export const apiClient = {
   notifications: notificationsApi,
   users: usersApi,
   whatsapp: whatsappApi,
+  auditLogs: auditLogsApi,
 };
 
 export default apiClient;

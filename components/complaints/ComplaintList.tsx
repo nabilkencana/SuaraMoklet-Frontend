@@ -11,28 +11,16 @@ import { cn } from "@/lib/utils";
 import { Complaint, ComplaintStatus } from "@/types/complaint";
 
 const STATUS_CONFIG: Record<ComplaintStatus | "FORWARDED", { label: string; classes: string }> = {
-  OPEN: {
-    label: "OPEN",
-    classes: "bg-slate-100 text-slate-600 border border-slate-200 ring-1 ring-slate-100/50",
-  },
   NEW: {
     label: "NEW",
     classes: "bg-red-50 text-red-650 border border-red-200 ring-1 ring-red-100/50",
   },
-  WAITING_RESPONSE: {
-    label: "WAITING RESPONSE",
+  OPEN: {
+    label: "OPEN",
     classes: "bg-amber-50 text-amber-600 border border-amber-200 ring-1 ring-amber-100/50",
   },
-  IN_PROGRESS: {
-    label: "IN PROGRESS",
-    classes: "bg-blue-50 text-blue-600 border border-blue-200 ring-1 ring-blue-100/50",
-  },
-  WAITING_USER: {
-    label: "WAITING USER",
-    classes: "bg-amber-50 text-amber-650 border border-amber-200 ring-1 ring-amber-100/50",
-  },
-  CLOSED: {
-    label: "CLOSED",
+  DONE: {
+    label: "DONE",
     classes: "bg-emerald-50 text-emerald-600 border border-emerald-200 ring-1 ring-emerald-100/50",
   },
   FORWARDED: {
@@ -117,7 +105,7 @@ export default function ComplaintList() {
 
       {/* Status Tags Filter */}
       <div className="flex flex-wrap gap-2 pb-2">
-        {(["ALL", "OPEN", "IN_PROGRESS", "WAITING_USER", "CLOSED"] as const).map((filter) => (
+        {(["ALL", "NEW", "OPEN", "DONE"] as const).map((filter) => (
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}

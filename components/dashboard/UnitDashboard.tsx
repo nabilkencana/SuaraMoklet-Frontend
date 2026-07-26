@@ -33,12 +33,23 @@ export default function UnitDashboard() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "keluhan">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "keluhan">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("unitActiveTab") as "dashboard" | "keluhan") || "dashboard";
+    }
+    return "dashboard";
+  });
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("unitActiveTab", activeTab);
+    }
+  }, [activeTab]);
 
   // Data dari backend
   const [complaints, setComplaints] = useState<ExtendedComplaint[]>([]);
   const [stats, setStats] = useState<Record<string, number>>({
-    NEW: 0, WAITING_RESPONSE: 0, IN_PROGRESS: 0, CLOSED: 0,
+    NEW: 0, OPEN: 0, DONE: 0,
   });
   const [meta, setMeta] = useState({ totalKeluhan: 0, page: 1, limit: 20, totalPages: 1 });
 
@@ -124,9 +135,8 @@ export default function UnitDashboard() {
   const filteredComplaints = complaints.filter((c) => {
     if (statusFilter === "Semua Status") return true;
     if (statusFilter === "Baru") return c.status === "NEW";
-    if (statusFilter === "Belum Direspon") return c.status === "WAITING_RESPONSE";
-    if (statusFilter === "Diproses") return c.status === "IN_PROGRESS";
-    if (statusFilter === "Selesai") return c.status === "CLOSED";
+    if (statusFilter === "Diproses") return c.status === "OPEN";
+    if (statusFilter === "Selesai") return c.status === "DONE";
     return true;
   });
 
@@ -190,9 +200,8 @@ export default function UnitDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { label: "Keluhan Baru", key: "NEW", filter: "Baru", color: "border-l-slate-400", activeColor: "border-l-slate-600", icon: <Mail className="h-5 w-5" />, bg: "bg-slate-50", text: "text-slate-500" },
-              { label: "Belum Direspon", key: "WAITING_RESPONSE", filter: "Belum Direspon", color: "border-l-amber-500", activeColor: "border-l-amber-600", icon: <FileText className="h-5 w-5" />, bg: "bg-amber-50", text: "text-amber-500" },
-              { label: "Sedang Diproses", key: "IN_PROGRESS", filter: "Diproses", color: "border-l-orange-500", activeColor: "border-l-orange-600", icon: <RefreshCw className="h-5 w-5" />, bg: "bg-orange-50", text: "text-orange-500" },
-              { label: "Selesai", key: "CLOSED", filter: "Selesai", color: "border-l-red-600", activeColor: "border-l-red-700", icon: <CheckCircle2 className="h-5 w-5" />, bg: "bg-red-50", text: "text-red-600" },
+              { label: "Sedang Diproses", key: "OPEN", filter: "Diproses", color: "border-l-orange-500", activeColor: "border-l-orange-600", icon: <RefreshCw className="h-5 w-5" />, bg: "bg-orange-50", text: "text-orange-500" },
+              { label: "Selesai", key: "DONE", filter: "Selesai", color: "border-l-red-600", activeColor: "border-l-red-700", icon: <CheckCircle2 className="h-5 w-5" />, bg: "bg-red-50", text: "text-red-600" },
             ].map((card) => (
               <div
                 key={card.key}
@@ -230,7 +239,6 @@ export default function UnitDashboard() {
               >
                 <option value="Semua Status">Semua Status</option>
                 <option value="Baru">Baru</option>
-                <option value="Belum Direspon">Belum Direspon</option>
                 <option value="Diproses">Diproses</option>
                 <option value="Selesai">Selesai</option>
               </select>
@@ -268,13 +276,11 @@ export default function UnitDashboard() {
                     </tr>
                   ) : (
                     paginatedComplaints.map((c) => {
-                      const isClosed = c.status === "CLOSED";
+                      const isClosed = c.status === "DONE";
                       let statusText = "Baru";
                       let statusBadgeClass = "bg-blue-50 text-blue-600 border border-blue-200";
-                      if (c.status === "WAITING_RESPONSE") { statusText = "Belum Direspon"; statusBadgeClass = "bg-rose-50 text-rose-600 border border-rose-200"; }
-                      else if (c.status === "IN_PROGRESS") { statusText = "Diproses"; statusBadgeClass = "bg-orange-50 text-orange-600 border border-orange-200"; }
-                      else if (c.status === "CLOSED") { statusText = "Selesai"; statusBadgeClass = "bg-slate-100 text-slate-500 border border-slate-200"; }
-                      else if (c.status === "WAITING_USER") { statusText = "Menunggu User"; statusBadgeClass = "bg-yellow-50 text-yellow-700 border border-yellow-200"; }
+                      if (c.status === "OPEN") { statusText = "Diproses"; statusBadgeClass = "bg-orange-50 text-orange-600 border border-orange-200"; }
+                      else if (c.status === "DONE") { statusText = "Selesai"; statusBadgeClass = "bg-slate-100 text-slate-500 border border-slate-200"; }
 
                       return (
                         <tr key={c.id} className="text-slate-700 text-xs hover:bg-slate-50/40 transition-all align-middle">
@@ -301,7 +307,7 @@ export default function UnitDashboard() {
                                 onClick={() => handleOpenDetail(c.id)}
                                 className="relative h-8 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-lg flex items-center gap-1 shadow-3xs transition-all cursor-pointer active:scale-[0.96]"
                               >
-                                {(c.status === "NEW" || c.status === "WAITING_RESPONSE") && !readIds.has(c.id) && (
+                                {(c.status === "NEW") && !readIds.has(c.id) && (
                                   <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-650" />
