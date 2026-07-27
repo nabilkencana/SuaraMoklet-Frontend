@@ -45,7 +45,8 @@ import {
   Briefcase,
   Pencil,
   Ban,
-  House
+  House,
+  RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient, mapBackendUnitToFrontend } from "@/lib/api";
@@ -121,6 +122,7 @@ export default function AdminDashboard() {
   // Filtering states
   const [tableTab, setTableTab] = useState<"ALL" | "NEW" | "OPEN" | "DONE">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [unitFilter, setUnitFilter] = useState("ALL");
 
   // CRUD modal/form states
   const [newUnitName, setNewUnitName] = useState("");
@@ -153,6 +155,18 @@ export default function AdminDashboard() {
   const [userRoleFilter, setUserRoleFilter] = useState("All");
   const [userStatusFilter, setUserStatusFilter] = useState("All");
   const [selectedUserForView, setSelectedUserForView] = useState<any>(null);
+
+  // User Form Modal states
+  const [isUserFormModalOpen, setIsUserFormModalOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [userFormData, setUserFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    phone_number: "",
+    role: "USER",
+    userType: "SISWA"
+  });
 
   // Auto-close configuration state
   const [isAutoCloseModalOpen, setIsAutoCloseModalOpen] = useState(false);
@@ -239,9 +253,9 @@ export default function AdminDashboard() {
       }
       setUnits(loadedUnits);
       if (loadedUnits.length > 0) {
-        setSelectedUnitForMember(loadedUnits[0].id);
-        setForwardUnitId(loadedUnits[0].id);
-        setSelectedUnitId(loadedUnits[0].id);
+        setSelectedUnitForMember(prev => prev && loadedUnits.some(u => u.id === prev) ? prev : loadedUnits[0].id);
+        setForwardUnitId(prev => prev && loadedUnits.some(u => u.id === prev) ? prev : loadedUnits[0].id);
+        setSelectedUnitId(prev => prev && loadedUnits.some(u => u.id === prev) ? prev : loadedUnits[0].id);
       }
 
       // 2. Fetch complaints
@@ -457,16 +471,28 @@ export default function AdminDashboard() {
   };
 
   // Remove Member
-  const handleRemoveMember = async (memberId: string, unitId: string) => {
-    try {
-      await apiClient.units.removeMember(unitId, memberId);
-      toast.success("Anggota Berhasil Dihapus");
-      fetchData();
-    } catch (err: any) {
-      toast.error("Gagal Menghapus Anggota", {
-        description: err.response?.data?.message || "Terjadi kesalahan",
-      });
-    }
+  const handleRemoveMember = (memberId: string, unitId: string) => {
+    toast.error("Hapus Anggota", {
+      description: "Apakah Anda yakin ingin menghapus anggota ini dari unit?",
+      action: {
+        label: "Hapus",
+        onClick: async () => {
+          try {
+            await apiClient.units.removeMember(unitId, memberId);
+            toast.success("Anggota Berhasil Dihapus");
+            fetchData();
+          } catch (err: any) {
+            toast.error("Gagal Menghapus Anggota", {
+              description: err.response?.data?.message || "Terjadi kesalahan",
+            });
+          }
+        }
+      },
+      cancel: {
+        label: "Batal",
+        onClick: () => {}
+      }
+    });
   };
 
   // Auto-close configuration handler
@@ -519,10 +545,121 @@ export default function AdminDashboard() {
     }
   };
 
+  // Export Users
+  const handleExportUsers = () => {
+    if (filteredUsers.length === 0) {
+      toast.error("Tidak ada data pengguna untuk diekspor");
+      return;
+    }
+    const csvRows = [
+      ["ID", "Nama", "Email", "Nomor HP", "Role", "Tipe User", "Status Aktif"],
+      ...filteredUsers.map(u => [
+        u.id,
+        u.name,
+        u.email,
+        u.phone_number || "-",
+        u.role,
+        u.userType || "-",
+        u.isActive ? "Aktif" : "Tidak Aktif"
+      ])
+    ];
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "data_pengguna.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Data pengguna berhasil diekspor");
+  };
+
+  // Save (Create/Update) User
+  const handleSaveUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      if (editingUserId) {
+        // Exclude password if empty during edit
+        const payload = { ...userFormData };
+        if (!payload.password) {
+          delete (payload as any).password;
+        }
+        await apiClient.users.update(editingUserId, payload);
+        toast.success("Pengguna berhasil diperbarui");
+      } else {
+        await apiClient.users.create(userFormData);
+        toast.success("Pengguna berhasil ditambahkan");
+      }
+      setIsUserFormModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error(editingUserId ? "Gagal memperbarui pengguna" : "Gagal menambahkan pengguna", {
+        description: err.response?.data?.message || "Terjadi kesalahan",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Delete User
+  const handleDeleteUser = (userId: string, userName: string) => {
+    toast.error("Hapus Pengguna", {
+      description: `Apakah Anda yakin ingin menonaktifkan akun ${userName}?`,
+      action: {
+        label: "Hapus",
+        onClick: async () => {
+          try {
+            await apiClient.users.delete(userId);
+            toast.success("Pengguna berhasil dinonaktifkan");
+            fetchData();
+          } catch (err: any) {
+            toast.error("Gagal menonaktifkan pengguna", {
+              description: err.response?.data?.message || "Terjadi kesalahan",
+            });
+          }
+        }
+      },
+      cancel: {
+        label: "Batal",
+        onClick: () => {}
+      }
+    });
+  };
+
+  // Restore User
+  const handleRestoreUser = (userId: string, userName: string) => {
+    toast.error("Aktifkan Pengguna", {
+      description: `Apakah Anda yakin ingin mengaktifkan kembali akun ${userName}?`,
+      action: {
+        label: "Aktifkan",
+        onClick: async () => {
+          try {
+            await apiClient.users.restore(userId);
+            toast.success("Pengguna berhasil diaktifkan kembali");
+            fetchData();
+          } catch (err: any) {
+            toast.error("Gagal mengaktifkan pengguna", {
+              description: err.response?.data?.message || "Terjadi kesalahan",
+            });
+          }
+        }
+      },
+      cancel: {
+        label: "Batal",
+        onClick: () => {}
+      }
+    });
+  };
+
   const filteredComplaints = complaints.filter((c) => {
     if (tableTab === "NEW" && c.status !== "NEW") return false;
     if (tableTab === "OPEN" && c.status !== "OPEN") return false;
     if (tableTab === "DONE" && c.status !== "DONE") return false;
+    if (unitFilter !== "ALL") {
+      const mappedFilter = mapBackendUnitToFrontend(unitFilter);
+      if (c.unit !== mappedFilter) return false;
+    }
     if (searchQuery.trim()) {
 
       const q = searchQuery.toLowerCase();
@@ -574,7 +711,9 @@ export default function AdminDashboard() {
       role: roleName,
       unitName: unitName,
       status: u.isActive ? "Active" : "Inactive",
-      memberId: `USR-${u.id.substring(0, 4).toUpperCase()}`
+      memberId: `USR-${u.id.substring(0, 4).toUpperCase()}`,
+      originalRole: u.role,
+      originalUserType: u.userType
     };
   });
 
@@ -769,15 +908,28 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
+                  <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                    <select
+                      value={unitFilter}
+                      onChange={(e) => setUnitFilter(e.target.value)}
+                      className="h-9 px-3 text-xs font-semibold rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-red-400 transition-all text-slate-700 w-full sm:w-auto"
+                    >
+                      <option value="ALL">Semua Unit</option>
+                      {units.map((u) => (
+                        <option key={u.id} value={u.name}>
+                          Unit {u.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="relative w-full sm:w-auto">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input
                         type="text"
                         placeholder="Cari keluhan..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-9 pl-9 pr-3 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-red-400 transition-all w-64"
+                        className="h-9 pl-9 pr-3 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-red-400 transition-all w-full sm:w-64"
                       />
                     </div>
                   </div>
@@ -1083,15 +1235,28 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
+                  <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-3 sm:mt-0">
+                    <select
+                      value={unitFilter}
+                      onChange={(e) => setUnitFilter(e.target.value)}
+                      className="h-9 px-3 text-xs font-semibold rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-red-400 transition-all text-slate-700 w-full sm:w-auto"
+                    >
+                      <option value="ALL">Semua Unit</option>
+                      {units.map((u) => (
+                        <option key={u.id} value={u.name}>
+                          Unit {u.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="relative w-full sm:w-auto">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input
                         type="text"
                         placeholder="Cari keluhan..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-9 pl-9 pr-3 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-red-400 transition-all w-64"
+                        className="h-9 pl-9 pr-3 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-red-400 transition-all w-full sm:w-64"
                       />
                     </div>
                   </div>
@@ -1438,17 +1603,28 @@ export default function AdminDashboard() {
                                 </div>
                               </div>
 
-                              <button
-                                onClick={() => {
-                                  setSelectedUnitForMember(activeUnit.id);
-                                  setMemberIsPic(true);
-                                  setNewMemberEmail("");
-                                  setIsAddMemberModalOpen(true);
-                                }}
-                                className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-xl shadow-xs transition-all cursor-pointer"
-                              >
-                                Ganti PIC
-                              </button>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    setSelectedUnitForMember(activeUnit.id);
+                                    setMemberIsPic(true);
+                                    setNewMemberEmail("");
+                                    setIsAddMemberModalOpen(true);
+                                  }}
+                                  className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+                                >
+                                  Ganti PIC
+                                </button>
+                                {pic.name !== "Belum Ditunjuk" && (
+                                  <button
+                                    onClick={() => handleRemoveMember((pic as any).id, activeUnit.id)}
+                                    className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-100 text-red-600 text-[10px] font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center"
+                                    title="Hapus PIC"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
 
@@ -1474,14 +1650,23 @@ export default function AdminDashboard() {
                             <div className="space-y-3">
                               {displayMembers.length > 0 ? (
                                 displayMembers.map((member) => (
-                                  <div key={member.id} className="flex items-center gap-3">
-                                    <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center shrink-0">
-                                      {(member as { initials?: string }).initials || getInitials(member.name)}
+                                  <div key={member.id} className="flex items-center justify-between gap-3 group">
+                                    <div className="flex items-center gap-3">
+                                      <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center shrink-0">
+                                        {(member as { initials?: string }).initials || getInitials(member.name)}
+                                      </div>
+                                      <div className="space-y-0.5 leading-none">
+                                        <span className="block text-xs font-bold text-slate-800">{member.name}</span>
+                                        <span className="block text-[10px] text-slate-400 font-medium">{member.role || "Staff Member"}</span>
+                                      </div>
                                     </div>
-                                    <div className="space-y-0.5 leading-none">
-                                      <span className="block text-xs font-bold text-slate-800">{member.name}</span>
-                                      <span className="block text-[10px] text-slate-400 font-medium">{member.role || "Staff Member"}</span>
-                                    </div>
+                                    <button
+                                      onClick={() => handleRemoveMember(member.id, activeUnit.id)}
+                                      className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                                      title="Hapus Anggota"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
                                   </div>
                                 ))
                               ) : (
@@ -1523,7 +1708,7 @@ export default function AdminDashboard() {
                     <span>Import</span>
                   </button>
                   <button
-                    onClick={() => toast.info("Mengekspor Data Pengguna...")}
+                    onClick={handleExportUsers}
                     className="h-10 px-4 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
                   >
                     <Upload className="h-4 w-4 text-slate-500" />
@@ -1532,9 +1717,9 @@ export default function AdminDashboard() {
 
                   <button
                     onClick={() => {
-                      setNewMemberEmail("");
-                      setMemberIsPic(false);
-                      setIsAddMemberModalOpen(true);
+                      setEditingUserId(null);
+                      setUserFormData({ name: "", email: "", password: "", phone_number: "", role: "USER", userType: "SISWA" });
+                      setIsUserFormModalOpen(true);
                     }}
                     className="h-10 px-4 bg-[#b61722] hover:bg-[#a7151e] text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
                   >
@@ -1669,23 +1854,40 @@ export default function AdminDashboard() {
                                   <Eye className="h-4 w-4" />
                                 </button>
                                 <button
-                                  onClick={() => toast.info(`Mengedit Pengguna: ${u.name}`)}
+                                  onClick={() => {
+                                    setEditingUserId(u.id);
+                                    setUserFormData({
+                                      name: u.name,
+                                      email: u.email,
+                                      password: "",
+                                      phone_number: u.phone === "-" ? "" : u.phone,
+                                      role: u.originalRole || "USER",
+                                      userType: u.originalUserType || "SISWA"
+                                    });
+                                    setIsUserFormModalOpen(true);
+                                  }}
                                   className="h-8 w-8 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
                                   title="Edit User"
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </button>
-                                <button
-                                  onClick={() => {
-                                    if (confirm(`Apakah Anda yakin ingin menghapus pengguna ${u.name}?`)) {
-                                      toast.success("Pengguna Dihapus");
-                                    }
-                                  }}
-                                  className="h-8 w-8 text-slate-400 hover:text-red-655 hover:bg-red-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                                  title="Delete User"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
+                                {u.status === "Inactive" ? (
+                                  <button
+                                    onClick={() => handleRestoreUser(u.id, u.name)}
+                                    className="h-8 w-8 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                                    title="Aktifkan User"
+                                  >
+                                    <RefreshCw className="h-4 w-4" />
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleDeleteUser(u.id, u.name)}
+                                    className="h-8 w-8 text-slate-400 hover:text-red-655 hover:bg-red-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                                    title="Nonaktifkan User"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -2097,7 +2299,7 @@ export default function AdminDashboard() {
             
             {importStep === 1 ? (
               <div className="space-y-4">
-                <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:border-slate-300 transition-colors cursor-pointer relative">
+                <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:border-slate-300 transition-colors cursor-pointer relative bg-slate-50/50 hover:bg-slate-50">
                   <input type="file" accept=".csv,.xlsx" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
                       setImportFile(e.target.files[0]);
@@ -2107,6 +2309,59 @@ export default function AdminDashboard() {
                   <span className="text-sm font-bold text-slate-700">{importFile ? importFile.name : "Pilih file CSV atau Excel"}</span>
                   <span className="text-xs text-slate-400 mt-1">atau drag & drop di sini</span>
                 </div>
+                
+                {/* Format Preview & Download */}
+                <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-700">Preview Format Kolom</span>
+                    <button
+                      onClick={() => {
+                        const csvContent = "data:text/csv;charset=utf-8,Nama,Email,Nomor HP,Role,Unit\nBudi Santoso,budi@moklet.org,08123456789,Siswa,\nSiti Aminah,siti@moklet.org,08987654321,Guru,Kurikulum";
+                        const encodedUri = encodeURI(csvContent);
+                        const link = document.createElement("a");
+                        link.setAttribute("href", encodedUri);
+                        link.setAttribute("download", "format_import_pengguna.csv");
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      className="text-[10px] font-bold text-[#b61722] hover:text-[#a7151e] flex items-center gap-1.5 cursor-pointer bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg border border-red-100 transition-colors"
+                    >
+                      <Download className="h-3 w-3" />
+                      Download Format (.csv)
+                    </button>
+                  </div>
+                  <div className="overflow-x-auto rounded-lg border border-slate-200">
+                    <table className="w-full text-left border-collapse text-[10px] min-w-[500px]">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                          <th className="p-2 font-semibold">Nama</th>
+                          <th className="p-2 font-semibold border-l border-slate-200">Email</th>
+                          <th className="p-2 font-semibold border-l border-slate-200">Nomor HP</th>
+                          <th className="p-2 font-semibold border-l border-slate-200">Role</th>
+                          <th className="p-2 font-semibold border-l border-slate-200">Unit (Opsional)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white text-slate-600 divide-y divide-slate-100">
+                        <tr>
+                          <td className="p-2">Budi Santoso</td>
+                          <td className="p-2 border-l border-slate-100">budi@moklet.org</td>
+                          <td className="p-2 border-l border-slate-100">08123456789</td>
+                          <td className="p-2 border-l border-slate-100">Siswa</td>
+                          <td className="p-2 border-l border-slate-100 text-slate-400 italic">kosong</td>
+                        </tr>
+                        <tr>
+                          <td className="p-2">Siti Aminah</td>
+                          <td className="p-2 border-l border-slate-100">siti@moklet.org</td>
+                          <td className="p-2 border-l border-slate-100">08987654321</td>
+                          <td className="p-2 border-l border-slate-100">Guru</td>
+                          <td className="p-2 border-l border-slate-100">Kurikulum</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
                 <div className="flex gap-2.5 pt-2">
                   <button
                     type="button"
@@ -2116,18 +2371,27 @@ export default function AdminDashboard() {
                     Batal
                   </button>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (!importFile) return toast.error("Pilih file terlebih dahulu");
-                      toast.success("File dibaca");
-                      setImportData([
-                        { name: "Siswa Baru", email: "siswa@moklet.org", phone: "08123456789", role: "Siswa", unit: "" },
-                        { name: "Guru Baru", email: "guru@moklet.org", phone: "08987654321", role: "Guru", unit: "Kurikulum" },
-                      ]);
-                      setImportStep(2);
+                      
+                      try {
+                        setIsSubmitting(true);
+                        const res = await apiClient.users.bulkImport(importFile);
+                        toast.success(res.message || "Data berhasil diimport");
+                        setIsImportModalOpen(false);
+                        setImportFile(null);
+                        setImportStep(1);
+                        fetchUsers(); // Refresh the list
+                      } catch (err: any) {
+                        toast.error(err?.response?.data?.message || "Gagal mengimport data");
+                      } finally {
+                        setIsSubmitting(false);
+                      }
                     }}
+                    disabled={isSubmitting}
                     className="flex-1 h-10 bg-[#b61722] hover:bg-[#a7151e] text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
                   >
-                    Verifikasi Data
+                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import Data"}
                   </button>
                 </div>
               </div>
@@ -2179,6 +2443,123 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ─── USER FORM MODAL (Add/Edit) ─── */}
+      {isUserFormModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-xl animate-in fade-in zoom-in duration-150">
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="font-extrabold text-slate-800 text-lg">{editingUserId ? "Edit Pengguna" : "Tambah Pengguna Baru"}</h3>
+              <button
+                onClick={() => setIsUserFormModalOpen(false)}
+                className="text-slate-400 hover:text-slate-655 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSaveUser} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nama Lengkap</label>
+                <input
+                  type="text"
+                  required
+                  value={userFormData.name}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
+                  placeholder="Masukkan nama lengkap"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={userFormData.email}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
+                  placeholder="email@contoh.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Password {editingUserId && <span className="text-slate-400 font-normal">(Kosongkan jika tidak ingin mengubah)</span>}</label>
+                <input
+                  type="password"
+                  required={!editingUserId}
+                  value={userFormData.password}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                  className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
+                  placeholder="Minimal 8 karakter"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nomor HP</label>
+                <input
+                  type="text"
+                  value={userFormData.phone_number}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, phone_number: e.target.value }))}
+                  className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
+                  placeholder="08xxxxxxxxxx"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Role Sistem</label>
+                  <select
+                    value={userFormData.role}
+                    onChange={(e) => setUserFormData(prev => ({ ...prev, role: e.target.value }))}
+                    className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
+                  >
+                    <option value="USER">User</option>
+                    <option value="UNIT_MEMBER">Anggota Unit</option>
+                    <option value="UNIT_PIC">PIC Unit</option>
+                    <option value="SUPER_PIC">Super PIC</option>
+                    <option value="SUPERADMIN">Superadmin</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Tipe Pengguna</label>
+                  <select
+                    value={userFormData.userType}
+                    onChange={(e) => setUserFormData(prev => ({ ...prev, userType: e.target.value }))}
+                    className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
+                  >
+                    <option value="SISWA">Siswa</option>
+                    <option value="GURU">Guru</option>
+                    <option value="KARYAWAN">Karyawan</option>
+                    <option value="ORANGTUA">Orangtua</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsUserFormModalOpen(false)}
+                  className="px-5 h-11 border border-slate-200 hover:bg-slate-50 text-slate-655 font-bold rounded-xl transition-all cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-5 h-11 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <span>{editingUserId ? "Simpan Perubahan" : "Simpan Pengguna"}</span>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

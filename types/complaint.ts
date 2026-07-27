@@ -45,6 +45,11 @@ export interface Complaint {
     avatarUrl?: string;
   } | null;
   timeline?: TimelineEvent[];
+  rating?: {
+    score: number;
+    note?: string;
+    createdAt: string;
+  };
 }
 
 export interface CreateComplaintRequest {

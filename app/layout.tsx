@@ -30,7 +30,7 @@ export default function RootLayout({
     <html lang="id" className={`${plusJakartaSans.variable} scroll-smooth`}>
       <body className="min-h-screen font-sans antialiased">
         {children}
-        <Toaster position="top-right" richColors closeButton />
+        <Toaster position="bottom-right" richColors closeButton />
       </body>
     </html>
   );

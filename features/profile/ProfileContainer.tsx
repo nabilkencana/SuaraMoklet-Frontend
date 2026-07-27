@@ -1,8 +1,10 @@
 "use client";
 
-import React from "react";
-import { User, Mail, Phone, ShieldCheck, Clock } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { User, Mail, Phone, ShieldCheck, Clock, Settings, Loader2 } from "lucide-react";
 import useProfile from "@/hooks/useProfile";
+import { apiClient } from "@/lib/api";
+import { toast } from "sonner";
 
 const ROLE_LABEL: Record<string, string> = {
   USER: "Siswa",
@@ -42,6 +44,38 @@ function InfoRow({ icon: Icon, label, value }: {
 
 export default function ProfileContainer() {
   const { profile, isLoading } = useProfile();
+  const [preferences, setPreferences] = useState<Record<string, boolean>>({});
+  const [isSavingPrefs, setIsSavingPrefs] = useState(false);
+
+  const isPIC = profile && ["UNIT_PIC", "SUPER_PIC", "SUPERADMIN"].includes(profile.user.role);
+
+  useEffect(() => {
+    if (isPIC) {
+      apiClient.profile.getPreferences().then(data => {
+        setPreferences(data || {
+          wa_new_complaint: true,
+          inapp_new_complaint: true,
+          wa_forwarded_complaint: true,
+          inapp_forwarded_complaint: true,
+        });
+      }).catch(err => console.error("Failed to load preferences:", err));
+    }
+  }, [isPIC]);
+
+  const handlePrefChange = async (key: string, value: boolean) => {
+    const newPrefs = { ...preferences, [key]: value };
+    setPreferences(newPrefs);
+    setIsSavingPrefs(true);
+    try {
+      await apiClient.profile.updatePreferences(newPrefs);
+      toast.success("Preferensi notifikasi berhasil disimpan");
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal menyimpan preferensi");
+    } finally {
+      setIsSavingPrefs(false);
+    }
+  };
 
   // Loading skeleton
   if (isLoading || !profile) {
@@ -135,6 +169,64 @@ export default function ProfileContainer() {
           </div>
         </div>
       </div>
+
+      {/* Preferences Section (Hanya untuk PIC & Admin) */}
+      {isPIC && (
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden p-6 mt-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+              <Settings className="h-5 w-5 text-red-600" />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold text-slate-900">Preferensi Notifikasi</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Atur notifikasi mana saja yang ingin Anda terima sebagai PIC Unit.</p>
+            </div>
+          </div>
+          
+          <div className="space-y-3 pt-2">
+            <label className="flex items-center justify-between p-3.5 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
+              <span className="text-xs font-semibold text-slate-700 group-hover:text-slate-900">Notifikasi WA (Keluhan Baru Masuk)</span>
+              <input 
+                type="checkbox" 
+                checked={preferences.wa_new_complaint !== false} 
+                onChange={(e) => handlePrefChange("wa_new_complaint", e.target.checked)}
+                disabled={isSavingPrefs}
+                className="accent-[#b61722] h-4 w-4 cursor-pointer"
+              />
+            </label>
+            <label className="flex items-center justify-between p-3.5 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
+              <span className="text-xs font-semibold text-slate-700 group-hover:text-slate-900">Notifikasi Dalam Aplikasi (Keluhan Baru Masuk)</span>
+              <input 
+                type="checkbox" 
+                checked={preferences.inapp_new_complaint !== false} 
+                onChange={(e) => handlePrefChange("inapp_new_complaint", e.target.checked)}
+                disabled={isSavingPrefs}
+                className="accent-[#b61722] h-4 w-4 cursor-pointer"
+              />
+            </label>
+            <label className="flex items-center justify-between p-3.5 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
+              <span className="text-xs font-semibold text-slate-700 group-hover:text-slate-900">Notifikasi WA (Keluhan Diteruskan)</span>
+              <input 
+                type="checkbox" 
+                checked={preferences.wa_forwarded_complaint !== false} 
+                onChange={(e) => handlePrefChange("wa_forwarded_complaint", e.target.checked)}
+                disabled={isSavingPrefs}
+                className="accent-[#b61722] h-4 w-4 cursor-pointer"
+              />
+            </label>
+            <label className="flex items-center justify-between p-3.5 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
+              <span className="text-xs font-semibold text-slate-700 group-hover:text-slate-900">Notifikasi Dalam Aplikasi (Keluhan Diteruskan)</span>
+              <input 
+                type="checkbox" 
+                checked={preferences.inapp_forwarded_complaint !== false} 
+                onChange={(e) => handlePrefChange("inapp_forwarded_complaint", e.target.checked)}
+                disabled={isSavingPrefs}
+                className="accent-[#b61722] h-4 w-4 cursor-pointer"
+              />
+            </label>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

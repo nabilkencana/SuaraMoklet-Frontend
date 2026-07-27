@@ -109,6 +109,31 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
       createdAt: c.forwardedAt || c.createdAt,
     });
   }
+  
+  if (c.status === "DONE") {
+    timeline.push({
+      id: `${c.id}-closed`,
+      title: "Keluhan Diselesaikan",
+      description: "Isu laporan telah ditangani dan dinyatakan selesai.",
+      createdAt: c.closedAt || c.updatedAt,
+    });
+  }
+
+  let rating;
+  if (c.rating) {
+    rating = {
+      score: c.rating.score,
+      note: c.rating.note,
+      createdAt: c.rating.createdAt,
+    };
+    
+    timeline.push({
+      id: `${c.id}-rated`,
+      title: "Penilaian Pengguna",
+      description: `Pelapor memberikan penilaian ${c.rating.score} Bintang.${c.rating.note ? ` Catatan: "${c.rating.note}"` : ''}`,
+      createdAt: c.rating.createdAt,
+    });
+  }
 
   return {
     id: c.id,
@@ -124,6 +149,7 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
     reporter,
     visibility: c.visibility,
     timeline,
+    rating,
   };
 }
 
@@ -180,6 +206,21 @@ export const authApi = {
     throw new Error("Pendaftaran akun baru dinonaktifkan. Silakan login melalui Moklet App.");
   },
 
+  ssoExchange: async (token: string): Promise<LoginResponse> => {
+    const response = await api.post<any>("/auth/sso/exchange", { sso_token: token });
+    const user = response.data.user;
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatarUrl: user.profilePicture || undefined,
+      },
+      accessToken: response.data.accessToken,
+    };
+  },
+
   getProfile: async (): Promise<User> => {
     const response = await api.get<any>("/users/me");
     const user = response.data;
@@ -221,6 +262,15 @@ export const profileApi = {
   },
   changePassword: async (_data: ChangePasswordRequest): Promise<{ message: string }> => {
     throw new Error("Password tidak dapat diubah.");
+  },
+
+  getPreferences: async (): Promise<Record<string, boolean>> => {
+    const response = await api.get<any>("/users/me/preferences");
+    return response.data?.data || {};
+  },
+  updatePreferences: async (data: Record<string, boolean>): Promise<Record<string, boolean>> => {
+    const response = await api.patch<any>("/users/me/preferences", data);
+    return response.data?.data || {};
   },
 };
 
@@ -448,7 +498,7 @@ export const statsApi = {
       const data = response.data;
 
       const totalCount = data.global?.totalComplaints || 0;
-      const resolvedCount = data.byStatus?.CLOSED || 0;
+      const resolvedCount = data.byStatus?.DONE || 0;
       const activeCount = totalCount - resolvedCount;
       const pendingCount = (data.byStatus?.WAITING_RESPONSE || 0) + (data.byStatus?.WAITING_USER || 0);
       const resolutionRate = totalCount > 0 ? Math.round((resolvedCount / totalCount) * 100) : 0;
@@ -461,6 +511,9 @@ export const statsApi = {
         console.error("Failed to load unread notification count:", err);
       }
 
+      const newCount = data.byStatus?.NEW || 0;
+      const byUnit = Array.isArray(data.byUnit) ? data.byUnit : [];
+
       return {
         activeCount,
         resolvedCount,
@@ -468,6 +521,8 @@ export const statsApi = {
         totalCount,
         unreadNotifications,
         resolutionRate,
+        newCount,
+        byUnit,
       };
     } catch (err) {
       console.error("Failed to fetch stats from backend:", err);
@@ -504,11 +559,50 @@ export const notificationsApi = {
   markAsRead: async (id: string): Promise<void> => {
     await api.patch(`/notifications/${id}/read`);
   },
+  
+  getWhatsAppLogs: async (params?: { page?: number; limit?: number; status?: string; search?: string }): Promise<any> => {
+    const response = await api.get<any>("/notifications/whatsapp-logs", { params });
+    return response.data;
+  },
+  
+  getTemplates: async (): Promise<any[]> => {
+    const response = await api.get<any[]>("/notifications/templates");
+    return response.data;
+  },
+  
+  updateTemplate: async (name: string, content: string): Promise<any> => {
+    const response = await api.patch(`/notifications/templates/${name}`, { content });
+    return response.data;
+  },
 };
 
 export const usersApi = {
   getAll: async (): Promise<any[]> => {
     const response = await api.get<any[]>("/users");
+    return response.data;
+  },
+  create: async (data: any): Promise<any> => {
+    const response = await api.post("/users", data);
+    return response.data;
+  },
+  update: async (id: string, data: any): Promise<any> => {
+    const response = await api.patch(`/users/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: string): Promise<any> => {
+    const response = await api.delete(`/users/${id}`);
+    return response.data;
+  },
+  restore: async (id: string): Promise<any> => {
+    const response = await api.patch(`/users/${id}/restore`);
+    return response.data;
+  },
+  bulkImport: async (file: File): Promise<{ message: string; totalImported: number }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await api.post("/users/bulk-import", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return response.data;
   },
 };

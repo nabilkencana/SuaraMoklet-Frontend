@@ -5,6 +5,13 @@ export interface DashboardStats {
   totalCount: number;
   unreadNotifications: number;
   resolutionRate: number; // percentage of complaints resolved e.g. 75
+  newCount?: number;
+  byUnit?: Array<{
+    unitId: string;
+    unitName: string;
+    totalComplaints: number;
+    averageRating: number;
+  }>;
 }
 
 export interface RecentActivity {

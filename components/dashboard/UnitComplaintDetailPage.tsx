@@ -184,7 +184,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
         });
         setIsForwardModalOpen(false);
         toast.success(`Keluhan berhasil diteruskan ke Unit ID: ${forwardUnitId}`);
-        router.push("/unit/complaints");
+        router.push("/dashboard");
       })(),
       {
         loading: "Meneruskan keluhan...",
@@ -494,6 +494,23 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                     </div>
                   );
                 })()}
+
+                {/* Rating Info */}
+                {complaint.rating && (
+                  <div className="rounded-2xl p-4 border border-yellow-200 bg-yellow-50 text-center relative overflow-hidden transition-all mt-3">
+                    <span className="block text-[9px] font-bold uppercase tracking-widest text-yellow-700 opacity-80">Penilaian Pelapor</span>
+                    <div className="flex items-center justify-center gap-2 mt-1">
+                      <span className="text-sm font-extrabold tracking-wider text-yellow-800">
+                        {complaint.rating.score} BINTANG
+                      </span>
+                    </div>
+                    {complaint.rating.note && (
+                      <p className="mt-2 text-xs text-yellow-700/80 font-medium italic">
+                        "{complaint.rating.note}"
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* PIC Info */}
                 <div className="space-y-2 pt-2 border-t border-slate-100">

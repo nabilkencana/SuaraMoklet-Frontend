@@ -64,7 +64,7 @@ export default function Header() {
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     if (href.startsWith("/#")) {
-      return pathname === "/" && typeof window !== "undefined" && window.location.hash === href.substring(1);
+      return mounted && pathname === "/" && typeof window !== "undefined" && window.location.hash === href.substring(1);
     }
     if (href === "/complaints") {
       return pathname === "/complaints" || (pathname?.startsWith("/complaints/") && !pathname?.startsWith("/complaints/create"));

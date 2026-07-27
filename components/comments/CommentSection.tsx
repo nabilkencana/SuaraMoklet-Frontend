@@ -114,55 +114,48 @@ export default function CommentSection({ complaintId, isClosed = false }: Commen
       {/* Discussion List */}
       <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
         {comments.length > 0 ? (
-          comments.map((comment) => (
-            <div 
-              key={comment.id} 
-              className={cn(
-                "p-4 rounded-2xl border transition-all space-y-2.5",
-                comment.isPic 
-                  ? "bg-red-50/40 border-red-150/70 shadow-sm shadow-red-50/20" 
-                  : "bg-slate-50/50 border-slate-100"
-              )}
-            >
-              {/* User Identity info header */}
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-7 w-7 rounded-full bg-slate-200 flex items-center justify-center font-bold text-[10px] text-slate-600 uppercase shrink-0">
-                    {comment.user.name.charAt(0)}
+          comments.map((comment) => {
+            const isOfficial = comment.isPic;
+            return (
+              <div 
+                key={comment.id} 
+                className={cn(
+                  "p-4 rounded-2xl text-xs space-y-2 max-w-[90%] border shadow-3xs",
+                  isOfficial 
+                    ? "bg-red-50/50 border-red-200/60 rounded-tl-none mr-auto" 
+                    : "bg-white border-slate-100 rounded-tr-none ml-auto"
+                )}
+              >
+                {/* User Identity info header */}
+                <div className="flex items-center justify-between gap-6">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-800">{comment.user.name || "Anonim"}</span>
+                    {isOfficial && (
+                      <span className="px-2 py-0.5 bg-[#b61722] text-white font-extrabold text-[8px] uppercase tracking-wider rounded-md">
+                        Respon Resmi Unit
+                      </span>
+                    )}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-slate-800">{comment.user.name}</span>
-                      {comment.isPic && (
-                        <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide bg-red-600 text-white shadow-sm shadow-red-100">
-                          <ShieldCheck className="h-2.5 w-2.5" />
-                          <span>PIC</span>
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[9px] text-slate-400 font-semibold block">
-                      {new Date(comment.createdAt).toLocaleDateString("id-ID", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}{" "}
-                      {new Date(comment.createdAt).toLocaleTimeString("id-ID", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
+                  <span className="text-[9px] text-slate-400 font-semibold shrink-0">
+                    {new Date(comment.createdAt).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                    })}{" "}
+                    {new Date(comment.createdAt).toLocaleTimeString("id-ID", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
                 </div>
-              </div>
 
-              {/* Message Content */}
-              <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap pl-9">
-                {comment.content}
-              </p>
+                {/* Message Content */}
+                <p className="text-slate-500 leading-relaxed font-semibold whitespace-pre-wrap">
+                  {comment.content}
+                </p>
 
               {/* Attached Image if exists */}
               {comment.evidenceUrl && (
-                <div className="pl-9 pt-1.5">
+                <div className="pt-1.5">
                   <div className="relative h-32 max-w-sm rounded-xl overflow-hidden border border-slate-200 bg-white shadow-sm">
                     <img 
                       src={comment.evidenceUrl} 
@@ -174,7 +167,8 @@ export default function CommentSection({ complaintId, isClosed = false }: Commen
                 </div>
               )}
             </div>
-          ))
+          );
+        })
         ) : (
           /* Empty State */
           <div className="text-center py-8 text-slate-400 space-y-2">
