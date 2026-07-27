@@ -708,12 +708,15 @@ export default function AdminDashboard() {
       name: u.name,
       email: u.email,
       phone: u.phoneNumber || u.phone_number || "-",
+      phone_number: u.phoneNumber || u.phone_number || "-",
       role: roleName,
       unitName: unitName,
       status: u.isActive ? "Active" : "Inactive",
       memberId: `USR-${u.id.substring(0, 4).toUpperCase()}`,
       originalRole: u.role,
-      originalUserType: u.userType
+      originalUserType: u.userType,
+      userType: u.userType || "-",
+      isActive: u.isActive
     };
   });
 
@@ -2337,14 +2340,14 @@ export default function AdminDashboard() {
                         link.click();
                         document.body.removeChild(link);
                       }}
-                      className="text-[10px] font-bold text-[#b61722] hover:text-[#a7151e] flex items-center gap-1.5 cursor-pointer bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg border border-red-100 transition-colors"
+                      className="text-[10px] font-bold text-[#b61722] hover:text-red-650 flex items-center gap-1.5 cursor-pointer bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg border border-red-100 transition-colors"
                     >
                       <Download className="h-3 w-3" />
                       Download Format (.csv)
                     </button>
                   </div>
                   <div className="overflow-x-auto rounded-lg border border-slate-200">
-                    <table className="w-full text-left border-collapse text-[10px] min-w-[500px]">
+                    <table className="w-full text-left border-collapse text-[10px] min-w-125">
                       <thead>
                         <tr className="bg-slate-50 text-slate-500 border-b border-slate-200">
                           <th className="p-2 font-semibold">Nama</th>
@@ -2393,7 +2396,7 @@ export default function AdminDashboard() {
                         setIsImportModalOpen(false);
                         setImportFile(null);
                         setImportStep(1);
-                        fetchUsers(); // Refresh the list
+                        fetchData(); // Refresh the list
                       } catch (err: any) {
                         toast.error(err?.response?.data?.message || "Gagal mengimport data");
                       } finally {
@@ -2562,7 +2565,7 @@ export default function AdminDashboard() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 h-11 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+                  className="px-5 h-11 bg-[#b61722] hover:bg-red-650 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
