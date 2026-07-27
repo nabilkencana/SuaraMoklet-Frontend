@@ -1127,7 +1127,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* ISO Audit Trail Card (1/3 width) */}
-                <div className="relative h-[500px] lg:h-auto">
+                <div className="relative h-125 lg:h-auto">
                   <div className="lg:absolute inset-0 bg-white rounded-2xl border border-[rgba(228,190,186,0.3)] p-6 shadow-sm flex flex-col h-full max-h-full">
                     <div className="flex flex-col flex-1 min-h-0">
                     <div className="shrink-0">
@@ -1567,7 +1567,7 @@ export default function AdminDashboard() {
                                     }
                                   });
                                 }}
-                                className="h-9 w-9 border border-red-100 hover:bg-red-50 rounded-xl flex items-center justify-center text-red-650 transition-colors cursor-pointer shrink-0 text-red-600"
+                                className="h-9 w-9 border border-red-100 hover:bg-red-50 rounded-xl flex items-center justify-center text-red-650 transition-colors cursor-pointer shrink-0"
                                 title="Delete Unit"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -2125,7 +2125,7 @@ export default function AdminDashboard() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 h-10 bg-[#b61722] hover:bg-[#a7151e] text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
+                  className="flex-1 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
                 >
                   {isSubmitting && <Loader2 className="h-3 w-3 animate-spin" />}
                   <span>Simpan Perubahan</span>
@@ -2401,7 +2401,7 @@ export default function AdminDashboard() {
                       }
                     }}
                     disabled={isSubmitting}
-                    className="flex-1 h-10 bg-[#b61722] hover:bg-[#a7151e] text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
+                    className="flex-1 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
                   >
                     {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import Data"}
                   </button>
@@ -2409,7 +2409,7 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="overflow-y-auto max-h-[400px]">
+                <div className="overflow-y-auto max-h-100">
                   <table className="w-full text-left border-collapse text-sm">
                     <thead>
                       <tr className="border-b border-slate-200 text-slate-500">
@@ -2451,7 +2451,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-100">
                   <button onClick={() => setImportStep(1)} className="px-4 h-10 border border-slate-200 hover:bg-slate-50 text-slate-600 font-extrabold rounded-xl transition-all text-xs cursor-pointer">Kembali</button>
-                  <button onClick={() => { toast.success("Data berhasil diimport"); setIsImportModalOpen(false); setImportStep(1); setImportFile(null); }} className="px-4 h-10 bg-[#b61722] hover:bg-[#a7151e] text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98]">Submit Import</button>
+                  <button onClick={() => { toast.success("Data berhasil diimport"); setIsImportModalOpen(false); setImportStep(1); setImportFile(null); }} className="px-4 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98]">Submit Import</button>
                 </div>
               </div>
             )}

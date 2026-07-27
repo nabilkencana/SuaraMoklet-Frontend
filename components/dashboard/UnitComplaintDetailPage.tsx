@@ -243,7 +243,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
           <UnitSidebar activeTab="keluhan" />
         )}
         {/* ─── MAIN WORKSPACE ─── */}
-        <div className="flex-grow h-full flex flex-col min-w-0 overflow-hidden items-center justify-center bg-[#f9f9f9]">
+        <div className="grow h-full flex flex-col min-w-0 overflow-hidden items-center justify-center bg-[#f9f9f9]">
           <Loader2 className="h-8 w-8 animate-spin text-red-600" />
         </div>
       </div>
