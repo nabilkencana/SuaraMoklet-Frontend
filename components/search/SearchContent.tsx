@@ -350,7 +350,7 @@ export default function SearchContent() {
                       <Link href={`/complaints/${item.id}`} className="absolute inset-0 z-10" />
 
                       {/* Image Header with hover overlay button */}
-                      <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden shrink-0">
+                      <div className="relative aspect-16/10 bg-slate-100 overflow-hidden shrink-0">
                         {item.evidenceUrl ? (
                           <img 
                             src={item.evidenceUrl} 
@@ -358,7 +358,7 @@ export default function SearchContent() {
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103" 
                           />
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-tr from-red-500/10 to-amber-500/10 flex items-center justify-center">
+                          <div className="w-full h-full bg-linear-to-tr from-red-500/10 to-amber-500/10 flex items-center justify-center">
                             <Building2 className="h-12 w-12 text-red-500/20" />
                           </div>
                         )}
@@ -634,7 +634,7 @@ export default function SearchContent() {
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103" 
                           />
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-tr from-red-500/5 to-amber-500/5 flex items-center justify-center">
+                          <div className="w-full h-full bg-linear-to-tr from-red-500/5 to-amber-500/5 flex items-center justify-center">
                             <Building2 className="h-10 w-10 text-red-500/10" />
                           </div>
                         )}

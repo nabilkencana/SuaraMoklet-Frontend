@@ -12,7 +12,7 @@ export default function NotFound() {
     <div className="min-h-screen bg-[#FAFAFA] text-slate-800 flex flex-col pt-16">
       <Header />
 
-      <main className="flex-grow flex items-center justify-center p-6 py-20">
+      <main className="grow flex items-center justify-center p-6 py-20">
         <div className="text-center space-y-6 max-w-md mx-auto">
           {/* Badge 404 */}
           <div className="relative inline-flex items-center justify-center">

@@ -397,7 +397,7 @@ export default function LandingPage() {
               </div>
             ) : trendingComplaints.length > 0 ? (
               trendingComplaints.map((complaint) => (
-                <div key={complaint.id} className="w-[300px] sm:w-[360px] shrink-0 snap-start">
+                <div key={complaint.id} className="w-75 sm:w-90 shrink-0 snap-start">
                   <ComplaintCard
                     data={complaint}
                     maxSupports={maxTrendingSupports}
@@ -427,7 +427,7 @@ export default function LandingPage() {
           {/* Steps */}
           <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-8 relative">
             {/* Connector lines — desktop only */}
-            <div className="hidden md:block absolute top-8 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-0.5 bg-gradient-to-r from-red-200 via-red-300 to-red-200" />
+            <div className="hidden md:block absolute top-8 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-0.5 bg-linear-to-r from-red-200 via-red-300 to-red-200" />
 
             {STEPS.map((step) => (
               <div key={step.num} className="relative flex flex-col items-center gap-4 px-4">
@@ -513,11 +513,11 @@ export default function LandingPage() {
       {/* ── SECTION 7: CTA Banner ────────────────────── */}
       <section className="py-16 sm:py-24 bg-slate-50/60">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="relative bg-gradient-to-br from-red-600 to-red-700 rounded-3xl px-8 py-14 sm:py-20 overflow-hidden shadow-2xl shadow-red-200">
+          <div className="relative bg-linear-to-br from-red-600 to-red-700 rounded-3xl px-8 py-14 sm:py-20 overflow-hidden shadow-2xl shadow-red-200">
             {/* Decorative circles */}
             <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-white/5" />
             <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-white/5" />
-            <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-white/[0.03]" />
+            <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-white/3" />
 
             <div className="relative z-10">
               <SectionEyebrow label="Ayo Beraksi" variant="light" />

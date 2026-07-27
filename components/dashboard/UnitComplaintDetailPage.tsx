@@ -263,10 +263,10 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       )}
 
       {/* ─── MAIN WORKSPACE ─── */}
-      <div className="flex-grow h-full flex flex-col min-w-0 overflow-hidden bg-[#f9f9f9]">
+      <div className="grow h-full flex flex-col min-w-0 overflow-hidden bg-[#f9f9f9]">
 
         {/* Scrollable Container */}
-        <div className="flex-grow overflow-y-auto p-8 space-y-6">
+        <div className="grow overflow-y-auto p-8 space-y-6">
 
           {/* Breadcrumbs Row */}
           <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
@@ -335,7 +335,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                   </div>
                   <div className="space-y-0.5">
                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pelapor</span>
-                    <span className="block font-bold text-slate-750 flex items-center gap-1">
+                    <span className="font-bold text-slate-750 flex items-center gap-1">
                       <UserIcon className="h-3.5 w-3.5 text-slate-400" />
                       {complaint.isAnonymous ? "Anonim" : (complaint.reporter?.name || "Pelapor")}
                     </span>
@@ -447,7 +447,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                     <div className="flex justify-end pt-2">
                       <button
                         type="submit"
-                        className="h-11 px-6 bg-[#b61722] hover:bg-[#a7151e] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-[0.98]"
+                        className="h-11 px-6 bg-[#b61722] hover:bg-red-650 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-[0.98]"
                       >
                         <Send className="h-4 w-4" />
                         <span>Kirim Respon</span>
@@ -562,7 +562,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
                       {/* Timeline dot */}
                       <div className={cn(
-                        "absolute left-[-22px] top-1.5 h-2.5 w-2.5 rounded-full border border-white shrink-0",
+                        "absolute -left-5.5 top-1.5 h-2.5 w-2.5 rounded-full border border-white shrink-0",
                         idx === 0 ? "bg-red-600" : "bg-slate-300"
                       )} />
 
@@ -725,7 +725,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                         </div>
                         {isSelected && (
                           <div className="absolute top-2.5 right-2.5 h-4 w-4 rounded-full bg-red-600 text-white flex items-center justify-center shadow-3xs">
-                            <Check className="h-2.5 w-2.5 stroke-[3]" />
+                            <Check className="h-2.5 w-2.5 stroke-3" />
                           </div>
                         )}
                       </div>

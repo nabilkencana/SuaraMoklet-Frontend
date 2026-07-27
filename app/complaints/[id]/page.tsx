@@ -125,7 +125,7 @@ export default function ComplaintDetailPage() {
     return (
       <div className="min-h-screen bg-[#FAFAFA] text-slate-800 pt-16">
         <Header />
-        <main className="flex-grow flex items-center justify-center p-6 mt-8">
+        <main className="grow flex items-center justify-center p-6 mt-8">
           <div className="text-center space-y-4 max-w-sm">
             <div className="h-16 w-16 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto">
               <AlertCircle className="h-8 w-8 text-red-400" />
@@ -150,7 +150,7 @@ export default function ComplaintDetailPage() {
     return (
       <div className="min-h-screen bg-[#FAFAFA] text-slate-800 pt-16">
         <Header />
-        <main className="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-4 animate-pulse mt-4">
+        <main className="grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-4 animate-pulse mt-4">
           <div className="h-6 w-20 bg-slate-200 rounded" />
           <div className="h-40 bg-slate-200 rounded-2xl" />
           <div className="h-32 bg-slate-200 rounded-2xl" />
@@ -165,7 +165,7 @@ export default function ComplaintDetailPage() {
     return (
       <div className="min-h-screen bg-[#FAFAFA] text-slate-800 pt-16">
         <Header />
-        <main className="flex-grow flex items-center justify-center p-6 mt-8">
+        <main className="grow flex items-center justify-center p-6 mt-8">
           <div className="text-center space-y-5 max-w-sm">
             <div className="h-16 w-16 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center mx-auto">
               <EyeOff className="h-8 w-8 text-slate-400" />
@@ -221,7 +221,7 @@ export default function ComplaintDetailPage() {
     <div className="min-h-screen bg-[#FAFAFA] text-slate-800 pt-16">
       <Header />
 
-      <main className="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-4 lg:space-y-6">
+      <main className="grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-4 lg:space-y-6">
 
         {/* Back button */}
         <button
@@ -272,7 +272,7 @@ export default function ComplaintDetailPage() {
         </div>
 
         {/* ── DESKTOP FULL HERO BANNER ─────────────────────────── */}
-        <div className="hidden lg:flex relative border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white min-h-[280px] flex-col justify-end">
+        <div className="hidden lg:flex relative border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white min-h-70 flex-col justify-end">
           <div className="absolute inset-0 bg-slate-100">
             {currentComplaint.evidenceUrl ? (
               <img
@@ -284,11 +284,11 @@ export default function ComplaintDetailPage() {
                 }}
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-tr from-red-500/10 to-amber-500/10 flex items-center justify-center">
+              <div className="w-full h-full bg-linear-to-tr from-red-500/10 to-amber-500/10 flex items-center justify-center">
                 <Building2 className="h-16 w-16 text-red-500/20" />
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/50 to-neutral-900/10" />
+            <div className="absolute inset-0 bg-linear-to-t from-neutral-900 via-neutral-900/50 to-neutral-900/10" />
           </div>
           <div className="relative z-10 p-8 space-y-3 text-white">
             <div className="flex flex-wrap gap-2.5 items-center">

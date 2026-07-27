@@ -101,7 +101,7 @@ export function ComplaintCard({ data, className, maxSupports }: ComplaintCardPro
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-tr from-red-50 to-slate-100 flex items-center justify-center">
+          <div className="w-full h-full bg-linear-to-tr from-red-50 to-slate-100 flex items-center justify-center">
             <span className="text-4xl font-black text-red-200 select-none">SM</span>
           </div>
         )}
@@ -157,7 +157,7 @@ export function ComplaintCard({ data, className, maxSupports }: ComplaintCardPro
             </div>
             <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200/50">
               <div
-                className="h-full bg-gradient-to-r from-red-500 to-red-600 rounded-full transition-all duration-700"
+                className="h-full bg-linear-to-r from-red-500 to-red-600 rounded-full transition-all duration-700"
                 style={{ width: `${Math.max(5, progressPercent)}%` }}
               />
             </div>
@@ -211,7 +211,7 @@ export function LatestComplaintListItem({ data }: { data: ComplaintCardData }) {
                 sizes="48px"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-tr from-red-50 to-slate-100 flex items-center justify-center">
+              <div className="w-full h-full bg-linear-to-tr from-red-50 to-slate-100 flex items-center justify-center">
                 <span className="text-xs font-black text-red-300">SM</span>
               </div>
             )}
