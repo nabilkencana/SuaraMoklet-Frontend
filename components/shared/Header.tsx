@@ -151,7 +151,7 @@ export default function Header() {
                 <div className="h-7 w-7 rounded-full bg-red-600 text-white flex items-center justify-center font-extrabold text-xs uppercase shadow-2xs shrink-0">
                   {user.name.charAt(0)}
                 </div>
-                <span className="text-xs font-bold text-slate-800 pr-1 truncate max-w-[120px]">{user.name}</span>
+                <span className="text-xs font-bold text-slate-800 pr-1 truncate max-w-30">{user.name}</span>
               </Link>
               <Button
                 variant="outline"

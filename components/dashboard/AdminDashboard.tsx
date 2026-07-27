@@ -754,7 +754,7 @@ export default function AdminDashboard() {
       <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* ─── 2. MAIN CONTAINER ─── */}
-      <div className="flex-grow h-full flex flex-col min-w-0 overflow-hidden bg-[#f9f9f9]">
+      <div className="grow h-full flex flex-col min-w-0 overflow-hidden bg-[#f9f9f9]">
 
         {/* Top Header Bar */}
         <header className="h-16 bg-white border-b border-slate-200/80 px-8 flex items-center justify-between shrink-0 shadow-xs z-10">
@@ -937,7 +937,7 @@ export default function AdminDashboard() {
 
                 {/* Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[800px]">
+                  <table className="w-full text-left border-collapse min-w-200">
                     <thead>
                       <tr className="text-slate-500 font-semibold text-xs border-b border-slate-100">
                         <th className="pb-4 pl-2 font-semibold">Judul Keluhan</th>
@@ -1040,7 +1040,7 @@ export default function AdminDashboard() {
 
                                 <button
                                   onClick={() => handleOpenDetailModal(c.id)}
-                                  className="inline-flex items-center justify-center px-4 py-1.5 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-lg text-xs shadow-sm transition-all cursor-pointer"
+                                  className="inline-flex items-center justify-center px-4 py-1.5 bg-[#b61722] hover:bg-red-650 text-white font-bold rounded-lg text-xs shadow-sm transition-all cursor-pointer"
                                 >
                                   Detail Informasi
                                 </button>
@@ -1264,7 +1264,7 @@ export default function AdminDashboard() {
 
                 {/* Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[800px]">
+                  <table className="w-full text-left border-collapse min-w-200">
                     <thead>
                       <tr className="text-slate-500 font-semibold text-xs border-b border-slate-100">
                         <th className="pb-4 pl-2 font-semibold">Judul Keluhan</th>
@@ -1359,7 +1359,7 @@ export default function AdminDashboard() {
 
                                 <button
                                   onClick={() => handleOpenDetailModal(c.id)}
-                                  className="inline-flex items-center justify-center px-4 py-1.5 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-lg text-xs shadow-sm transition-all cursor-pointer"
+                                  className="inline-flex items-center justify-center px-4 py-1.5 bg-[#b61722] hover:bg-red-650 text-white font-bold rounded-lg text-xs shadow-sm transition-all cursor-pointer"
                                 >
                                   Detail Informasi
                                 </button>
@@ -1465,7 +1465,7 @@ export default function AdminDashboard() {
                           key={unit.id}
                           onClick={() => setSelectedUnitId(unit.id)}
                           className={cn(
-                            "bg-white p-6 rounded-3xl border shadow-sm transition-all duration-300 flex flex-col justify-between h-[240px] relative cursor-pointer group",
+                            "bg-white p-6 rounded-3xl border shadow-sm transition-all duration-300 flex flex-col justify-between h-60 relative cursor-pointer group",
                             isSelected
                               ? "border-[#b61722] ring-1 ring-[#b61722] scale-[1.01]"
                               : "border-slate-200/80 hover:border-slate-350 hover:shadow-md"
@@ -1542,7 +1542,7 @@ export default function AdminDashboard() {
                     const totalMembers = activeMembers.length;
 
                     return (
-                      <div className="bg-white rounded-3xl border border-[#b61722] shadow-md p-6 flex flex-col justify-between min-h-[580px]">
+                      <div className="bg-white rounded-3xl border border-[#b61722] shadow-md p-6 flex flex-col justify-between min-h-145">
                         <div className="space-y-6">
                           {/* Header section with Pencil icon */}
                           <div className="flex justify-between items-start gap-4">
@@ -1640,7 +1640,7 @@ export default function AdminDashboard() {
                                   setNewMemberEmail("");
                                   setIsAddMemberModalOpen(true);
                                 }}
-                                className="inline-flex items-center gap-1 text-[10px] font-bold text-[#b61722] hover:text-[#a7151e] transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1 text-[10px] font-bold text-[#b61722] hover:text-red-650 transition-colors cursor-pointer"
                               >
                                 <UserPlus className="h-3.5 w-3.5" />
                                 <span>Tambah Anggota</span>
@@ -1683,6 +1683,18 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
+                        {/* Manage Settings Button */}
+                        <div className="pt-6 border-t border-slate-100">
+                          <button
+                            onClick={() => {
+                              toast.info(`Membuka Pengaturan Unit: ${activeUnit.name}`);
+                            }}
+                            className="w-full h-11 bg-[#b61722] hover:bg-red-650 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-[0.98]"
+                          >
+                            <Sliders className="h-4 w-4" />
+                            <span>Kelola Pengaturan Unit</span>
+                          </button>
+                        </div>
                       </div>
                     );
                   })()}
@@ -1721,7 +1733,7 @@ export default function AdminDashboard() {
                       setUserFormData({ name: "", email: "", password: "", phone_number: "", role: "USER", userType: "SISWA" });
                       setIsUserFormModalOpen(true);
                     }}
-                    className="h-10 px-4 bg-[#b61722] hover:bg-[#a7151e] text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+                    className="h-10 px-4 bg-[#b61722] hover:bg-red-650 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
                   >
                     <UserPlus className="h-4 w-4 text-white" />
                     <span>Tambah Pengguna</span>
@@ -1781,7 +1793,7 @@ export default function AdminDashboard() {
               {/* User Management Table */}
               <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[800px]">
+                  <table className="w-full text-left border-collapse min-w-200">
                     <thead>
                       <tr className="text-slate-450 font-bold text-xs uppercase border-b border-slate-100 pb-4">
                         <th className="pb-4 pl-2 font-semibold">Nama Pengguna</th>
@@ -2046,7 +2058,7 @@ export default function AdminDashboard() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 h-10 bg-[#b61722] hover:bg-[#a7151e] text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
+                  className="flex-1 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
                 >
                   {isSubmitting && <Loader2 className="h-3 w-3 animate-spin" />}
                   <span>Buat Unit</span>
@@ -2200,7 +2212,7 @@ export default function AdminDashboard() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 h-10 bg-[#b61722] hover:bg-[#a7151e] text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
+                  className="flex-1 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
                 >
                   {isSubmitting && <Loader2 className="h-3 w-3 animate-spin" />}
                   <span>{memberIsPic ? "Simpan PIC" : "Tambah"}</span>
@@ -2264,7 +2276,7 @@ export default function AdminDashboard() {
                 <button
                   type="submit"
                   disabled={isUpdatingAutoClose}
-                  className="flex-1 h-10 bg-[#b61722] hover:bg-[#a7151e] text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
+                  className="flex-1 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
                 >
                   {isUpdatingAutoClose && <Loader2 className="h-3 w-3 animate-spin" />}
                   <span>Simpan Konfigurasi</span>

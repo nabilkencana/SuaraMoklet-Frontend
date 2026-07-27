@@ -178,8 +178,8 @@ export default function UnitDashboard() {
 
       {activeTab === "dashboard" ? (
         /* ─── MAIN WORKSPACE ─── */
-        <div className="flex-grow h-full flex flex-col min-w-0 overflow-hidden bg-[#f9f9f9]">
-        <div className="flex-grow overflow-y-auto p-8 space-y-8">
+        <div className="grow h-full flex flex-col min-w-0 overflow-hidden bg-[#f9f9f9]">
+        <div className="grow overflow-y-auto p-8 space-y-8">
 
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -246,7 +246,7 @@ export default function UnitDashboard() {
 
             {/* Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[700px]">
+              <table className="w-full text-left border-collapse min-w-175">
                 <thead>
                   <tr className="text-slate-450 font-bold text-[11px] uppercase border-b border-slate-100">
                     <th className="pb-3 pl-2 font-semibold">ID</th>
@@ -287,7 +287,7 @@ export default function UnitDashboard() {
                           <td className="py-4 pl-2 font-bold text-slate-400 font-mono uppercase">
                             #{c.id.slice(0, 8)}
                           </td>
-                          <td className="py-4 pr-3 max-w-[220px]">
+                          <td className="py-4 pr-3 max-w-55">
                             <span className={cn("block font-bold text-slate-800 leading-snug truncate", isClosed && "line-through text-slate-400 font-medium")}>
                               {c.title}
                             </span>
@@ -319,7 +319,7 @@ export default function UnitDashboard() {
                               {user?.role === "UNIT_PIC" && !isClosed && (
                                 <button
                                   onClick={() => handleOpenDetail(c.id, "#reply-form-section")}
-                                  className="h-8 px-3 bg-[#b61722] hover:bg-[#a7151e] text-white font-bold rounded-lg flex items-center gap-1 shadow-xs transition-all cursor-pointer active:scale-[0.96] text-[10px]"
+                                  className="h-8 px-3 bg-[#b61722] hover:bg-red-650 text-white font-bold rounded-lg flex items-center gap-1 shadow-xs transition-all cursor-pointer active:scale-[0.96] text-[10px]"
                                 >
                                   <Send className="h-3 w-3" />
                                   <span>Balas</span>

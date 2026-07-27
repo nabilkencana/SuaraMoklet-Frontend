@@ -140,7 +140,7 @@ export default function ProfileContainer() {
               className="h-20 w-20 rounded-full object-cover border-2 border-slate-200 shadow-sm shrink-0"
             />
           ) : (
-            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white text-xl font-extrabold shrink-0 shadow-sm">
+            <div className="h-20 w-20 rounded-full bg-linear-to-br from-red-500 to-red-700 flex items-center justify-center text-white text-xl font-extrabold shrink-0 shadow-sm">
               {initials}
             </div>
           )}
