@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ThumbsUp, ThumbsDown, Loader2, LogIn, Heart } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/app/store/auth.store";
 import { toast } from "sonner";
 
@@ -25,7 +24,12 @@ export default function SupportWidget({
   const { isAuthenticated } = useAuthStore();
   const [localLiked, setLocalLiked] = useState<boolean>(false);
   const [localDisliked, setLocalDisliked] = useState<boolean>(false);
+  const [likeCount, setLikeCount] = useState<number>(supports);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setLikeCount(supports);
+  }, [supports]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -47,33 +51,44 @@ export default function SupportWidget({
     }
 
     setIsSubmitting(true);
-    const success = await onSupport(complaintId);
-    if (success) {
-      if (localLiked) {
-        setLocalLiked(false);
-        const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
-        const updatedLiked = likedList.filter((id: string) => id !== complaintId);
-        localStorage.setItem("liked_complaints", JSON.stringify(updatedLiked));
-        toast.success("Batal menyukai aspirasi.");
-      } else {
+
+    if (localLiked) {
+      // Toggle OFF (Unlike)
+      setLocalLiked(false);
+      setLikeCount((prev) => Math.max(0, prev - 1));
+      const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
+      const updatedLiked = likedList.filter((id: string) => id !== complaintId);
+      localStorage.setItem("liked_complaints", JSON.stringify(updatedLiked));
+      toast.success("Batal menyukai aspirasi.");
+    } else {
+      // Toggle ON (Like)
+      const success = await onSupport(complaintId);
+      if (success) {
         setLocalLiked(true);
-        setLocalDisliked(false);
+        setLikeCount((prev) => prev + 1);
+
+        // If previously disliked, remove dislike
+        if (localDisliked) {
+          setLocalDisliked(false);
+          const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
+          const updatedDisliked = dislikedList.filter((id: string) => id !== complaintId);
+          localStorage.setItem("disliked_complaints", JSON.stringify(updatedDisliked));
+        }
+
         const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
         if (!likedList.includes(complaintId)) {
           likedList.push(complaintId);
           localStorage.setItem("liked_complaints", JSON.stringify(likedList));
         }
-        const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
-        const updatedDisliked = dislikedList.filter((id: string) => id !== complaintId);
-        localStorage.setItem("disliked_complaints", JSON.stringify(updatedDisliked));
-        
+
         toast.success("Aspirasi disukai!");
-        
+
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event("local-disliked-change"));
         }
       }
     }
+
     setIsSubmitting(false);
   };
 
@@ -85,6 +100,11 @@ export default function SupportWidget({
     if (!isAuthenticated) {
       toast.error("Silakan login untuk memberikan dislike.");
       return;
+    }
+
+    // If previously liked, decrement count
+    if (localLiked) {
+      setLikeCount((prev) => Math.max(0, prev - 1));
     }
 
     setLocalDisliked(true);
@@ -100,7 +120,7 @@ export default function SupportWidget({
     localStorage.setItem("liked_complaints", JSON.stringify(updatedLiked));
 
     toast.info("Aspirasi disembunyikan karena dislike.");
-    
+
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("local-disliked-change"));
     }
@@ -111,7 +131,7 @@ export default function SupportWidget({
     const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
     const updatedDisliked = dislikedList.filter((id: string) => id !== complaintId);
     localStorage.setItem("disliked_complaints", JSON.stringify(updatedDisliked));
-    
+
     toast.success("Dislike dibatalkan.");
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("local-disliked-change"));
@@ -123,7 +143,7 @@ export default function SupportWidget({
       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
         <div>
           <span className="block text-2xl font-extrabold text-slate-800 leading-none">
-            {supports}
+            {likeCount}
           </span>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1.5 block">
             Jumlah Suka
@@ -135,16 +155,16 @@ export default function SupportWidget({
           <button
             onClick={handleLike}
             disabled={isSubmitting}
-            className={`h-11 px-4 rounded-xl flex items-center justify-center gap-2 border text-xs font-bold uppercase tracking-wider transition-all select-none cursor-pointer ${
+            className={`h-10 px-4 rounded-xl flex items-center justify-center gap-2 border text-xs font-bold uppercase tracking-wider transition-all select-none cursor-pointer ${
               localLiked
                 ? "bg-red-50 border-red-200 text-red-650 hover:bg-red-100"
-                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
             }`}
           >
             {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <ThumbsUp className={`h-4 w-4 ${localLiked ? "fill-red-600" : ""}`} />
+              <ThumbsUp className={`h-4 w-4 ${localLiked ? "fill-red-600 text-red-600" : "text-slate-500"}`} />
             )}
             <span>{localLiked ? "Unlike" : "Like"}</span>
           </button>
@@ -153,17 +173,17 @@ export default function SupportWidget({
           {localDisliked ? (
             <button
               onClick={handleUndoDislike}
-              className="h-11 px-4 rounded-xl flex items-center justify-center gap-2 border text-xs font-bold uppercase tracking-wider transition-all bg-slate-100 border-slate-200 text-slate-800 cursor-pointer"
+              className="h-10 px-4 rounded-xl flex items-center justify-center gap-2 border text-xs font-bold uppercase tracking-wider transition-all bg-slate-100 border-slate-200 text-slate-800 cursor-pointer hover:bg-slate-200/80"
             >
-              <ThumbsDown className="h-4 w-4 fill-slate-700" />
+              <ThumbsDown className="h-4 w-4 fill-slate-700 text-slate-700" />
               <span>Undo Dislike</span>
             </button>
           ) : (
             <button
               onClick={handleDislike}
-              className="h-11 px-4 rounded-xl flex items-center justify-center gap-2 border text-xs font-bold uppercase tracking-wider transition-all bg-white border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+              className="h-10 px-4 rounded-xl flex items-center justify-center gap-2 border text-xs font-bold uppercase tracking-wider transition-all bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 cursor-pointer"
             >
-              <ThumbsDown className="h-4 w-4" />
+              <ThumbsDown className="h-4 w-4 text-slate-500" />
               <span>Dislike</span>
             </button>
           )}
@@ -182,26 +202,29 @@ export default function SupportWidget({
             </p>
           </div>
         </div>
-      ) : !isAuthenticated && (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
-              <LogIn className="h-4 w-4" />
+      ) : (
+        !isAuthenticated && (
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+                <LogIn className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-700">Ingin merespon?</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Login untuk menyukai atau menyembunyikan aspirasi.</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-bold text-slate-700">Ingin merespon?</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">Login untuk menyukai atau menyembunyikan aspirasi.</p>
-            </div>
+            <Link
+              href={`/login?redirect=/complaints/${complaintId}`}
+              className="shrink-0 h-8 px-4 inline-flex items-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors"
+            >
+              <LogIn className="h-3.5 w-3.5" />
+              Login
+            </Link>
           </div>
-          <Link
-            href={`/login?redirect=/complaints/${complaintId}`}
-            className="shrink-0 h-8 px-4 inline-flex items-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors"
-          >
-            <LogIn className="h-3.5 w-3.5" />
-            Login
-          </Link>
-        </div>
+        )
       )}
     </div>
   );
 }
+

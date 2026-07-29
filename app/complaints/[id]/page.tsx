@@ -21,6 +21,9 @@ import {
   Menu,
   X,
   ThumbsUp,
+  CheckCircle2,
+  MessageCircle,
+  RefreshCw,
 } from "lucide-react";
 import SupportWidget from "@/components/complaints/SupportWidget";
 import Timeline from "@/components/complaints/Timeline";
@@ -32,6 +35,142 @@ import { cn } from "@/lib/utils";
 import { ComplaintStatus, TimelineEvent } from "@/types/complaint";
 import Header from "@/components/shared/Header";
 import UnitComplaintDetailPage from "@/components/dashboard/UnitComplaintDetailPage";
+import useComments from "@/hooks/useComments";
+
+// ─── Plan Card (shows handling plan from admin/unit when OPEN / DIPROSES) ───
+function PlanCard({ complaintId }: { complaintId: string }) {
+  const { comments, isLoading } = useComments(complaintId);
+  // Get admin (unit) comments
+  const adminComments = comments.filter((c) => c.isPic);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white border border-amber-200/80 rounded-2xl p-6 shadow-sm animate-pulse">
+        <div className="h-4 w-32 bg-amber-100 rounded mb-3" />
+        <div className="h-16 bg-slate-100 rounded-xl" />
+      </div>
+    );
+  }
+
+  // Strip prefix if any
+  const planComments = adminComments.map(c => ({
+    ...c,
+    content: c.content.replace(/^\[RENCANA\]\s*/i, ""),
+  }));
+
+  if (planComments.length === 0) {
+    return (
+      <div className="bg-white border border-amber-200/80 rounded-2xl p-6 shadow-sm space-y-3">
+        <div className="flex items-center gap-2 border-b border-amber-100 pb-3">
+          <div className="h-7 w-7 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+            <RefreshCw className="h-4 w-4 text-amber-600 animate-spin" />
+          </div>
+          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+            Rencana Penanganan dari Unit
+          </h3>
+          <span className="ml-auto px-2.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold rounded-full uppercase tracking-wider">
+            Diproses
+          </span>
+        </div>
+        <p className="text-xs text-slate-600 leading-relaxed bg-amber-50/50 rounded-xl p-3.5 border border-amber-100 font-medium">
+          Laporan sedang ditinjau dan diproses oleh unit kerja terkait.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-amber-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-2 border-b border-amber-100 pb-3">
+        <div className="h-7 w-7 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+          <RefreshCw className="h-4 w-4 text-amber-600" />
+        </div>
+        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+          Rencana Penanganan dari Unit
+        </h3>
+        <span className="ml-auto px-2.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold rounded-full uppercase tracking-wider">
+          Diproses
+        </span>
+      </div>
+
+      {/* Plan list */}
+      <div className="space-y-3">
+        {planComments.map((comment) => (
+          <div key={comment.id} className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700">{comment.user?.name || "Unit"}</span>
+              <span className="text-[10px] text-slate-400 font-semibold">
+                {new Date(comment.createdAt).toLocaleDateString("id-ID", {
+                  day: "numeric", month: "short", year: "numeric",
+                })}
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap bg-amber-50/40 rounded-xl p-3.5 border border-amber-100 font-medium">
+              {comment.content}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Solution Card (shows official resolution from admin/unit when DONE) ───
+function SolutionCard({ complaintId }: { complaintId: string }) {
+  const { comments, isLoading } = useComments(complaintId);
+  // Only show admin (unit) comments as the official solution
+  const adminComments = comments.filter((c) => c.isPic);
+
+  if (isLoading) {
+    return (
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm animate-pulse">
+        <div className="h-4 w-32 bg-slate-100 rounded mb-3" />
+        <div className="h-16 bg-slate-100 rounded-xl" />
+      </div>
+    );
+  }
+
+  if (adminComments.length === 0) return null;
+
+  return (
+    <div className="bg-white border border-emerald-200 rounded-2xl p-6 shadow-sm space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-2 border-b border-emerald-100 pb-3">
+        <div className="h-7 w-7 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+        </div>
+        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+          Solusi Resmi dari Unit
+        </h3>
+        <span className="ml-auto px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded-full uppercase tracking-wider">
+          Selesai
+        </span>
+      </div>
+
+      {/* Solutions list */}
+      <div className="space-y-3">
+        {adminComments.map((comment) => (
+          <div key={comment.id} className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700">{comment.user?.name || "Unit"}</span>
+              <span className="text-[10px] text-slate-400 font-semibold">
+                {new Date(comment.createdAt).toLocaleDateString("id-ID", {
+                  day: "numeric", month: "short", year: "numeric",
+                })}
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap bg-emerald-50/50 rounded-xl p-3 border border-emerald-100">
+              {comment.content}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
 
 // NAV_LINKS has been removed in favor of the unified Header component
 
@@ -428,8 +567,22 @@ export default function ComplaintDetailPage() {
                   </div>
                 </div>
 
-                {/* Comments — shown on both */}
-                <CommentSection complaintId={currentComplaint.id} isClosed={currentComplaint.status === "DONE"} />
+                {/* Plan Card — visible to all when OPEN (Diproses) */}
+                {currentComplaint.status === "OPEN" && (
+                  <PlanCard complaintId={currentComplaint.id} />
+                )}
+
+                {/* Solution Card — visible to all when DONE */}
+                {currentComplaint.status === "DONE" && (
+                  <SolutionCard complaintId={currentComplaint.id} />
+                )}
+
+                {/* Private Discussion — only visible to complaint owner (pelapor) */}
+                <CommentSection
+                  complaintId={currentComplaint.id}
+                  isClosed={currentComplaint.status === "DONE"}
+                  isOwner={isOwner}
+                />
               </>
             )}
           </div>

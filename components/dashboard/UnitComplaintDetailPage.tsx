@@ -23,7 +23,6 @@ import {
   PlusCircle,
   Folder,
   Bell,
-  Upload,
   X,
   Share2,
   CheckCircle,
@@ -52,8 +51,21 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   // States
   const [complaint, setComplaint] = useState<Complaint | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [replyText, setReplyText] = useState("");
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
+
+  // Inline discussion reply
+  const [replyText, setReplyText] = useState("");
+  const [isSendingReply, setIsSendingReply] = useState(false);
+
+  // Modal: Proses Laporan (rencana solusi)
+  const [isOpenModal, setIsOpenModal] = useState(false);
+  const [rencanaText, setRencanaText] = useState("");
+  const [isSubmittingOpen, setIsSubmittingOpen] = useState(false);
+
+  // Modal: Tutup Keluhan (solusi yang sudah dilakukan)
+  const [isCloseModal, setIsCloseModal] = useState(false);
+  const [solusiText, setSolusiText] = useState("");
+  const [isSubmittingClose, setIsSubmittingClose] = useState(false);
 
   // Forward Modal State
   const [isForwardModalOpen, setIsForwardModalOpen] = useState(false);
@@ -129,47 +141,59 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyText.trim() || !complaint) return;
-
-    toast.promise(
-      (async () => {
-        try {
-          await apiClient.comments.create(complaint.id, {
-            content: replyText,
-          });
-
-          await loadComplaintData();
-
-          setReplyText("");
-          toast.success("Tanggapan resmi unit terkirim!");
-        } catch (err) {
-          throw err;
-        }
-      })(),
-      {
-        loading: "Mengirim tanggapan resmi...",
-        success: "Respon resmi terkirim dan status diperbarui!",
-        error: "Gagal mengirimkan respon resmi."
-      }
-    );
+    setIsSendingReply(true);
+    try {
+      await apiClient.comments.create(complaint.id, { content: replyText });
+      await loadComplaintData();
+      setReplyText("");
+      toast.success("Tanggapan terkirim!");
+    } catch {
+      toast.error("Gagal mengirimkan tanggapan.");
+    } finally {
+      setIsSendingReply(false);
+    }
   };
 
-  const handleStatusTransition = async (nextStatus: ComplaintStatus) => {
-    if (!complaint) return;
-    toast.promise(
-      (async () => {
-        try {
-          await apiClient.complaints.updateStatus(complaint.id, nextStatus as any);
-          await loadComplaintData();
-        } catch (err) {
-          throw err;
-        }
-      })(),
-      {
-        loading: "Memperbarui status...",
-        success: `Status berhasil diubah menjadi ${nextStatus}!`,
-        error: "Gagal memperbarui status."
-      }
-    );
+  /** Proses Laporan: post rencana comment → update status to OPEN */
+  const handleProsesLaporan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rencanaText.trim() || !complaint) return;
+    setIsSubmittingOpen(true);
+    try {
+      await apiClient.comments.create(complaint.id, {
+        content: `[RENCANA] ${rencanaText.trim()}`,
+      });
+      await apiClient.complaints.updateStatus(complaint.id, "OPEN" as any);
+      await loadComplaintData();
+      setIsOpenModal(false);
+      setRencanaText("");
+      toast.success("Laporan sedang diproses!");
+    } catch {
+      toast.error("Gagal memproses laporan.");
+    } finally {
+      setIsSubmittingOpen(false);
+    }
+  };
+
+  /** Tutup Keluhan: post solusi comment → update status to DONE */
+  const handleTutupKeluhan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!solusiText.trim() || !complaint) return;
+    setIsSubmittingClose(true);
+    try {
+      await apiClient.comments.create(complaint.id, {
+        content: solusiText.trim(),
+      });
+      await apiClient.complaints.updateStatus(complaint.id, "DONE" as any);
+      await loadComplaintData();
+      setIsCloseModal(false);
+      setSolusiText("");
+      toast.success("Keluhan berhasil ditutup!");
+    } catch {
+      toast.error("Gagal menutup keluhan.");
+    } finally {
+      setIsSubmittingClose(false);
+    }
   };
 
   const handleForwardComplaint = async (e: React.FormEvent) => {
@@ -372,91 +396,83 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                 </div>
               )}
 
-              {/* Card 4: Discussion & Responses */}
+              {/* Card 4: Discussion — private between pelapor & unit */}
               <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-5">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Diskusi &amp; Tanggapan</span>
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-slate-400" />
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Diskusi Pribadi dengan Pelapor</span>
+                  <span className="ml-auto px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded-full uppercase tracking-wider">Privat</span>
+                </div>
 
-                <div className="space-y-4">
-                  {comments.map((comment) => {
-                    const isOfficial = comment.isPic;
-                    return (
-                      <div
-                        key={comment.id}
-                        className={cn(
-                          "p-4 rounded-2xl text-xs space-y-2 max-w-[90%] border shadow-3xs",
-                          isOfficial
-                            ? "bg-red-50/50 border-red-200/60 rounded-tr-none ml-auto"
-                            : "bg-white border-slate-100 rounded-tl-none mr-auto"
-                        )}
-                      >
-                        <div className="flex items-center justify-between gap-6">
-                          <span className="font-bold text-slate-800">
-                            {comment.user?.name || "Anonim"}
-                          </span>
-
-                          {isOfficial && (
-                            <span className="px-2 py-0.5 bg-[#b61722] text-white font-extrabold text-[8px] uppercase tracking-wider rounded-md">
-                              Respon Resmi Unit
-                            </span>
+                {/* Message thread */}
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                  {comments.length === 0 ? (
+                    <div className="text-center py-6 text-slate-400">
+                      <MessageSquare className="h-6 w-6 mx-auto mb-2 text-slate-300" />
+                      <p className="text-xs font-semibold">Belum ada pesan dalam diskusi ini.</p>
+                    </div>
+                  ) : (
+                    comments.map((comment) => {
+                      const isOfficial = comment.isPic;
+                      return (
+                        <div
+                          key={comment.id}
+                          className={cn(
+                            "p-3.5 rounded-2xl text-xs space-y-1.5 max-w-[90%] border shadow-3xs",
+                            isOfficial
+                              ? "bg-red-50/50 border-red-200/60 rounded-tr-none ml-auto"
+                              : "bg-white border-slate-100 rounded-tl-none mr-auto"
                           )}
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="font-bold text-slate-800">
+                              {comment.user?.name || "Anonim"}
+                            </span>
+                            {isOfficial && (
+                              <span className="px-2 py-0.5 bg-[#b61722] text-white font-extrabold text-[8px] uppercase tracking-wider rounded-md">
+                                Unit
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-slate-500 leading-relaxed font-semibold">
+                            {comment.content}
+                          </p>
                         </div>
-                        <p className="text-slate-500 leading-relaxed font-semibold">
-                          {comment.content}
-                        </p>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
-              </div>
 
-              {/* Card 5: Action Reply Form */}
-              {complaint.status === "DONE" ? (
-                <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 text-center text-xs text-slate-500 font-semibold shadow-xs">
-                  Keluhan telah ditutup. Diskusi dinonaktifkan.
-                </div>
-              ) : (
-                <div id="reply-form-section" className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-                  <span className="block text-[10px] font-bold text-slate-455 uppercase tracking-wider">Kirim Tanggapan Unit</span>
-
-                  <form onSubmit={handleSendReply} className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Tanggapan Unit</label>
-                      <textarea
-                        required
-                        rows={5}
-                        placeholder="Tuliskan respon atau update terbaru mengenai penanganan keluhan ini..."
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        className="w-full p-3.5 text-xs rounded-xl border border-slate-250 bg-white focus:outline-none focus:border-red-400 font-medium"
-                      />
-                    </div>
-
-                    {/* Attachment upload */}
-                    <div className="space-y-1.5">
-                      <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">Lampiran Pendukung (Opsional)</label>
-                      <button
-                        type="button"
-                        onClick={() => toast.info("Mengunggah foto bukti...")}
-                        className="h-10 w-full border border-dashed border-slate-350 hover:bg-slate-50 text-slate-400 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-all"
-                      >
-                        <Upload className="h-4 w-4" />
-                        <span>Upload Foto/Dokumen Bukti</span>
-                      </button>
-                    </div>
-
-                    <div className="flex justify-end pt-2">
-                      <button
-                        type="submit"
-                        className="h-11 px-6 bg-[#b61722] hover:bg-red-650 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-[0.98]"
-                      >
-                        <Send className="h-4 w-4" />
-                        <span>Kirim Respon</span>
-                      </button>
-                    </div>
-
+                {/* Inline reply form */}
+                {complaint.status !== "DONE" ? (
+                  <form onSubmit={handleSendReply} className="flex gap-2 pt-2 border-t border-slate-100">
+                    <textarea
+                      rows={2}
+                      required
+                      placeholder="Balas pesan pelapor..."
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      disabled={isSendingReply}
+                      className="flex-1 p-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-red-400 resize-none font-medium"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSendingReply || !replyText.trim()}
+                      className="h-auto px-4 bg-[#b61722] hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer active:scale-[0.98]"
+                    >
+                      {isSendingReply ? (
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Send className="h-3.5 w-3.5" />
+                      )}
+                    </button>
                   </form>
-                </div>
-              )}
+                ) : (
+                  <div className="pt-2 border-t border-slate-100 text-center text-[10px] text-slate-400 font-semibold">
+                    Keluhan ditutup. Diskusi dinonaktifkan.
+                  </div>
+                )}
+              </div>
 
             </div>
 
@@ -529,15 +545,17 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
                 {/* Action Controls */}
                 <div className="space-y-2.5 pt-3 border-t border-slate-100">
+                  {/* Proses Laporan */}
                   <button
                     disabled={complaint.status === "OPEN" || complaint.status === "DONE"}
-                    onClick={() => handleStatusTransition("OPEN")}
+                    onClick={() => setIsOpenModal(true)}
                     className="w-full h-11 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer active:scale-[0.98]"
                   >
                     <RefreshCw className="h-4 w-4" />
                     <span>Proses Laporan</span>
                   </button>
 
+                  {/* Forward */}
                   <button
                     onClick={() => setIsForwardModalOpen(true)}
                     className="w-full h-11 bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-bold rounded-xl border border-slate-200/80 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
@@ -546,9 +564,10 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                     <span>Teruskan (Forward)</span>
                   </button>
 
+                  {/* Tutup / Reopen */}
                   {(user.role === "SUPERADMIN" || user.role === "SUPER_PIC") && complaint.status === "DONE" ? (
                     <button
-                      onClick={() => handleStatusTransition("OPEN")}
+                      onClick={() => apiClient.complaints.updateStatus(complaint.id, "OPEN" as any).then(() => loadComplaintData())}
                       className="w-full h-11 bg-white hover:bg-amber-50/50 border border-amber-200 text-amber-600 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
                     >
                       <RefreshCw className="h-4 w-4 text-amber-600" />
@@ -557,7 +576,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                   ) : (
                     <button
                       disabled={complaint.status === "DONE"}
-                      onClick={() => handleStatusTransition("DONE")}
+                      onClick={() => setIsCloseModal(true)}
                       className="w-full h-11 bg-white hover:bg-red-50/50 disabled:opacity-40 disabled:cursor-not-allowed border border-red-200 text-red-600 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
                     >
                       <CheckCircle className="h-4 w-4 text-red-600" />
@@ -619,6 +638,241 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
         </div>
 
       </div>
+
+      {/* ─── MODAL: PROSES LAPORAN (Rencana Penanganan) ─── */}
+      {isOpenModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-2xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center shrink-0 shadow-3xs">
+                  <RefreshCw className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-base leading-tight">Proses Laporan</h3>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">Tentukan rencana tindakan penanganan laporan ini</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setIsOpenModal(false); setRencanaText(""); }}
+                className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl flex items-center justify-center cursor-pointer transition-colors shrink-0"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Complaint Context */}
+            {complaint && (
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex items-start gap-3">
+                <div className="h-8 w-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-3xs">
+                  <AlertCircle className="h-4 w-4 text-slate-500" />
+                </div>
+                <div className="min-w-0">
+                  <span className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Keluhan yang Diproses</span>
+                  <span className="block font-bold text-slate-800 text-xs truncate">{complaint.title}</span>
+                  <span className="block text-[10px] text-slate-400 font-mono mt-0.5">#{complaint.id?.slice(0, 8)}</span>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleProsesLaporan} className="space-y-4">
+
+              {/* Quick Templates */}
+              <div className="space-y-1.5">
+                <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
+                  Template Cepat (Opsional)
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    "Sedang dijadwalkan untuk ditinjau",
+                    "Tim teknis akan segera turun lapangan",
+                    "Koordinasi dengan pihak terkait",
+                    "Pengadaan material diproses",
+                  ].map((tpl) => (
+                    <button
+                      key={tpl}
+                      type="button"
+                      onClick={() => setRencanaText((prev) => prev ? `${prev}\n${tpl}` : tpl)}
+                      className="px-2.5 py-1 bg-slate-100 hover:bg-red-50 hover:text-red-600 border border-slate-200 text-slate-600 font-semibold text-[11px] rounded-lg transition-all cursor-pointer active:scale-95"
+                    >
+                      + {tpl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Textarea */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
+                    Rencana Penanganan <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-semibold">{rencanaText.length} karakter</span>
+                </div>
+                <textarea
+                  required
+                  rows={5}
+                  placeholder="Jelaskan langkah-langkah yang akan dilakukan untuk menangani keluhan ini..."
+                  value={rencanaText}
+                  onChange={(e) => setRencanaText(e.target.value)}
+                  className="w-full p-3.5 text-xs rounded-2xl border border-slate-250 bg-white focus:outline-none focus:border-red-500 font-medium resize-none"
+                />
+                <p className="text-[10px] text-slate-400 font-medium">
+                  Rencana ini akan dikirim sebagai pesan diskusi pribadi kepada pelapor.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setIsOpenModal(false); setRencanaText(""); }}
+                  className="flex-1 h-11 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-all text-xs cursor-pointer active:scale-[0.98]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingOpen || !rencanaText.trim()}
+                  className="flex-1 h-11 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all text-xs cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+                >
+                  {isSubmittingOpen ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  <span>Konfirmasi &amp; Proses</span>
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL: TUTUP KELUHAN (Solusi yang Sudah Dilakukan) ─── */}
+      {isCloseModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0 shadow-3xs">
+                  <CheckCircle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-base leading-tight">Tutup Keluhan</h3>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">Isi solusi yang telah dilakukan untuk menyelesaikan keluhan ini</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setIsCloseModal(false); setSolusiText(""); }}
+                className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl flex items-center justify-center cursor-pointer transition-colors shrink-0"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Complaint Context */}
+            {complaint && (
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex items-start gap-3">
+                <div className="h-8 w-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-3xs">
+                  <CheckCircle className="h-4 w-4 text-emerald-600" />
+                </div>
+                <div className="min-w-0">
+                  <span className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Keluhan yang Ditutup</span>
+                  <span className="block font-bold text-slate-800 text-xs truncate">{complaint.title}</span>
+                  <span className="block text-[10px] text-slate-400 font-mono mt-0.5">#{complaint.id?.slice(0, 8)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Info Box */}
+            <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-3.5 flex items-start gap-2.5 text-xs text-amber-800 font-semibold">
+              <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+              <p className="leading-relaxed text-[11px]">
+                Setelah ditutup, solusi ini akan ditampilkan sebagai <strong>Solusi Resmi</strong> kepada pelapor dan pelapor dapat memberikan penilaian (rating).
+              </p>
+            </div>
+
+            <form onSubmit={handleTutupKeluhan} className="space-y-4">
+
+              {/* Quick Templates */}
+              <div className="space-y-1.5">
+                <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
+                  Template Cepat (Opsional)
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    "Kerusakan telah diperbaiki",
+                    "Penggantian peralatan selesai",
+                    "Koordinasi lintas unit tuntas",
+                    "Masalah teridentifikasi & diatasi",
+                  ].map((tpl) => (
+                    <button
+                      key={tpl}
+                      type="button"
+                      onClick={() => setSolusiText((prev) => prev ? `${prev}\n${tpl}` : tpl)}
+                      className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 text-slate-600 font-semibold text-[11px] rounded-lg transition-all cursor-pointer active:scale-95"
+                    >
+                      + {tpl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Textarea */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
+                    Solusi yang Telah Dilakukan <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-semibold">{solusiText.length} karakter</span>
+                </div>
+                <textarea
+                  required
+                  rows={5}
+                  placeholder="Jelaskan secara detail solusi atau tindakan yang telah dilakukan untuk menyelesaikan keluhan ini..."
+                  value={solusiText}
+                  onChange={(e) => setSolusiText(e.target.value)}
+                  className="w-full p-3.5 text-xs rounded-2xl border border-slate-250 bg-white focus:outline-none focus:border-emerald-500 font-medium resize-none"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setIsCloseModal(false); setSolusiText(""); }}
+                  className="flex-1 h-11 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-all text-xs cursor-pointer active:scale-[0.98]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingClose || !solusiText.trim()}
+                  className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all text-xs cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+                >
+                  {isSubmittingClose ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4" />
+                  )}
+                  <span>Tutup &amp; Simpan Solusi</span>
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
 
       {/* ─── FORWARD / DELEGASI MODAL ─── */}
       {isForwardModalOpen && (
@@ -816,9 +1070,5 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
     </div>
   );
-}
-
-function setReplyStatus(nextStatus: string) {
-  throw new Error("Function not implemented.");
 }
 

@@ -22,9 +22,13 @@ import { useAuthStore } from "@/app/store/auth.store";
 interface CommentSectionProps {
   complaintId: string;
   isClosed?: boolean;
+  /** Only show the section to the complaint owner (pelapor). Others see nothing. */
+  isOwner?: boolean;
 }
 
-export default function CommentSection({ complaintId, isClosed = false }: CommentSectionProps) {
+export default function CommentSection({ complaintId, isClosed = false, isOwner = false }: CommentSectionProps) {
+  // Private discussion: only visible to the complaint owner
+  if (!isOwner) return null;
   const { comments, isLoading, isSubmitting, addComment } = useComments(complaintId);
   const { isAuthenticated } = useAuthStore();
   const [content, setContent] = useState("");
