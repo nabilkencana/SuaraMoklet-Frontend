@@ -167,6 +167,7 @@ export default function AdminDashboard() {
     role: "USER",
     userType: "SISWA"
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   // Auto-close configuration state
   const [isAutoCloseModalOpen, setIsAutoCloseModalOpen] = useState(false);
@@ -385,7 +386,7 @@ export default function AdminDashboard() {
 
     setIsSubmitting(true);
     try {
-      const mappedName = newUnitName.trim().toUpperCase().replace(/\s+/g, '_');
+      const mappedName = newUnitName.trim();
       await apiClient.units.create({ name: mappedName, description: newUnitDesc });
       toast.success("Unit Baru Berhasil Dibuat");
       setNewUnitName("");
@@ -407,7 +408,7 @@ export default function AdminDashboard() {
 
     setIsSubmitting(true);
     try {
-      const mappedName = editUnitName.trim().toUpperCase().replace(/\s+/g, '_');
+      const mappedName = editUnitName.trim();
       await apiClient.units.update(selectedUnitId, { name: mappedName, description: editUnitDesc });
       toast.success("Data Unit Berhasil Diperbarui");
       setIsEditUnitModalOpen(false);
@@ -1111,7 +1112,7 @@ export default function AdminDashboard() {
                         return (
                           <div key={unit.id} className="space-y-2">
                             <div className="flex justify-between text-sm font-semibold text-slate-700">
-                              <span>{unit.name}</span>
+                              <span>{mapBackendUnitToFrontend(unit.name)}</span>
                               <span className={cn(rate >= 70 ? "text-[#16a34a]" : rate >= 40 ? "text-[#d97706]" : "text-[#ba1a1a]")}>
                                 {rate}% Efisien ({total} Keluhan, Rating: {rating ? `${rating} ★` : "-"})
                               </span>
@@ -1474,19 +1475,19 @@ export default function AdminDashboard() {
                               : "border-slate-200/80 hover:border-slate-350 hover:shadow-md"
                           )}
                         >
-                          {/* Selected pill */}
-                          {isSelected && (
-                            <span className="absolute top-4 right-16 bg-[#b61722] text-white text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full">
-                              TERPILIH
-                            </span>
-                          )}
-
                           {/* Top row: Name & icon badge */}
                           <div className="flex justify-between items-start">
                             <div className="space-y-1.5 pr-8">
-                              <h3 className="font-extrabold text-slate-800 text-lg leading-tight group-hover:text-[#b61722] transition-colors">
-                                {unit.name}
-                              </h3>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-extrabold text-slate-800 text-lg leading-tight group-hover:text-[#b61722] transition-colors">
+                                  {unit.name}
+                                </h3>
+                                {isSelected && (
+                                  <span className="bg-[#b61722] text-white text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full whitespace-nowrap">
+                                    TERPILIH
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-xs text-slate-400 leading-relaxed font-medium line-clamp-2">
                                 {desc}
                               </p>
@@ -1599,10 +1600,7 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="space-y-0.5">
                                   <span className="block text-xs font-bold text-slate-800">{pic.name}</span>
-                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-500 bg-emerald-50/50 px-1.5 py-0.5 rounded border border-emerald-100">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    Aktif
-                                  </span>
+
                                 </div>
                               </div>
 
@@ -2503,14 +2501,23 @@ export default function AdminDashboard() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">Password {editingUserId && <span className="text-slate-400 font-normal">(Kosongkan jika tidak ingin mengubah)</span>}</label>
-                <input
-                  type="password"
-                  required={!editingUserId}
-                  value={userFormData.password}
-                  onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
-                  className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
-                  placeholder="Minimal 8 karakter"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required={!editingUserId}
+                    value={userFormData.password}
+                    onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                    className="w-full h-11 px-4 pr-10 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
+                    placeholder="Minimal 8 karakter"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -2533,8 +2540,6 @@ export default function AdminDashboard() {
                     className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
                   >
                     <option value="USER">User</option>
-                    <option value="UNIT_MEMBER">Anggota Unit</option>
-                    <option value="UNIT_PIC">PIC Unit</option>
                     <option value="SUPER_PIC">Super PIC</option>
                     <option value="SUPERADMIN">Superadmin</option>
                   </select>

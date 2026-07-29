@@ -54,19 +54,19 @@ export function mapFrontendUnitToBackend(unit: string): string {
 export function mapBackendUnitToFrontend(name: string): ComplaintUnit {
   switch (name) {
     case "ISO":
-      return "Umum (ISO)";
+      return "Umum (ISO)" as ComplaintUnit;
     case "SARPRA":
-      return "Sarpras";
+      return "Sarpras" as ComplaintUnit;
     case "KURIKULUM":
-      return "Kurikulum";
+      return "Kurikulum" as ComplaintUnit;
     case "KESISWAAN":
-      return "Kesiswaan";
+      return "Kesiswaan" as ComplaintUnit;
     case "HUBINKOM":
-      return "Hubin";
+      return "Hubin" as ComplaintUnit;
     case "TATA_USAHA":
-      return "Tata Usaha";
+      return "Tata Usaha" as ComplaintUnit;
     default:
-      return "Umum (ISO)";
+      return name as ComplaintUnit;
   }
 }
 
@@ -630,6 +630,14 @@ export const whatsappApi = {
   },
   disconnect: async (): Promise<any> => {
     const res = await api.post('/whatsapp/disconnect');
+    return res.data;
+  },
+  testSend: async (data: { to: string; message: string }): Promise<any> => {
+    const res = await api.post('/notifications/whatsapp/test-send', data);
+    return res.data;
+  },
+  resendFailed: async (): Promise<any> => {
+    const res = await api.post('/notifications/whatsapp/resend-failed');
     return res.data;
   },
 };

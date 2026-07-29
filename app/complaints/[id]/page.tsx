@@ -309,8 +309,8 @@ export default function ComplaintDetailPage() {
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-neutral-300">
               <span className="flex items-center gap-1.5">
                 {currentComplaint.isAnonymous
-                  ? <><EyeOff className="h-4 w-4 text-neutral-400" />Diajukan Anonim</>
-                  : <><UserIcon className="h-4 w-4 text-neutral-400" />Diajukan oleh: {currentComplaint.reporter?.name || "Siswa"}</>
+                  ? <><EyeOff className="h-4 w-4 text-neutral-400" />Diajukan Anonim {currentComplaint.unit ? `- dituju ke unit ${currentComplaint.unit}` : ''}</>
+                  : <><UserIcon className="h-4 w-4 text-neutral-400" />Diajukan oleh: {currentComplaint.reporter?.name || "Siswa"} {currentComplaint.unit ? `- dituju ke unit ${currentComplaint.unit}` : ''}</>
                 }
               </span>
               <span className="h-1.5 w-1.5 rounded-full bg-neutral-600" />
@@ -446,7 +446,7 @@ export default function ComplaintDetailPage() {
             <Timeline events={displayTimeline} />
             {/* Rating: only show to complaint owner after DONE */}
             {isOwner && currentComplaint.status === "DONE" && (
-              <RatingWidget complaintId={currentComplaint.id} />
+              <RatingWidget complaintId={currentComplaint.id} existingRating={currentComplaint.rating} />
             )}
           </div>
 

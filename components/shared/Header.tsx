@@ -40,6 +40,7 @@ export default function Header() {
     logout();
     toast.success("Berhasil keluar", {
       description: "Anda telah keluar dari sesi saat ini.",
+      position: "bottom-right",
     });
     router.push("/");
   };

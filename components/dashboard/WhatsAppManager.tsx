@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Loader2, QrCode, Smartphone, Bot, Zap, CheckCircle, AlertTriangle, LogOut, RefreshCw, Save, Check, X, Search, Filter } from "lucide-react";
+import { Loader2, QrCode, Smartphone, Bot, Zap, CheckCircle, AlertTriangle, LogOut, RefreshCw, Save, Check, X, Search, Filter, Send } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
 
@@ -32,6 +32,16 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
   const [isTemplatesLoading, setIsTemplatesLoading] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+
+  // Testing State
+  const [testNumber, setTestNumber] = useState("");
+  const [testMessage, setTestMessage] = useState("");
+  const [isTestSending, setIsTestSending] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+
+  // Modal States
+  const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
+  const [isResendModalOpen, setIsResendModalOpen] = useState(false);
 
   useEffect(() => {
     if (isActive) {
@@ -213,7 +223,12 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
     }
   };
 
-  const handleWaDisconnect = async () => {
+  const handleDisconnect = async () => {
+    setIsDisconnectModalOpen(true);
+  };
+
+  const confirmDisconnect = async () => {
+    setIsDisconnectModalOpen(false);
     setIsWaLoading(true);
     try {
       await apiClient.whatsapp.disconnect();
@@ -236,6 +251,47 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
       fetchTemplates();
     } catch (e) {
       toast.error("Gagal menyimpan template");
+    }
+  };
+
+  const handleTestSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testNumber.match(/^(08|628)\d{7,12}$/)) {
+      toast.error("Format nomor tidak valid (Gunakan 08x atau 628x)");
+      return;
+    }
+    if (!testMessage.trim()) {
+      toast.error("Pesan tidak boleh kosong");
+      return;
+    }
+    setIsTestSending(true);
+    try {
+      await apiClient.whatsapp.testSend({ to: testNumber, message: testMessage });
+      toast.success("Pesan percobaan terkirim!");
+      setTestMessage("");
+      fetchLogs(1, false);
+    } catch (e) {
+      toast.error("Gagal mengirim pesan percobaan");
+    } finally {
+      setIsTestSending(false);
+    }
+  };
+
+  const handleResendFailed = async () => {
+    setIsResendModalOpen(true);
+  };
+
+  const confirmResendFailed = async () => {
+    setIsResendModalOpen(false);
+    setIsResending(true);
+    try {
+      await apiClient.whatsapp.resendFailed();
+      toast.success("Permintaan kirim ulang berhasil dijalankan");
+      fetchLogs(1, false);
+    } catch (e) {
+      toast.error("Gagal melakukan kirim ulang");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -355,7 +411,7 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
                   </div>
                 </div>
               </div>
-              <button onClick={handleWaDisconnect} disabled={isWaLoading} className="h-11 px-6 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
+              <button onClick={handleDisconnect} disabled={isWaLoading} className="h-11 px-6 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
                 {isWaLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
                 <span>Disconnect Bot</span>
               </button>
@@ -516,9 +572,128 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
                 </div>
               </div>
             </div>
+
+            {/* Testing & Utilities */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+              {/* Testing Form */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                    Testing Pengiriman
+                  </h4>
+                </div>
+                <form onSubmit={handleTestSend} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Nomor Tujuan (WhatsApp)</label>
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="08xxxxxxxxxx atau 628xxxxxxxxxx" 
+                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={testNumber}
+                      onChange={(e) => setTestNumber(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Isi Pesan</label>
+                    <textarea 
+                      required
+                      placeholder="Ketik pesan percobaan di sini..." 
+                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
+                      value={testMessage}
+                      onChange={(e) => setTestMessage(e.target.value)}
+                    />
+                  </div>
+                  <button type="submit" disabled={isTestSending} className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors">
+                    {isTestSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    Kirim Pesan
+                  </button>
+                </form>
+              </div>
+
+              {/* Utility Section */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-base font-bold text-slate-800">Utilitas & Maintenance</h4>
+                </div>
+                <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl flex-1">
+                  <h5 className="font-bold text-orange-800 text-sm mb-2">Kirim Ulang Pesan Gagal</h5>
+                  <p className="text-xs text-orange-700 mb-4 leading-relaxed">
+                    Jika terdapat banyak log pesan dengan status "Gagal" (misalnya karena bot sempat offline atau koneksi terputus), Anda dapat mencoba mengirimkan ulang semua pesan tersebut ke antrean.
+                  </p>
+                  <button 
+                    onClick={handleResendFailed}
+                    disabled={isResending}
+                    className="w-full py-2.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors"
+                  >
+                    {isResending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    Kirim Ulang Semua Pesan Gagal
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
-      </div>
+        {/* Disconnect Modal */}
+      {isDisconnectModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsDisconnectModalOpen(false)}></div>
+          <div className="relative bg-white rounded-3xl shadow-xl border border-slate-100 p-6 w-full max-w-sm flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+            <div className="h-16 w-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+              <LogOut className="h-8 w-8" />
+            </div>
+            <h3 className="text-lg font-black text-slate-800 mb-2">Putus Koneksi Bot?</h3>
+            <p className="text-sm text-slate-500 mb-6">
+              Bot WhatsApp akan logout dan tidak bisa mengirim pesan secara otomatis sampai Anda menghubungkannya kembali dengan QR Code baru.
+            </p>
+            <div className="flex w-full gap-3">
+              <button
+                onClick={() => setIsDisconnectModalOpen(false)}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmDisconnect}
+                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-md shadow-red-500/20 transition-all hover:shadow-lg hover:shadow-red-500/30 active:scale-95"
+              >
+                Ya, Putuskan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Resend Modal */}
+      {isResendModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsResendModalOpen(false)}></div>
+          <div className="relative bg-white rounded-3xl shadow-xl border border-slate-100 p-6 w-full max-w-sm flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+            <div className="h-16 w-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-4">
+              <RefreshCw className="h-8 w-8" />
+            </div>
+            <h3 className="text-lg font-black text-slate-800 mb-2">Kirim Ulang Pesan Gagal?</h3>
+            <p className="text-sm text-slate-500 mb-6">
+              Sistem akan memproses dan mengirim ulang semua log notifikasi WhatsApp yang sebelumnya berstatus gagal. Lanjutkan?
+            </p>
+            <div className="flex w-full gap-3">
+              <button
+                onClick={() => setIsResendModalOpen(false)}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmResendFailed}
+                className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-md shadow-amber-500/20 transition-all hover:shadow-lg hover:shadow-amber-500/30 active:scale-95"
+              >
+                Kirim Ulang
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
     </div>
   );
 }
