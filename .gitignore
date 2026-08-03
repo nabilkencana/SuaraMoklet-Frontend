@@ -42,3 +42,8 @@ next-env.d.ts
 
 # Python secret
 .secret_scanner.py
+
+# Graphify
+graphify-out/
+.agent/
+.agents/
