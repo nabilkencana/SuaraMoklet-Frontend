@@ -17,11 +17,11 @@ export default function CreateComplaintPage() {
       {/* Back Button Bar */}
       <div className="flex items-center gap-3 px-4 sm:px-6 lg:px-8 max-w-7xl w-full mx-auto pt-6">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push('/complaints')}
           className="h-9 px-4 flex items-center gap-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm cursor-pointer text-xs font-semibold text-slate-600 hover:text-slate-800"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Kembali</span>
+          <span>Keluhan Saya</span>
         </button>
       </div>
 
