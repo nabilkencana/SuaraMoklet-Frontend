@@ -402,7 +402,7 @@ export default function LandingPage() {
                 </span>
                 <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">+</span>
               </div>
-              <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-[220px]">
+              <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-55">
                 Total keluhan &amp; aspirasi publik yang diajukan.
               </p>
             </div>
@@ -416,7 +416,7 @@ export default function LandingPage() {
                 </span>
                 <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">+</span>
               </div>
-              <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-[220px]">
+              <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-55">
                 Laporan resmi yang berhasil diselesaikan unit.
               </p>
             </div>
@@ -429,7 +429,7 @@ export default function LandingPage() {
                   {isLoadingComplaints ? "0%" : `${summaryStats.total > 0 ? Math.round((summaryStats.resolved / summaryStats.total) * 100) : 98}%`}
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-[220px]">
+              <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-55">
                 Tingkat komitmen penanganan isu oleh sekolah.
               </p>
             </div>
@@ -443,7 +443,7 @@ export default function LandingPage() {
                 </span>
                 <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">+</span>
               </div>
-              <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-[220px]">
+              <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-55">
                 Rata-rata dukungan publik per laporan dari siswa.
               </p>
             </div>

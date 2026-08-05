@@ -26,7 +26,7 @@ export default function CreateComplaintPage() {
       </div>
 
       {/* Main Form Container */}
-      <main className="flex-grow p-4 sm:p-6 lg:px-8 lg:pb-8 lg:pt-4 max-w-7xl w-full mx-auto">
+      <main className="grow p-4 sm:p-6 lg:px-8 lg:pb-8 lg:pt-4 max-w-7xl w-full mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
           {/* Left Panel: Information panel */}

@@ -116,7 +116,7 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
       </h3>
 
       {/* Discussion List */}
-      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+      <div className="space-y-4 max-h-100 overflow-y-auto pr-1">
         {comments.length > 0 ? (
           comments.map((comment) => {
             const isOfficial = comment.isPic;

@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-[#FAFAFA] text-slate-800 flex flex-col pt-16">
       <Header />
 
-      <main className="flex-grow max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8 mt-4">
+      <main className="grow max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8 mt-4">
         {/* Back button */}
         <Link
           href="/"
