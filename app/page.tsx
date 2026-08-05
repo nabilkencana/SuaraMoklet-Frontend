@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -28,6 +29,10 @@ import { ComplaintCard, ComplaintCardData, LatestComplaintListItem } from "@/com
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/app/store/auth.store";
 import { useRouter } from "next/navigation";
+import BlurText from "@/components/BlurText";
+import SplitText from "@/components/SplitText";
+import TextLoop from "@/components/TextLoop";
+import FoldText from "@/components/FoldText";
 import { toast } from "sonner";
 import Header from "@/components/shared/Header";
 import Footer from "@/components/shared/Footer";
@@ -39,7 +44,7 @@ function SectionEyebrow({
   variant = "default",
 }: {
   label: string;
-  icon?: React.ElementType;
+  icon?: React.ComponentType<{ className?: string }>;
   variant?: "default" | "light";
 }) {
   return (
@@ -112,13 +117,13 @@ function FaqAccordionItem({ item, isOpen, onClick }: { item: FaqItem; isOpen: bo
         className="w-full flex items-center justify-between p-5 text-left font-bold text-slate-800 hover:text-red-650 transition-colors gap-4 select-none cursor-pointer"
       >
         <span className="text-sm md:text-base leading-snug">{item.question}</span>
-        <ChevronDown 
-          className={cn("h-5 w-5 text-slate-400 shrink-0 transition-transform duration-300", 
+        <ChevronDown
+          className={cn("h-5 w-5 text-slate-400 shrink-0 transition-transform duration-300",
             isOpen && "rotate-180 text-red-600"
-          )} 
+          )}
         />
       </button>
-      <div 
+      <div
         className={cn("grid transition-all duration-300 ease-in-out",
           isOpen ? "grid-rows-[1fr] opacity-100 border-t border-slate-100" : "grid-rows-[0fr] opacity-0"
         )}
@@ -142,6 +147,7 @@ export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
   const [statsTriggered, setStatsTriggered] = useState(false);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
+  const [suaramuDone, setSuaramuDone] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
   const [petitionTitle, setPetitionTitle] = useState("");
   const [trendingComplaints, setTrendingComplaints] = useState<ComplaintCardData[]>([]);
@@ -183,7 +189,7 @@ export default function LandingPage() {
     const loadPublicComplaints = async () => {
       try {
         const publicList = await apiClient.complaints.getPublic({ limit: 10 });
-        
+
         const formatTimeAgo = (dateStr: string) => {
           const diffMs = Date.now() - new Date(dateStr).getTime();
           const diffDays = Math.floor(diffMs / (24 * 3600 * 1000));
@@ -234,7 +240,7 @@ export default function LandingPage() {
         setIsLoadingComplaints(false);
       }
     };
-    
+
     loadPublicComplaints();
   }, []);
 
@@ -273,21 +279,89 @@ export default function LandingPage() {
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center animate-fade-in-up">
           {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] tracking-tight text-slate-900">
-            Perubahan Sekolah{" "}
-            <br className="hidden sm:block" />
-            Dimulai dari{" "}
-            <span className="relative inline-block text-red-600">
-              Suaramu.
-              <svg className="absolute -bottom-2 left-0 w-full" height="6" viewBox="0 0 200 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 4 Q50 0 100 4 Q150 8 200 4" stroke="#B61722" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-              </svg>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] tracking-tight text-slate-900 flex flex-col items-center gap-0">
+            {/* Baris 1: "Perubahan Sekolah" */}
+            <BlurText
+              text="Perubahan Sekolah"
+              delay={120}
+              animateBy="words"
+              direction="top"
+              stepDuration={0.4}
+              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] tracking-tight text-slate-900 justify-center"
+            />
+            {/* Baris 2: "Dimulai dari" + "Suaramu." merah */}
+            <span className="flex flex-wrap items-center justify-center gap-x-2 sm:gap-x-3 gap-y-1 sm:gap-y-0 mt-1 sm:mt-0">
+              <BlurText
+                text="Dimulai dari"
+                delay={120}
+                animateBy="words"
+                direction="top"
+                stepDuration={0.4}
+                animationFrom={{ filter: 'blur(10px)', opacity: 0, y: -50 }}
+                animationTo={[
+                  { filter: 'blur(5px)', opacity: 0.5, y: 5 },
+                  { filter: 'blur(0px)', opacity: 1, y: 0 },
+                ]}
+                easing={[0.25, 0.1, 0.25, 1]}
+                className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] tracking-tight text-slate-900 justify-center"
+              />
+              <span className="relative inline-block px-1.5 sm:px-2 py-0.5 sm:py-1">
+                <BlurText
+                  text="Suaramu."
+                  delay={120}
+                  animateBy="words"
+                  direction="top"
+                  stepDuration={0.5}
+                  animationFrom={{ filter: 'blur(12px)', opacity: 0, y: -40 }}
+                  animationTo={[
+                    { filter: 'blur(6px)', opacity: 0.4, y: 6 },
+                    { filter: 'blur(0px)', opacity: 1, y: 0 },
+                  ]}
+                  easing={[0.25, 0.1, 0.25, 1]}
+                  onAnimationComplete={() => setSuaramuDone(true)}
+                  className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] tracking-tight text-red-600 justify-center"
+                />
+                {/* Hand-drawn organic circle loop wrapping around "Suaramu." - Responsive mobile & desktop */}
+                <motion.svg
+                  className="absolute -inset-x-3.5 -inset-y-2 sm:-inset-x-6 sm:-inset-y-3.5 w-[calc(100%+1.75rem)] sm:w-[calc(100%+3rem)] h-[calc(100%+1rem)] sm:h-[calc(100%+1.75rem)] overflow-visible pointer-events-none z-10"
+                  viewBox="0 0 280 90"
+                  preserveAspectRatio="none"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  initial={{ opacity: 0 }}
+                  animate={suaramuDone ? { opacity: 1 } : { opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <motion.path
+                    d="M 18 42 C 16 14, 85 5, 160 7 C 235 9, 272 22, 268 50 C 262 76, 175 85, 90 81 C 28 78, 5 56, 14 34 C 22 18, 75 10, 140 8"
+                    stroke="#B61722"
+                    strokeWidth="3.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                    initial={{ pathLength: 0 }}
+                    animate={suaramuDone ? { pathLength: 1 } : { pathLength: 0 }}
+                    transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                </motion.svg>
+              </span>
             </span>
           </h1>
 
-          <p className="mt-6 sm:mt-8 text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
-            Platform tata kelola sekolah yang transparan. Suarakan pendapatmu, kumpulkan dukungan, dan wujudkan lingkungan belajar yang lebih baik bersama-sama.
-          </p>
+          <SplitText
+            text="Platform tata kelola sekolah yang transparan. Suarakan pendapatmu, kumpulkan dukungan, dan wujudkan lingkungan belajar yang lebih baik bersama-sama."
+            className="mt-6 sm:mt-8 text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed"
+            delay={30}
+            duration={0.8}
+            ease="power3.out"
+            splitType="words"
+            from={{ opacity: 0, y: 20 }}
+            to={{ opacity: 1, y: 0 }}
+            threshold={0.1}
+            rootMargin="-50px"
+            textAlign="center"
+            tag="p"
+          />
 
           {/* CTA Input */}
           <div className="mt-14 sm:mt-16 max-w-2xl mx-auto">
@@ -315,38 +389,63 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SECTION 2: Stats Summary (Wrapped Card Trust Bar) ──────────────────── */}
-      <section ref={statsRef} className="py-8 bg-white border-y border-slate-100">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-slate-50/80 rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
-            <div className="grid grid-cols-3 gap-4 sm:gap-8 text-center divide-x divide-slate-200/70">
-              {/* Total Keluhan */}
-              <div className="space-y-1 px-2">
-                <p className={`text-3xl sm:text-4xl font-extrabold text-red-600 transition-all duration-700 ${
-                  statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}>
-                  {isLoadingComplaints ? "—" : summaryStats.total}
-                </p>
-                <p className="text-xs sm:text-sm font-bold text-slate-600">Total Keluhan Publik</p>
+      {/* ── SECTION 2: Stats Summary (Responsive 2x2 Mobile / 4-Col Desktop Grid) ── */}
+      <section ref={statsRef} className="py-10 sm:py-16 bg-white border-y border-slate-100 font-sans">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 lg:gap-10">
+            {/* Metric 1: Total Keluhan */}
+            <div className="flex flex-col items-start space-y-1.5 sm:space-y-2 p-4 sm:p-0 rounded-2xl bg-slate-50/60 sm:bg-transparent border border-slate-100/80 sm:border-none shadow-2xs sm:shadow-none">
+              <div className="w-10 sm:w-12 h-1 bg-red-600 rounded-full mb-1.5 sm:mb-3" />
+              <div className={`flex items-baseline gap-1 transition-all duration-700 ${statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+                <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+                  {isLoadingComplaints ? "0" : summaryStats.total}
+                </span>
+                <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">+</span>
               </div>
-              {/* Diselesaikan */}
-              <div className="space-y-1 px-2">
-                <p className={`text-3xl sm:text-4xl font-extrabold text-red-600 transition-all duration-700 delay-100 ${
-                  statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}>
-                  {isLoadingComplaints ? "—" : summaryStats.resolved}
-                </p>
-                <p className="text-xs sm:text-sm font-bold text-slate-600">Sudah Diselesaikan</p>
+              <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-55">
+                Total keluhan &amp; aspirasi publik yang diajukan.
+              </p>
+            </div>
+
+            {/* Metric 2: Sudah Diselesaikan */}
+            <div className="flex flex-col items-start space-y-1.5 sm:space-y-2 p-4 sm:p-0 rounded-2xl bg-slate-50/60 sm:bg-transparent border border-slate-100/80 sm:border-none shadow-2xs sm:shadow-none">
+              <div className="w-10 sm:w-12 h-1 bg-red-600 rounded-full mb-1.5 sm:mb-3" />
+              <div className={`flex items-baseline gap-1 transition-all duration-700 delay-100 ${statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+                <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+                  {isLoadingComplaints ? "0" : summaryStats.resolved}
+                </span>
+                <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">+</span>
               </div>
-              {/* Rata-rata Suka */}
-              <div className="space-y-1 px-2">
-                <p className={`text-3xl sm:text-4xl font-extrabold text-red-600 transition-all duration-700 delay-200 ${
-                  statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-                }`}>
-                  {isLoadingComplaints ? "—" : `${summaryStats.avgRating}`}
-                </p>
-                <p className="text-xs sm:text-sm font-bold text-slate-600">Rata-rata Suka</p>
+              <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-55">
+                Laporan resmi yang berhasil diselesaikan unit.
+              </p>
+            </div>
+
+            {/* Metric 3: Tingkat Penyelesaian */}
+            <div className="flex flex-col items-start space-y-1.5 sm:space-y-2 p-4 sm:p-0 rounded-2xl bg-slate-50/60 sm:bg-transparent border border-slate-100/80 sm:border-none shadow-2xs sm:shadow-none">
+              <div className="w-10 sm:w-12 h-1 bg-red-600 rounded-full mb-1.5 sm:mb-3" />
+              <div className={`flex items-baseline gap-1 transition-all duration-700 delay-200 ${statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+                <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+                  {isLoadingComplaints ? "0%" : `${summaryStats.total > 0 ? Math.round((summaryStats.resolved / summaryStats.total) * 100) : 98}%`}
+                </span>
               </div>
+              <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-55">
+                Tingkat komitmen penanganan isu oleh sekolah.
+              </p>
+            </div>
+
+            {/* Metric 4: Rata-rata Suka */}
+            <div className="flex flex-col items-start space-y-1.5 sm:space-y-2 p-4 sm:p-0 rounded-2xl bg-slate-50/60 sm:bg-transparent border border-slate-100/80 sm:border-none shadow-2xs sm:shadow-none">
+              <div className="w-10 sm:w-12 h-1 bg-red-600 rounded-full mb-1.5 sm:mb-3" />
+              <div className={`flex items-baseline gap-1 transition-all duration-700 delay-300 ${statsTriggered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+                <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+                  {isLoadingComplaints ? "0" : summaryStats.avgRating}
+                </span>
+                <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">+</span>
+              </div>
+              <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-55">
+                Rata-rata dukungan publik per laporan dari siswa.
+              </p>
             </div>
           </div>
         </div>
@@ -417,31 +516,83 @@ export default function LandingPage() {
       <section id="about" className="py-16 sm:py-24 bg-white">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <SectionEyebrow label="Cara Kerja" icon={Sparkles} />
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Bagaimana SuaraMoklet Bekerja
+          <h2 className="mt-1">
+            <FoldText
+              text="Bagaimana SuaraMoklet Bekerja"
+              splitBy="char"
+              hinge="top"
+              trigger="scroll"
+              duration={0.65}
+              stagger={0.035}
+              ease="power3.out"
+              perspective={700}
+              creaseShading={0.4}
+              fontSize="clamp(1.5rem, 4vw, 2.25rem)"
+              fontWeight={800}
+              color="#0f172a"
+              className="tracking-tight"
+            />
           </h2>
-          <p className="mt-3 text-slate-500 text-sm max-w-md mx-auto">
-            Tiga langkah sederhana untuk membuat perubahan nyata di sekolahmu.
-          </p>
+          <SplitText
+            text="Tiga langkah sederhana untuk membuat perubahan nyata di sekolahmu."
+            className="mt-3 text-slate-500 text-sm max-w-md mx-auto"
+            delay={25}
+            duration={0.7}
+            ease="power3.out"
+            splitType="words"
+            from={{ opacity: 0, y: 15 }}
+            to={{ opacity: 1, y: 0 }}
+            threshold={0.1}
+            rootMargin="-50px"
+            textAlign="center"
+            tag="p"
+          />
 
           {/* Steps */}
           <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {/* Connector lines — desktop only */}
-            <div className="hidden md:block absolute top-8 left-[calc(16.67%+1rem)] right-[calc(16.67%+1rem)] h-0.5 bg-linear-to-r from-red-200 via-red-300 to-red-200" />
+            {/* Connector line 1: Step 1 -> Step 2 (desktop only) */}
+            <motion.div
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 0.45, ease: "easeInOut" }}
+              style={{ originX: 0 }}
+              className="hidden md:block absolute top-8 left-[calc(16.67%+1.25rem)] w-[calc(33.33%-2.5rem)] h-0.5 bg-linear-to-r from-red-300 via-red-400 to-red-300 z-0"
+            />
 
-            {STEPS.map((step) => (
-              <div key={step.num} className="relative flex flex-col items-center gap-4 px-4">
-                {/* Circle */}
-                <div className="relative z-10 h-16 w-16 rounded-full border-2 border-red-200 bg-white shadow-md shadow-red-100 flex items-center justify-center">
-                  <span className="text-xl font-extrabold text-red-600">{step.num}</span>
-                  <div className="absolute inset-0 rounded-full border border-red-300 animate-ping opacity-20" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base">{step.title}</h3>
-                  <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">{step.description}</p>
-                </div>
-              </div>
-            ))}
+            {/* Connector line 2: Step 2 -> Step 3 (desktop only) */}
+            <motion.div
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 1.05, ease: "easeInOut" }}
+              style={{ originX: 0 }}
+              className="hidden md:block absolute top-8 left-[calc(50%+1.25rem)] w-[calc(33.33%-2.5rem)] h-0.5 bg-linear-to-r from-red-300 via-red-400 to-red-300 z-0"
+            />
+
+            {STEPS.map((step, index) => {
+              const stepDelay = index === 0 ? 0.1 : index === 1 ? 0.7 : 1.3;
+              return (
+                <motion.div
+                  key={step.num}
+                  initial={{ opacity: 0, y: 24, scale: 0.9 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.45, delay: stepDelay, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="relative flex flex-col items-center gap-4 px-4"
+                >
+                  {/* Circle */}
+                  <div className="relative z-10 h-16 w-16 rounded-full border-2 border-red-200 bg-white shadow-md shadow-red-100 flex items-center justify-center">
+                    <span className="text-xl font-extrabold text-red-600">{step.num}</span>
+                    <div className="absolute inset-0 rounded-full border border-red-300 animate-ping opacity-20" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base">{step.title}</h3>
+                    <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">{step.description}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -510,9 +661,33 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SECTION 7: CTA Banner ────────────────────── */}
-      <section className="py-16 sm:py-24 bg-slate-50/60">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      {/* ── SECTION 7: CTA Banner + TextLoop Background ──── */}
+      {/* TextLoop wave runs as a background layer behind the card */}
+      <section className="relative py-16 sm:py-24 overflow-hidden bg-white">
+
+        {/* TextLoop: absolute background, pointer-events-none so card stays interactive */}
+        <div className="absolute inset-0 flex items-center pointer-events-none select-none">
+          <TextLoop
+            text="Suaramu Penting ✦ Laporkan Sekarang ✦ Bersama Kita Bisa Berubah ✦ Transparan & Terpercaya"
+            shape="wave"
+            speed={80}
+            direction="forward"
+            separator="✦"
+            curviness={90}
+            fontSize={46}
+            fontWeight={800}
+            letterSpacing={2}
+            uppercase
+            color="#ffffff"
+            ribbon
+            ribbonColor="#B61722"
+            ribbonWidth={86}
+            pauseOnHover={false}
+          />
+        </div>
+
+        {/* Card — sits above the wave via z-10 */}
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="relative bg-linear-to-br from-red-600 to-red-700 rounded-3xl px-8 py-14 sm:py-20 overflow-hidden shadow-2xl shadow-red-200">
             {/* Decorative circles */}
             <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-white/5" />
