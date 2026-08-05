@@ -6,6 +6,7 @@ import { apiClient } from "@/lib/api";
 import { useAuthStore } from "@/app/store/auth.store";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import FullScreenLoader from "@/components/shared/FullScreenLoader";
 
 function SsoHandler() {
   const router = useRouter();
@@ -68,11 +69,7 @@ function SsoHandler() {
 
 export default function SsoPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="h-8 w-8 text-[#b61722] animate-spin" />
-      </div>
-    }>
+    <Suspense fallback={<FullScreenLoader />}>
       <SsoHandler />
     </Suspense>
   );

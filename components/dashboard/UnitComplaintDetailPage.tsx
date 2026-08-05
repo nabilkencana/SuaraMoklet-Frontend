@@ -160,10 +160,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     if (!rencanaText.trim() || !complaint) return;
     setIsSubmittingOpen(true);
     try {
-      await apiClient.comments.create(complaint.id, {
-        content: `[RENCANA] ${rencanaText.trim()}`,
-      });
-      await apiClient.complaints.updateStatus(complaint.id, "OPEN" as any);
+      await apiClient.complaints.updateStatus(complaint.id, "OPEN" as any, rencanaText.trim());
       await loadComplaintData();
       setIsOpenModal(false);
       setRencanaText("");
@@ -181,10 +178,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     if (!solusiText.trim() || !complaint) return;
     setIsSubmittingClose(true);
     try {
-      await apiClient.comments.create(complaint.id, {
-        content: solusiText.trim(),
-      });
-      await apiClient.complaints.updateStatus(complaint.id, "DONE" as any);
+      await apiClient.complaints.updateStatus(complaint.id, "DONE" as any, undefined, solusiText.trim());
       await loadComplaintData();
       setIsCloseModal(false);
       setSolusiText("");
@@ -507,6 +501,20 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                           {displayStatus}
                         </span>
                       </div>
+                      
+                      {complaint.status === "OPEN" && complaint.handlingPlan && (
+                        <div className="mt-3 pt-3 border-t border-amber-200/50 text-left">
+                          <span className="block text-[9px] font-bold uppercase tracking-widest opacity-80 mb-1">Rencana Penanganan:</span>
+                          <p className="text-xs font-semibold whitespace-pre-wrap">{complaint.handlingPlan}</p>
+                        </div>
+                      )}
+                      
+                      {complaint.status === "DONE" && complaint.resolution && (
+                        <div className="mt-3 pt-3 border-t border-emerald-200/50 text-left">
+                          <span className="block text-[9px] font-bold uppercase tracking-widest opacity-80 mb-1">Solusi yang Telah Dilakukan:</span>
+                          <p className="text-xs font-semibold whitespace-pre-wrap">{complaint.resolution}</p>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}

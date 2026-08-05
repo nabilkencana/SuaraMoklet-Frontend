@@ -38,6 +38,8 @@ export interface Complaint {
   targetSupports?: number; // target count e.g. 500
   isSupported?: boolean;   // supported status by the current user
   visibility?: ComplaintVisibility;
+  handlingPlan?: string;
+  resolution?: string;
   category?: string;
   reporter?: {
     id: string;

@@ -10,9 +10,20 @@ import Footer from "@/components/shared/Footer";
 
 import { useAuthStore } from "@/app/store/auth.store";
 import UnitComplaintsList from "@/components/dashboard/UnitComplaintsList";
+import FullScreenLoader from "@/components/shared/FullScreenLoader";
+import { useEffect, useState } from "react";
 
 export default function MyComplaintsPage() {
   const { user, isAuthenticated } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <FullScreenLoader />;
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-slate-800 flex flex-col pt-16">

@@ -82,10 +82,10 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) return;
+    if (!content.trim() && !attachedUrl) return;
 
     const res = await addComment({
-      content: content.trim(),
+      content: content.trim() || "(Lampiran Gambar)",
       evidenceUrl: attachedUrl || undefined,
     });
 
@@ -260,7 +260,7 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
             {/* Submit button */}
             <Button
               type="submit"
-              disabled={isSubmitting || isUploading || !content.trim()}
+              disabled={isSubmitting || isUploading || (!content.trim() && !attachedFile)}
               size="sm"
               className="w-full sm:w-auto bg-red-600 hover:bg-red-700 h-9 font-bold text-xs uppercase tracking-wider"
             >

@@ -126,7 +126,6 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
       note: c.rating.note,
       createdAt: c.rating.createdAt,
     };
-    
     timeline.push({
       id: `${c.id}-rated`,
       title: "Penilaian Pengguna",
@@ -150,6 +149,8 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
     visibility: c.visibility,
     timeline,
     rating,
+    handlingPlan: c.handlingPlan,
+    resolution: c.resolution,
   };
 }
 
@@ -366,9 +367,16 @@ export const complaintsApi = {
     return mapBackendComplaintToFrontend(response.data);
   },
 
-  updateStatus: async (id: string, status: string): Promise<Complaint> => {
-    const response = await api.patch<any>(`/complaints/${id}/status`, { status });
+  updateStatus: async (id: string, status: string, handlingPlan?: string, resolution?: string): Promise<Complaint> => {
+    const payload: any = { status };
+    if (handlingPlan) payload.handlingPlan = handlingPlan;
+    if (resolution) payload.resolution = resolution;
+    const response = await api.patch<any>(`/complaints/${id}/status`, payload);
     return mapBackendComplaintToFrontend(response.data);
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/complaints/${id}`);
   },
 
   // ponytail: POST /complaints/:id/rating — only callable by complaint owner after CLOSED

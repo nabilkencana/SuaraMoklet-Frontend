@@ -180,6 +180,10 @@ export default function AdminDashboard() {
   const [detailModalData, setDetailModalData] = useState<any>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
 
+  // Delete Modal states
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [complaintIdToDelete, setComplaintIdToDelete] = useState<string | null>(null);
+
   const handleOpenDetailModal = async (id: string) => {
     setIsDetailModalOpen(true);
     setIsDetailLoading(true);
@@ -365,13 +369,9 @@ export default function AdminDashboard() {
         description: `Keluhan kini disetel menjadi ${nextVisibility}.`,
       });
       fetchData();
-    } catch (err) {
-      // Simulate state update
-      setComplaints((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, visibility: nextVisibility as ComplaintVisibility } : c))
-      );
-      toast.success("Visibilitas Diperbarui (Simulated)", {
-        description: `Keluhan disetel menjadi ${nextVisibility}.`,
+    } catch (err: any) {
+      toast.error("Gagal Memperbarui Visibilitas", {
+        description: err?.response?.data?.message || "Terjadi kesalahan pada server",
       });
     }
   };
@@ -543,6 +543,30 @@ export default function AdminDashboard() {
       toast.success("Keluhan didelegasikan (Simulated)");
       setSelectedComplaintForForward(null);
       setForwardNote("");
+    }
+  };
+
+  // Delete Complaint Modal Handlers
+  const promptDeleteComplaint = (id: string) => {
+    setComplaintIdToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteComplaint = async () => {
+    if (!complaintIdToDelete) return;
+    setIsSubmitting(true);
+    try {
+      await apiClient.complaints.delete(complaintIdToDelete);
+      toast.success("Keluhan berhasil dihapus secara permanen");
+      fetchData();
+      setIsDeleteModalOpen(false);
+      setComplaintIdToDelete(null);
+    } catch (err: any) {
+      toast.error("Gagal menghapus keluhan", {
+        description: err.response?.data?.message || "Terjadi kesalahan pada server",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1056,6 +1080,16 @@ export default function AdminDashboard() {
                                 >
                                   <Eye className="h-4.5 w-4.5" />
                                 </button>
+                                
+                                {(user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC") && (
+                                  <button
+                                    onClick={() => promptDeleteComplaint(c.id)}
+                                    className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                                    title="Hapus Keluhan"
+                                  >
+                                    <Trash2 className="h-4.5 w-4.5" />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -1375,6 +1409,16 @@ export default function AdminDashboard() {
                                 >
                                   <Eye className="h-4.5 w-4.5" />
                                 </button>
+                                
+                                {(user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC") && (
+                                  <button
+                                    onClick={() => promptDeleteComplaint(c.id)}
+                                    className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                                    title="Hapus Keluhan"
+                                  >
+                                    <Trash2 className="h-4.5 w-4.5" />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -2734,6 +2778,41 @@ export default function AdminDashboard() {
               >
                 Tutup
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setIsDeleteModalOpen(false)} />
+          <div className="relative bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 sm:p-8 transform transition-all scale-100 opacity-100">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-5 border-[6px] border-white shadow-sm ring-1 ring-red-100">
+                <AlertTriangle className="h-7 w-7" />
+              </div>
+              <h3 className="text-xl font-extrabold text-slate-800 tracking-tight mb-2">Konfirmasi Hapus</h3>
+              <p className="text-sm text-slate-500 leading-relaxed font-medium mb-8">
+                Apakah Anda yakin ingin menghapus keluhan ini beserta semua data terkaitnya? Aksi ini bersifat <span className="font-bold text-slate-700">permanen</span>.
+              </p>
+              <div className="flex w-full gap-3 sm:gap-4">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer text-sm"
+                  disabled={isSubmitting}
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={confirmDeleteComplaint}
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2.5 bg-[#b61722] hover:bg-red-650 text-white font-bold rounded-xl shadow-[0_4px_12px_rgba(182,23,34,0.3)] transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 text-sm"
+                >
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  Hapus
+                </button>
+              </div>
             </div>
           </div>
         </div>
