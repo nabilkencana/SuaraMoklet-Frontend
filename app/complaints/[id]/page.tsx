@@ -34,7 +34,7 @@ import { useAuthStore } from "@/app/store/auth.store";
 import { cn } from "@/lib/utils";
 import { ComplaintStatus, TimelineEvent } from "@/types/complaint";
 import Header from "@/components/shared/Header";
-import UnitComplaintDetailPage from "@/components/dashboard/UnitComplaintDetailPage";
+
 import FullScreenLoader from "@/components/shared/FullScreenLoader";
 
 
@@ -115,9 +115,7 @@ export default function ComplaintDetailPage() {
     }
   }, [mounted, complaintId]);
 
-  if (isAuthenticated && (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC")) {
-    return <UnitComplaintDetailPage complaintId={complaintId} />;
-  }
+
 
   const safeISO = (base: string | undefined, offsetMs = 0): string => {
     const ts = base ? new Date(base).getTime() : NaN;

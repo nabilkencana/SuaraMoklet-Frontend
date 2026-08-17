@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ComplaintUnit } from "@/types/complaint";
 import { apiClient } from "@/lib/api";
+import imageCompression from "browser-image-compression";
 
 const complaintSchema = z.object({
   title: z.string().min(5, "Judul keluhan minimal harus 5 karakter"),
@@ -171,20 +172,43 @@ export default function ComplaintWizard() {
       return;
     }
 
-    if (fileToUpload.size > 5 * 1024 * 1024) {
+    let finalFile = fileToUpload;
+    
+    if (fileToUpload.type.startsWith("image/")) {
+      setIsUploading(true);
+      try {
+        const isLargeFile = fileToUpload.size > 5 * 1024 * 1024;
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+          initialQuality: isLargeFile ? 1 : 0.8,
+        };
+        
+        finalFile = await imageCompression(fileToUpload, options);
+      } catch (error) {
+        console.error("Error compressing image:", error);
+        toast.error("Gagal mengompres gambar.");
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
+    }
+
+    if (finalFile.size > 5 * 1024 * 1024) {
       toast.error("Ukuran file maksimal 5MB.");
       return;
     }
 
-    setFile(fileToUpload);
+    setFile(finalFile);
     setIsUploading(true);
     try {
-      const res = await apiClient.upload.uploadFile(fileToUpload);
+      const res = await apiClient.upload.uploadFile(finalFile);
       setFileUrl(res.url);
       toast.success("File bukti berhasil diunggah!");
     } catch {
       await new Promise((r) => setTimeout(r, 500));
-      const objectUrl = URL.createObjectURL(fileToUpload);
+      const objectUrl = URL.createObjectURL(finalFile);
       setFileUrl(objectUrl);
       toast.success("File bukti berhasil dilampirkan! (Mode Demo)");
     } finally {
@@ -399,7 +423,7 @@ export default function ComplaintWizard() {
                   </span>
                   <p className="text-xs text-slate-400 mt-0.5">atau seret dan taruh di sini</p>
                 </div>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium mt-0.5">JPG, JPEG, PNG, atau PDF (Maks. 5MB)</p>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium mt-0.5 text-center">JPG, PNG (Otomatis Kompres), PDF (Maks. 5MB)</p>
               </div>
             ) : (
               <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 flex flex-col sm:flex-row items-center gap-4 justify-between">

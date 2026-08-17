@@ -109,6 +109,8 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
   // Set mounted
   useEffect(() => {
+    if (typeof window !== "undefined") {
+    }
     const timer = setTimeout(() => setMounted(true), 0);
     return () => clearTimeout(timer);
   }, []);
@@ -248,12 +250,23 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   };
 
   if (!mounted || !isAuthenticated || (user?.role !== "UNIT_PIC" && user?.role !== "UNIT_MEMBER" && user?.role !== "SUPERADMIN" && user?.role !== "SUPER_PIC")) {
-    return null;
+    return (
+      <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9] font-sans antialiased text-slate-800">
+        {user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC" ? (
+          <AdminSidebar activeTab="complaints" />
+        ) : (
+          <UnitSidebar activeTab="keluhan" />
+        )}
+        <div className="grow h-full flex flex-col min-w-0 overflow-hidden items-center justify-center bg-[#f9f9f9]">
+          <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+        </div>
+      </div>
+    );
   }
 
   if (isLoading || !complaint) {
     return (
-      <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9]">
+      <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9] font-sans antialiased text-slate-800">
         {/* ─── LEFT SIDEBAR (Dark UI) ─── */}
         {user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC" ? (
           <AdminSidebar activeTab="complaints" />
@@ -271,7 +284,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   const timelineList = (isTimelineExpanded ? complaint.timeline : complaint.timeline?.slice(0, 3)) || [];
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9] font-sans antialiased text-slate-800">
 
       {/* ─── LEFT SIDEBAR (Dark UI) ─── */}
       {user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC" ? (

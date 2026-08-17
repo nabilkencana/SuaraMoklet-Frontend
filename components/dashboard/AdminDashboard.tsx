@@ -102,12 +102,14 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "complaints" | "units" | "members" | "whatsapp">(() => {
+  const [activeTab, setActiveTab] = useState<"dashboard" | "complaints" | "units" | "members" | "whatsapp">("dashboard");
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("adminActiveTab") as "dashboard" | "complaints" | "units" | "members" | "whatsapp") || "dashboard";
+      const savedTab = localStorage.getItem("adminActiveTab") as "dashboard" | "complaints" | "units" | "members" | "whatsapp";
+      if (savedTab) setActiveTab(savedTab);
     }
-    return "dashboard";
-  });
+  }, []);
   const [isLoading, setIsLoading] = useState(true);
 
   // States
@@ -769,8 +771,11 @@ export default function AdminDashboard() {
 
   if (!mounted || !isAuthenticated || (user?.role !== "SUPERADMIN" && user?.role !== "SUPER_PIC")) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-slate-50">
-        <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+      <div className="h-screen w-screen overflow-hidden bg-[#f9f9f9] flex font-sans antialiased text-slate-800">
+        <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="grow h-full flex items-center justify-center bg-[#f9f9f9]">
+          <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+        </div>
       </div>
     );
   }
@@ -827,7 +832,7 @@ export default function AdminDashboard() {
                     className="h-11 px-4 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
                   >
                     <Clock className="h-4.5 w-4.5 text-slate-500" />
-                    <span>Auto-Close ({autoCloseDays} Hari)</span>
+                    <span className="flex items-center gap-1">Auto-Close ({isLoading ? <span className="inline-block w-3 h-4 bg-slate-200 animate-pulse rounded blur-[2px]" /> : autoCloseDays} Hari)</span>
                   </button>
                 </div>
               </div>
@@ -843,7 +848,9 @@ export default function AdminDashboard() {
                   </div>
                   <div className="space-y-1">
                     <span className="block text-[13px] font-medium text-slate-500">Total Keluhan</span>
-                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">{stats?.totalCount ?? complaints.length}</span>
+                    <span className={cn("block text-4xl font-extrabold tracking-tight transition-all duration-300", isLoading ? "text-transparent bg-slate-200 blur-[3px] animate-pulse rounded-lg w-16 h-10 select-none" : "text-slate-900")}>
+                      {isLoading ? "0" : (stats?.totalCount ?? complaints.length)}
+                    </span>
                   </div>
                 </div>
 
@@ -856,7 +863,9 @@ export default function AdminDashboard() {
                   </div>
                   <div className="space-y-1">
                     <span className="block text-[13px] font-medium text-slate-500">Rata-rata Rating</span>
-                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">{stats?.averageRating ? `${stats.averageRating} ★` : "0 ★"}</span>
+                    <span className={cn("block text-4xl font-extrabold tracking-tight transition-all duration-300", isLoading ? "text-transparent bg-slate-200 blur-[3px] animate-pulse rounded-lg w-24 h-10 select-none" : "text-slate-900")}>
+                      {isLoading ? "0" : (stats?.averageRating ? `${stats.averageRating} ★` : "0 ★")}
+                    </span>
                   </div>
                 </div>
 
@@ -869,7 +878,9 @@ export default function AdminDashboard() {
                   </div>
                   <div className="space-y-1">
                     <span className="block text-[13px] font-medium text-slate-500">Belum Ditangani</span>
-                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">{stats?.pendingCount ?? complaints.filter(c => c.status === "NEW").length}</span>
+                    <span className={cn("block text-4xl font-extrabold tracking-tight transition-all duration-300", isLoading ? "text-transparent bg-slate-200 blur-[3px] animate-pulse rounded-lg w-16 h-10 select-none" : "text-slate-900")}>
+                      {isLoading ? "0" : (stats?.pendingCount ?? complaints.filter(c => c.status === "NEW").length)}
+                    </span>
                   </div>
                 </div>
 
@@ -882,7 +893,9 @@ export default function AdminDashboard() {
                   </div>
                   <div className="space-y-1">
                     <span className="block text-[13px] font-medium text-slate-500">Terselesaikan</span>
-                    <span className="block text-4xl font-extrabold text-slate-900 tracking-tight">{stats?.resolvedCount ?? complaints.filter(c => c.status === "DONE").length}</span>
+                    <span className={cn("block text-4xl font-extrabold tracking-tight transition-all duration-300", isLoading ? "text-transparent bg-slate-200 blur-[3px] animate-pulse rounded-lg w-16 h-10 select-none" : "text-slate-900")}>
+                      {isLoading ? "0" : (stats?.resolvedCount ?? complaints.filter(c => c.status === "DONE").length)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -976,18 +989,45 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {filteredComplaints.map((c) => {
-                        // Map units to friendly names
-                        let friendlyUnitName = c.unit;
-                        if (c.unit === "Sarpras") friendlyUnitName = "Sarana & Prasarana" as ComplaintUnit;
+                      {isLoading ? (
+                        Array.from({ length: 5 }).map((_, i) => (
+                          <tr key={`skel-dash-${i}`} className="text-slate-700 text-sm align-middle">
+                            <td className="py-5 pl-2 max-w-xs md:max-w-md">
+                              <div className="flex flex-col gap-2">
+                                <div className="h-4 w-3/4 bg-slate-200 blur-[2px] animate-pulse rounded-md" />
+                                <div className="h-3 w-1/2 bg-slate-100 blur-[2px] animate-pulse rounded-md" />
+                              </div>
+                            </td>
+                            <td className="py-5">
+                               <div className="h-4 w-24 bg-slate-200 blur-[2px] animate-pulse rounded-md" />
+                            </td>
+                            <td className="py-5">
+                               <div className="h-6 w-16 bg-slate-200 blur-[2px] animate-pulse rounded-full" />
+                            </td>
+                            <td className="py-5">
+                               <div className="h-6 w-16 bg-slate-200 blur-[2px] animate-pulse rounded-full" />
+                            </td>
+                            <td className="py-5 text-right pr-2">
+                               <div className="flex justify-end gap-2">
+                                 <div className="h-8 w-8 bg-slate-200 blur-[2px] animate-pulse rounded-lg" />
+                                 <div className="h-8 w-8 bg-slate-200 blur-[2px] animate-pulse rounded-lg" />
+                               </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        filteredComplaints.map((c) => {
+                          // Map units to friendly names
+                          let friendlyUnitName = c.unit;
+                          if (c.unit === "Sarpras") friendlyUnitName = "Sarana & Prasarana" as ComplaintUnit;
 
-                        // Check status badges
-                        const isNew = c.status === "NEW";
-                        const isWaiting = false;
-                        const isClosed = c.status === "DONE";
-                        const isInProgress = c.status === "OPEN";
+                          // Check status badges
+                          const isNew = c.status === "NEW";
+                          const isWaiting = false;
+                          const isClosed = c.status === "DONE";
+                          const isInProgress = c.status === "OPEN";
 
-                        const infoDetail = `#REQ-${c.id.substring(0, 8).toUpperCase()} • Disubmit ${new Date(c.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`;
+                          const infoDetail = `#REQ-${c.id.substring(0, 8).toUpperCase()} • Disubmit ${new Date(c.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`;
 
                         return (
                           <tr key={c.id} className="text-slate-700 text-sm hover:bg-slate-50/50 transition-all align-middle">
@@ -995,7 +1035,7 @@ export default function AdminDashboard() {
                             <td className="py-5 pl-2 max-w-xs md:max-w-md">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span 
-                                  onClick={() => router.push(`/complaints/${c.id}`)}
+                                  onClick={() => router.push(`/dashboard/complaints/${c.id}`)}
                                   className="font-bold text-[#b61722] hover:underline cursor-pointer leading-snug"
                                 >
                                   {c.title}
@@ -1074,7 +1114,7 @@ export default function AdminDashboard() {
                                 </button>
 
                                 <button
-                                  onClick={() => router.push(`/complaints/${c.id}`)}
+                                  onClick={() => router.push(`/dashboard/complaints/${c.id}`)}
                                   className="h-8 w-8 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
                                   title="Lihat Detail"
                                 >
@@ -1094,7 +1134,8 @@ export default function AdminDashboard() {
                             </td>
                           </tr>
                         );
-                      })}
+                      })
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1328,7 +1369,7 @@ export default function AdminDashboard() {
                             <td className="py-5 pl-2 max-w-xs md:max-w-md">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span 
-                                  onClick={() => router.push(`/complaints/${c.id}`)}
+                                  onClick={() => router.push(`/dashboard/complaints/${c.id}`)}
                                   className="font-bold text-[#b61722] hover:underline cursor-pointer leading-snug"
                                 >
                                   {c.title}
@@ -1403,7 +1444,7 @@ export default function AdminDashboard() {
                                 </button>
 
                                 <button
-                                  onClick={() => router.push(`/complaints/${c.id}`)}
+                                  onClick={() => router.push(`/dashboard/complaints/${c.id}`)}
                                   className="h-8 w-8 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
                                   title="Lihat Detail"
                                 >

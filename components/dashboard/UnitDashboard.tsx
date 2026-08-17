@@ -33,12 +33,14 @@ export default function UnitDashboard() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "keluhan">(() => {
+  const [activeTab, setActiveTab] = useState<"dashboard" | "keluhan">("dashboard");
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("unitActiveTab") as "dashboard" | "keluhan") || "dashboard";
+      const savedTab = localStorage.getItem("unitActiveTab") as "dashboard" | "keluhan";
+      if (savedTab) setActiveTab(savedTab);
     }
-    return "dashboard";
-  });
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -75,7 +77,7 @@ export default function UnitDashboard() {
       }
       return next;
     });
-    router.push(`/complaints/${id}${hash}`);
+    router.push(`/dashboard/complaints/${id}${hash}`);
   };
 
   // Filter & pagination
@@ -164,14 +166,17 @@ export default function UnitDashboard() {
 
   if (!mounted || !isAuthenticated || (user?.role !== "UNIT_PIC" && user?.role !== "UNIT_MEMBER" && user?.role !== "SUPERADMIN")) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-slate-50">
-        <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+      <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9] font-sans antialiased text-slate-800">
+        <UnitSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="grow h-full flex items-center justify-center bg-[#f9f9f9]">
+          <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9] font-sans antialiased text-slate-800">
 
       {/* ─── LEFT SIDEBAR ─── */}
       <UnitSidebar activeTab={activeTab} onTabChange={setActiveTab} />

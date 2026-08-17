@@ -260,7 +260,7 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
                 return (
                   <div
                     key={c.id}
-                    onClick={() => router.push(`/complaints/${c.id}`)}
+                    onClick={() => router.push(`/dashboard/complaints/${c.id}`)}
                     className="bg-white rounded-3xl border border-slate-200/80 p-6 flex flex-col lg:flex-row justify-between gap-6 shadow-xs hover:shadow-md transition-all duration-200 hover:border-slate-350 cursor-pointer hover:bg-slate-50/10"
                   >
                     {/* Left Column */}
@@ -347,7 +347,7 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
                         )}
                         {(isClosed || user?.role === "UNIT_MEMBER") && (
                           <button
-                            onClick={(e) => { e.stopPropagation(); router.push(`/complaints/${c.id}`); }}
+                            onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/complaints/${c.id}`); }}
                             className="w-full h-10 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 text-xs font-bold rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.98]"
                           >
                             <span>Lihat Detail</span>

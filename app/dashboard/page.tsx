@@ -10,15 +10,17 @@ import AdminDashboard from "@/components/dashboard/AdminDashboard";
 import IsoDashboard from "@/components/dashboard/IsoDashboard";
 import UnitDashboard from "@/components/dashboard/UnitDashboard";
 
+let isAppHydrated = false;
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(isAppHydrated);
 
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 0);
-    return () => clearTimeout(timer);
-  }, []);
+    isAppHydrated = true;
+    if (!mounted) setMounted(true);
+  }, [mounted]);
 
   useEffect(() => {
     if (mounted) {

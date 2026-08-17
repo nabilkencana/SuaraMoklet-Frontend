@@ -51,7 +51,7 @@ export default function RecentComplaintCard({ complaint, commentCount = 0 }: Rec
 
   return (
     <Link
-      href={`/complaints/${complaint.id}`}
+      href={`/dashboard/complaints/${complaint.id}`}
       className="group block bg-white border border-slate-200/80 hover:border-red-200 hover:shadow-md rounded-2xl p-5 transition-all duration-300 relative overflow-hidden active:scale-[0.99]"
     >
       <div className="flex items-start justify-between gap-4 mb-3">
