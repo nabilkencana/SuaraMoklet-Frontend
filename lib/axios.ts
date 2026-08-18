@@ -1,6 +1,7 @@
 import axios from "axios";
 import { getCookie } from "./cookies";
 import { toast } from "sonner";
+import useAuthStore from "@/app/store/auth.store";
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api",
@@ -25,6 +26,17 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const isSilent = (error.config as any)?.silent || false;
+    
+    if (error.response?.status === 401) {
+      if (typeof window !== "undefined") {
+        useAuthStore.getState().logout();
+        toast.error("Sesi telah habis", {
+          description: "Silakan login kembali untuk melanjutkan.",
+        });
+        window.location.href = "/login";
+      }
+      return Promise.reject(error);
+    }
     
     if (typeof window !== "undefined" && !isSilent) {
       if (!error.response) {

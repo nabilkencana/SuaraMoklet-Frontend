@@ -46,7 +46,8 @@ import {
   Pencil,
   Ban,
   House,
-  RefreshCw
+  RefreshCw,
+  FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient, mapBackendUnitToFrontend } from "@/lib/api";
@@ -54,6 +55,7 @@ import { Complaint, ComplaintUnit, UnitModel, ComplaintVisibility } from "@/type
 import { cn } from "@/lib/utils";
 import AdminSidebar from "@/components/dashboard/AdminSidebar";
 import WhatsAppManager from "@/components/dashboard/WhatsAppManager";
+import AuditLogsManager from "@/components/dashboard/AuditLogsManager";
 
 interface UnitMember {
   id: string;
@@ -102,11 +104,11 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "complaints" | "units" | "members" | "whatsapp">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "complaints" | "units" | "members" | "whatsapp" | "audit_logs">("dashboard");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedTab = localStorage.getItem("adminActiveTab") as "dashboard" | "complaints" | "units" | "members" | "whatsapp";
+      const savedTab = localStorage.getItem("adminActiveTab") as "dashboard" | "complaints" | "units" | "members" | "whatsapp" | "audit_logs";
       if (savedTab) setActiveTab(savedTab);
     }
   }, []);
@@ -152,7 +154,7 @@ export default function AdminDashboard() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importStep, setImportStep] = useState(1);
   const [importFile, setImportFile] = useState<File | null>(null);
-  const [importData, setImportData] = useState<{name: string, email: string, phone: string, role: string, unit: string}[]>([]);
+  const [importData, setImportData] = useState<any[]>([]);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("All");
   const [userStatusFilter, setUserStatusFilter] = useState("All");
@@ -1180,9 +1182,8 @@ export default function AdminDashboard() {
                         const unitStats = stats?.byUnit?.find((u: any) => u.unitId === unit.id || u.unitName === unit.name);
                         const total = unitStats?.totalComplaints ?? 0;
                         const rating = unitStats?.averageRating ?? 0;
-                        const resolvedCount = complaints.filter(c => (c.unit === unit.name || mapBackendUnitToFrontend(unit.name) === c.unit) && c.status === "DONE").length;
-                        const totalCount = complaints.filter(c => (c.unit === unit.name || mapBackendUnitToFrontend(unit.name) === c.unit)).length;
-                        const rate = totalCount > 0 ? Math.round((resolvedCount / totalCount) * 100) : 0;
+                        const resolvedCount = unitStats?.resolvedComplaints ?? 0;
+                        const rate = total > 0 ? Math.round((resolvedCount / total) * 100) : 0;
 
                         return (
                           <div key={unit.id} className="space-y-2">
@@ -1221,7 +1222,7 @@ export default function AdminDashboard() {
                             <div className={cn("h-2 w-2 rounded-full mt-1.5 shrink-0", 
                               log.action === 'FORWARDED' ? 'bg-amber-500' : 
                               log.action === 'STATUS_CHANGED' ? 'bg-blue-500' : 'bg-[#b61722]')} />
-                            <div className="space-y-1 w-full text-left">
+                            <div className="space-y-1 w-full text-left min-w-0">
                               <div className="flex justify-between items-start w-full">
                                 <span className="block text-sm font-bold text-slate-800">
                                   {log.action.replace(/_/g, ' ')}
@@ -1236,8 +1237,8 @@ export default function AdminDashboard() {
                                 {new Date(log.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                               </span>
                               {log.meta && Object.keys(log.meta).length > 0 && (
-                                <div className="mt-1 bg-slate-50 p-2 rounded border border-slate-100 text-[10px] font-mono text-slate-600 overflow-x-auto whitespace-pre-wrap break-all">
-                                  {JSON.stringify(log.meta, null, 2)}
+                                <div className="mt-1 w-full max-w-full bg-slate-50 p-2 rounded border border-slate-100 text-[10px] font-mono text-slate-600 overflow-x-auto whitespace-nowrap custom-scrollbar">
+                                  {JSON.stringify(log.meta)}
                                 </div>
                               )}
                             </div>
@@ -2021,6 +2022,8 @@ export default function AdminDashboard() {
             </div>
           ) : activeTab === "whatsapp" ? (
             <WhatsAppManager isActive={activeTab === "whatsapp"} />
+          ) : activeTab === "audit_logs" ? (
+            <AuditLogsManager />
           ) : null}
 
         </div>
@@ -2397,16 +2400,38 @@ export default function AdminDashboard() {
             
             {importStep === 1 ? (
               <div className="space-y-4">
-                <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:border-slate-300 transition-colors cursor-pointer relative bg-slate-50/50 hover:bg-slate-50">
-                  <input type="file" accept=".csv,.xlsx" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setImportFile(e.target.files[0]);
-                    }
-                  }} />
-                  <Upload className="h-8 w-8 text-slate-300 mb-2" />
-                  <span className="text-sm font-bold text-slate-700">{importFile ? importFile.name : "Pilih file CSV atau Excel"}</span>
-                  <span className="text-xs text-slate-400 mt-1">atau drag & drop di sini</span>
-                </div>
+                {importFile ? (
+                  <div className="border-2 border-dashed border-[#b61722]/50 bg-red-50/30 rounded-xl p-6 flex items-center justify-between transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-xl bg-red-100 flex items-center justify-center text-[#b61722]">
+                        <FileText className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-800">{importFile.name}</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">{(importFile.size / 1024).toFixed(1)} KB • Siap diimport</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setImportFile(null)}
+                      className="h-8 w-8 rounded-lg hover:bg-red-100 flex items-center justify-center text-red-600 transition-colors cursor-pointer"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:border-[#b61722]/50 hover:bg-red-50/10 transition-all cursor-pointer relative group">
+                    <input type="file" accept=".csv,.xlsx" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setImportFile(e.target.files[0]);
+                      }
+                    }} />
+                    <div className="h-12 w-12 rounded-full bg-slate-100 group-hover:bg-red-100 flex items-center justify-center text-slate-400 group-hover:text-[#b61722] transition-colors mb-3">
+                      <Upload className="h-6 w-6" />
+                    </div>
+                    <span className="text-sm font-bold text-slate-700 group-hover:text-[#b61722] transition-colors">Pilih file CSV atau Excel</span>
+                    <span className="text-xs text-slate-400 mt-1">atau drag & drop di sini. Maksimal ukuran file 5MB</span>
+                  </div>
+                )}
                 
                 {/* Format Preview & Download */}
                 <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-sm">
@@ -2414,7 +2439,7 @@ export default function AdminDashboard() {
                     <span className="text-xs font-bold text-slate-700">Preview Format Kolom</span>
                     <button
                       onClick={() => {
-                        const csvContent = "data:text/csv;charset=utf-8,Nama,Email,Nomor HP,Role,Unit\nBudi Santoso,budi@moklet.org,08123456789,Siswa,\nSiti Aminah,siti@moklet.org,08987654321,Guru,Kurikulum";
+                        const csvContent = "data:text/csv;charset=utf-8,Nama,Email,Nomor HP,Role,Unit\nBudi Santoso,budi@moklet.org,08123456789,Siswa,\nSiti Aminah,siti@moklet.org,08987654321,Guru,Kurikulum\nAgus Supriyanto,agus@example.com,08111222333,Orangtua,";
                         const encodedUri = encodeURI(csvContent);
                         const link = document.createElement("a");
                         link.setAttribute("href", encodedUri);
@@ -2455,6 +2480,13 @@ export default function AdminDashboard() {
                           <td className="p-2 border-l border-slate-100">Guru</td>
                           <td className="p-2 border-l border-slate-100">Kurikulum</td>
                         </tr>
+                        <tr>
+                          <td className="p-2">Agus Supriyanto</td>
+                          <td className="p-2 border-l border-slate-100">agus@example.com</td>
+                          <td className="p-2 border-l border-slate-100">08111222333</td>
+                          <td className="p-2 border-l border-slate-100">Orangtua</td>
+                          <td className="p-2 border-l border-slate-100 text-slate-400 italic">kosong</td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
@@ -2470,65 +2502,83 @@ export default function AdminDashboard() {
                   </button>
                   <button
                     onClick={async () => {
-                      if (!importFile) return toast.error("Pilih file terlebih dahulu");
+                      if (!importFile) return;
                       
                       try {
                         setIsSubmitting(true);
-                        const res = await apiClient.users.bulkImport(importFile);
-                        toast.success(res.message || "Data berhasil diimport");
-                        setIsImportModalOpen(false);
-                        setImportFile(null);
-                        setImportStep(1);
-                        fetchData(); // Refresh the list
+                        const res = await apiClient.users.bulkImportPreview(importFile);
+                        setImportData(res.data || []);
+                        setImportStep(2);
                       } catch (err: any) {
-                        toast.error(err?.response?.data?.message || "Gagal mengimport data");
+                        toast.error(err?.response?.data?.message || "Gagal memproses file");
                       } finally {
                         setIsSubmitting(false);
                       }
                     }}
-                    disabled={isSubmitting}
-                    className="flex-1 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
+                    disabled={isSubmitting || !importFile}
+                    className={cn(
+                      "flex-1 h-10 font-extrabold rounded-xl transition-all text-xs flex items-center justify-center gap-1.5",
+                      !importFile 
+                        ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                        : "bg-[#b61722] hover:bg-red-650 text-white shadow-xs cursor-pointer active:scale-[0.98]"
+                    )}
                   >
-                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import Data"}
+                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Preview Data"}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="overflow-y-auto max-h-100">
-                  <table className="w-full text-left border-collapse text-sm">
+                <div className="flex gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                  <div><span className="font-bold text-slate-800">Total Data:</span> {importData.length}</div>
+                  <div className="text-red-600"><span className="font-bold">Error:</span> {importData.filter((d: any) => !d.isValid).length}</div>
+                  <div className="text-amber-600"><span className="font-bold">Ganda:</span> {importData.filter((d: any) => d.isDuplicate).length}</div>
+                </div>
+
+                <div className="overflow-y-auto max-h-100 border border-slate-200 rounded-xl">
+                  <table className="w-full text-left border-collapse text-[11px] min-w-[800px]">
                     <thead>
-                      <tr className="border-b border-slate-200 text-slate-500">
-                        <th className="pb-2">Nama</th>
-                        <th className="pb-2">Email</th>
-                        <th className="pb-2">Nomor HP</th>
-                        <th className="pb-2">Role</th>
-                        <th className="pb-2">Unit</th>
+                      <tr className="bg-slate-50 text-slate-500 border-b border-slate-200 sticky top-0 z-10">
+                        <th className="p-2 font-semibold">Nama</th>
+                        <th className="p-2 font-semibold border-l border-slate-200">Email</th>
+                        <th className="p-2 font-semibold border-l border-slate-200">Nomor HP</th>
+                        <th className="p-2 font-semibold border-l border-slate-200">Role</th>
+                        <th className="p-2 font-semibold border-l border-slate-200">Unit</th>
+                        <th className="p-2 font-semibold border-l border-slate-200 w-48">Status / Aksi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 bg-white text-slate-600">
                       {importData.map((row, i) => (
-                        <tr key={i}>
-                          <td className="py-2"><input type="text" value={row.name} onChange={(e) => { const nd = [...importData]; nd[i].name = e.target.value; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs" required /></td>
-                          <td className="py-2"><input type="text" value={row.email} onChange={(e) => { const nd = [...importData]; nd[i].email = e.target.value; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs" required /></td>
-                          <td className="py-2"><input type="text" value={row.phone} onChange={(e) => { const nd = [...importData]; nd[i].phone = e.target.value; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs" required placeholder="Wajib diisi" /></td>
-                          <td className="py-2">
-                            <select value={row.role} onChange={(e) => { const nd = [...importData]; nd[i].role = e.target.value; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs">
-                              <option value="Siswa">Siswa</option>
-                              <option value="Guru">Guru</option>
-                              <option value="Orangtua">Orangtua</option>
-                              <option value="Admin">Admin</option>
+                        <tr key={i} className={cn(!row.isValid ? "bg-red-50" : row.isDuplicate ? "bg-amber-50" : "")}>
+                          <td className="p-2"><input type="text" value={row.name} onChange={(e) => { const nd = [...importData]; nd[i].name = e.target.value; nd[i].isValid = !!e.target.value && !!nd[i].email && !!nd[i].role; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs bg-white" required /></td>
+                          <td className="p-2"><input type="email" value={row.email} onChange={(e) => { const nd = [...importData]; nd[i].email = e.target.value; nd[i].isValid = !!e.target.value && !!nd[i].name && !!nd[i].role; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs bg-white" required /></td>
+                          <td className="p-2"><input type="text" value={row.phone_number} onChange={(e) => { const nd = [...importData]; nd[i].phone_number = e.target.value; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs bg-white" /></td>
+                          <td className="p-2">
+                            <select value={row.role?.toUpperCase() || ''} onChange={(e) => { const nd = [...importData]; nd[i].role = e.target.value; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs bg-white">
+                              <option value="SISWA">Siswa</option>
+                              <option value="GURU">Guru</option>
+                              <option value="ORANGTUA">Orangtua</option>
+                              <option value="KARYAWAN">Karyawan</option>
+                              <option value="ADMIN">Admin</option>
                             </select>
                           </td>
-                          <td className="py-2">
-                            {row.role !== "Siswa" ? (
-                               <select value={row.unit} onChange={(e) => { const nd = [...importData]; nd[i].unit = e.target.value; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs">
-                                 <option value="">Pilih Unit</option>
-                                 {units.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                               </select>
-                            ) : (
-                               <span className="text-xs text-slate-400 italic">Tidak wajib</span>
-                            )}
+                          <td className="p-2">
+                             <select value={row.unit} onChange={(e) => { const nd = [...importData]; nd[i].unit = e.target.value; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs bg-white">
+                               <option value="">Pilih Unit</option>
+                               {units.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                             </select>
+                          </td>
+                          <td className="p-2">
+                            <div className="flex flex-col gap-1">
+                              {!row.isValid && <span className="text-[10px] text-red-600 font-bold break-words">{row.errors?.join(', ') || 'Data tidak lengkap'}</span>}
+                              {row.isDuplicate && (
+                                <label className="flex items-center gap-1.5 text-[10px] font-bold text-amber-700 cursor-pointer">
+                                  <input type="checkbox" checked={row.updateDuplicate} onChange={(e) => { const nd = [...importData]; nd[i].updateDuplicate = e.target.checked; setImportData(nd); }} className="accent-amber-600 rounded" />
+                                  Timpa / Update Data
+                                </label>
+                              )}
+                              {row.isValid && !row.isDuplicate && <span className="text-[10px] text-emerald-600 font-bold">Siap Import</span>}
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -2536,8 +2586,33 @@ export default function AdminDashboard() {
                   </table>
                 </div>
                 <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-100">
-                  <button onClick={() => setImportStep(1)} className="px-4 h-10 border border-slate-200 hover:bg-slate-50 text-slate-600 font-extrabold rounded-xl transition-all text-xs cursor-pointer">Kembali</button>
-                  <button onClick={() => { toast.success("Data berhasil diimport"); setIsImportModalOpen(false); setImportStep(1); setImportFile(null); }} className="px-4 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98]">Submit Import</button>
+                  <button onClick={() => setImportStep(1)} className="flex-1 h-10 border border-slate-200 hover:bg-slate-50 text-slate-600 font-extrabold rounded-xl transition-all text-xs cursor-pointer">Kembali ke Pilih File</button>
+                  <button 
+                    onClick={async () => { 
+                      const hasErrors = importData.some(d => !d.isValid);
+                      if (hasErrors) {
+                        return toast.error("Masih ada data yang error", { description: "Harap perbaiki baris berwarna merah terlebih dahulu" });
+                      }
+                      
+                      try {
+                        setIsSubmitting(true);
+                        const res = await apiClient.users.bulkImport(importData);
+                        toast.success(res.message || "Data berhasil diimport");
+                        setIsImportModalOpen(false);
+                        setImportFile(null);
+                        setImportStep(1);
+                        fetchData();
+                      } catch (err: any) {
+                        toast.error(err?.response?.data?.message || "Gagal mengimport data");
+                      } finally {
+                        setIsSubmitting(false);
+                      }
+                    }} 
+                    disabled={isSubmitting}
+                    className="flex-1 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
+                  >
+                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit Import"}
+                  </button>
                 </div>
               </div>
             )}

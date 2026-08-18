@@ -8,11 +8,12 @@ import {
   MessageSquare,
   Bot,
   LayoutDashboard,
-  House
+  House,
+  ScrollText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type AdminTab = "dashboard" | "complaints" | "units" | "members" | "whatsapp";
+type AdminTab = "dashboard" | "complaints" | "units" | "members" | "whatsapp" | "audit_logs";
 
 interface AdminSidebarProps {
   activeTab?: AdminTab;
@@ -136,6 +137,22 @@ export default function AdminSidebar({ activeTab, onTabChange }: AdminSidebarPro
             )}
             <Bot className="h-4.5 w-4.5" />
             <span>WhatsApp Bot</span>
+          </button>
+
+          <button
+            onClick={() => handleTabClick("audit_logs")}
+            className={cn(
+              "w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer relative",
+              activeTab === "audit_logs"
+                ? "bg-[#1c1c1e] text-white"
+                : "text-[rgba(226,226,226,0.7)] hover:bg-[#1c1c1e]/50 hover:text-white"
+            )}
+          >
+            {activeTab === "audit_logs" && (
+              <div className="absolute left-[-24px] top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
+            )}
+            <ScrollText className="h-4.5 w-4.5" />
+            <span>Log Sistem</span>
           </button>
         </nav>
       </div>

@@ -557,10 +557,11 @@ export const notificationsApi = {
     return rawList.map((n: any) => ({
       id: n.id,
       title: n.title,
-      description: n.message,
+      message: n.message,
       isRead: n.isRead,
       createdAt: n.createdAt,
       complaintId: n.link ? n.link.split("/").pop() : undefined,
+      link: n.link,
     }));
   },
 
@@ -605,12 +606,16 @@ export const usersApi = {
     const response = await api.patch(`/users/${id}/restore`);
     return response.data;
   },
-  bulkImport: async (file: File): Promise<{ message: string; totalImported: number }> => {
+  bulkImportPreview: async (file: File): Promise<any> => {
     const formData = new FormData();
     formData.append("file", file);
-    const response = await api.post("/users/bulk-import", formData, {
+    const response = await api.post("/users/bulk-import-preview", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
+    return response.data;
+  },
+  bulkImport: async (data: any[]): Promise<{ message: string; totalImported: number }> => {
+    const response = await api.post("/users/bulk-import", { data });
     return response.data;
   },
 };
@@ -651,7 +656,7 @@ export const whatsappApi = {
 };
 
 export const auditLogsApi = {
-  getAll: async (params?: { page?: number; limit?: number; action?: string; entityType?: string; userId?: string }): Promise<any> => {
+  getAll: async (params?: { page?: number; limit?: number; search?: string; startDate?: string; endDate?: string; action?: string; entityType?: string; userId?: string }): Promise<any> => {
     const response = await api.get<any>("/audit-logs", { params });
     return response.data;
   }
