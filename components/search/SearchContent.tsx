@@ -198,10 +198,10 @@ export default function SearchContent() {
           <section className="bg-white border-b border-slate-200/60 py-16 px-4 text-center">
             <div className="max-w-3xl mx-auto space-y-6">
               <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-                Temukan tujuan Anda berikutnya
+                Eksplorasi Aspirasi &amp; Laporan Sekolah
               </h1>
               <p className="text-sm sm:text-base text-slate-500 max-w-xl mx-auto leading-relaxed">
-                Jelajahi jutaan petisi dan temukan satu yang Anda pedulikan
+                Jelajahi keluhan dan aspirasi siswa untuk mendukung perubahan nyata di lingkungan sekolah
               </p>
 
               {/* Large search input */}
@@ -215,7 +215,7 @@ export default function SearchContent() {
                   </div>
                   <input
                     type="text"
-                    placeholder="Cari petisi..."
+                    placeholder="Cari aspirasi atau keluhan..."
                     value={searchVal}
                     onChange={(e) => setSearchVal(e.target.value)}
                     className="flex-1 px-3 text-sm sm:text-base text-slate-900 placeholder:text-slate-400 bg-transparent outline-none py-3"
@@ -271,7 +271,7 @@ export default function SearchContent() {
                   </div>
                   <div>
                     <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider">Paling Banyak Disukai</h4>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Petisi dengan like terbanyak</p>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Aspirasi dengan dukungan terbanyak</p>
                   </div>
                 </button>
 
@@ -314,21 +314,21 @@ export default function SearchContent() {
             </div>
 
 
-            {/* Featured Petitions Grid (Matching Change.org style) */}
+            {/* Featured Complaints Grid */}
             <div className="space-y-6 pt-6 border-t border-slate-200/60">
               <h2 className="text-xl font-extrabold text-slate-900">
-                Petisi dipromosikan oleh pengguna lain SuaraMoklet
+                Aspirasi yang Diajukan oleh Siswa SuaraMoklet
               </h2>
 
               {isLoading ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
-                  <p className="text-xs text-slate-400 mt-2">Memuat petisi...</p>
+                  <p className="text-xs text-slate-400 mt-2">Memuat laporan...</p>
                 </div>
               ) : complaints.length === 0 ? (
                 <div className="text-center py-12 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
                   <Compass className="h-10 w-10 text-slate-300 mx-auto" />
-                  <h4 className="text-sm font-bold text-slate-700">Belum ada petisi atau keluhan</h4>
+                  <h4 className="text-sm font-bold text-slate-700">Belum ada laporan atau keluhan</h4>
                   <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
                     Jadilah yang pertama menuliskan keluhan atau aspirasi Anda demi sekolah yang lebih baik!
                   </p>
@@ -400,12 +400,12 @@ export default function SearchContent() {
                             <span>{item.supports.toLocaleString("id-ID")} Suka</span>
                           </div>
                           
-                          {/* Tandatangani Petisi Button */}
+                          {/* Detail Button */}
                           <Link
                             href={`/complaints/${item.id}`}
                             className="w-full h-10 rounded-xl border border-slate-200 hover:bg-slate-50 active:scale-[0.98] text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1.5 relative z-20"
                           >
-                            <PenTool className="h-4 w-4" /> Lihat Petisi
+                            <PenTool className="h-4 w-4" /> Lihat Laporan
                           </Link>
                         </div>
                       </div>
@@ -418,7 +418,7 @@ export default function SearchContent() {
           </section>
         </div>
       ) : (
-        /* Results view (Image 2 & 3 Change.org style) */
+        /* Results view */
         <div className="flex-1 bg-white">
           
           {/* Header search input section */}
@@ -430,7 +430,7 @@ export default function SearchContent() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Cari keluhan atau petisi..."
+                  placeholder="Cari keluhan atau aspirasi..."
                   value={searchVal}
                   onChange={(e) => setSearchVal(e.target.value)}
                   className="flex-1 px-3 text-sm text-slate-800 placeholder:text-slate-400 bg-transparent outline-none py-2.5"
@@ -565,9 +565,9 @@ export default function SearchContent() {
                 {filteredResults.length === 0 ? (
                   <div className="text-center py-16 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
                     <Compass className="h-12 w-12 text-slate-300 mx-auto" />
-                    <h3 className="text-sm font-bold text-slate-700">Tidak ada petisi yang cocok</h3>
+                    <h3 className="text-sm font-bold text-slate-700">Tidak ada laporan yang cocok</h3>
                     <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
-                      Coba cari menggunakan kata kunci yang berbeda atau jelajahi topik populer lainnya.
+                      Coba cari menggunakan kata kunci yang berbeda atau jelajahi unit/kategori lainnya.
                     </p>
                     <button
                       onClick={() => { setSelectedStatus("ALL"); setSelectedTopic("Semua Topik"); setSearchVal(""); router.push("/search"); }}
