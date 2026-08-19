@@ -113,26 +113,20 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "complaints" | "units" | "members" | "whatsapp" | "audit_logs">("dashboard");
-
-  // Load initial tab from URL param or localStorage
-  useEffect(() => {
+  const [activeTab, setActiveTab] = useState<"dashboard" | "complaints" | "units" | "members" | "whatsapp" | "audit_logs">(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get("tab") as any;
       if (tabParam && VALID_ADMIN_TABS.includes(tabParam)) {
-        setActiveTab(tabParam);
-      } else {
-        const savedTab = localStorage.getItem("adminActiveTab") as any;
-        if (savedTab && VALID_ADMIN_TABS.includes(savedTab)) {
-          setActiveTab(savedTab);
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.set("tab", savedTab);
-          window.history.replaceState({}, "", newUrl.toString());
-        }
+        return tabParam;
+      }
+      const savedTab = localStorage.getItem("adminActiveTab") as any;
+      if (savedTab && VALID_ADMIN_TABS.includes(savedTab)) {
+        return savedTab;
       }
     }
-  }, []);
+    return "dashboard";
+  });
 
   // Sync tab change to URL param and localStorage
   useEffect(() => {
@@ -145,6 +139,19 @@ export default function AdminDashboard() {
       }
     }
   }, [activeTab]);
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get("tab") as any;
+      if (tabParam && VALID_ADMIN_TABS.includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const [isLoading, setIsLoading] = useState(true);
 

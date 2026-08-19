@@ -35,25 +35,20 @@ export default function UnitDashboard() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "keluhan">("dashboard");
-
-  useEffect(() => {
+  const [activeTab, setActiveTab] = useState<"dashboard" | "keluhan">(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get("tab") as any;
       if (tabParam && VALID_UNIT_TABS.includes(tabParam)) {
-        setActiveTab(tabParam);
-      } else {
-        const savedTab = localStorage.getItem("unitActiveTab") as "dashboard" | "keluhan";
-        if (savedTab && VALID_UNIT_TABS.includes(savedTab)) {
-          setActiveTab(savedTab);
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.set("tab", savedTab);
-          window.history.replaceState({}, "", newUrl.toString());
-        }
+        return tabParam;
+      }
+      const savedTab = localStorage.getItem("unitActiveTab") as any;
+      if (savedTab && VALID_UNIT_TABS.includes(savedTab)) {
+        return savedTab;
       }
     }
-  }, []);
+    return "dashboard";
+  });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
