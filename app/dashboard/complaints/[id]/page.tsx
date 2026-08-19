@@ -6,25 +6,25 @@ import { useAuthStore } from "@/app/store/auth.store";
 import UnitComplaintDetailPage from "@/components/dashboard/UnitComplaintDetailPage";
 import FullScreenLoader from "@/components/shared/FullScreenLoader";
 
-let isAppHydrated = false;
-
 export default function DashboardComplaintPage() {
   const params = useParams();
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
-  const [mounted, setMounted] = useState(isAppHydrated);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    isAppHydrated = true;
-    if (!mounted) setMounted(true);
-  }, [mounted]);
+    setMounted(true);
+  }, []);
 
-  if (!mounted) {
-    return <FullScreenLoader />;
-  }
+  useEffect(() => {
+    if (mounted) {
+      if (!isAuthenticated || !["UNIT_PIC", "UNIT_MEMBER", "SUPERADMIN", "SUPER_PIC"].includes(user?.role || "")) {
+        router.replace("/dashboard");
+      }
+    }
+  }, [mounted, isAuthenticated, user, router]);
 
-  if (!isAuthenticated || !["UNIT_PIC", "UNIT_MEMBER", "SUPERADMIN", "SUPER_PIC"].includes(user?.role || "")) {
-    router.replace("/dashboard");
+  if (!mounted || !isAuthenticated || !["UNIT_PIC", "UNIT_MEMBER", "SUPERADMIN", "SUPER_PIC"].includes(user?.role || "")) {
     return <FullScreenLoader />;
   }
 

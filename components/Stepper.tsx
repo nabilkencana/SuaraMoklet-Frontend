@@ -5,6 +5,7 @@ interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   initialStep?: number;
   onStepChange?: (step: number) => void;
+  onBeforeNext?: (currentStep: number) => Promise<boolean> | boolean;
   onFinalStepCompleted?: () => void;
   stepCircleContainerClassName?: string;
   stepContainerClassName?: string;
@@ -27,6 +28,7 @@ export default function Stepper({
   children,
   initialStep = 1,
   onStepChange = () => {},
+  onBeforeNext,
   onFinalStepCompleted = () => {},
   stepCircleContainerClassName = '',
   stepContainerClassName = '',
@@ -64,16 +66,35 @@ export default function Stepper({
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (onBeforeNext) {
+      const canProceed = await onBeforeNext(currentStep);
+      if (!canProceed) return;
+    }
     if (!isLastStep) {
       setDirection(1);
       updateStep(currentStep + 1);
     }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    if (onBeforeNext) {
+      const canProceed = await onBeforeNext(currentStep);
+      if (!canProceed) return;
+    }
     setDirection(1);
     updateStep(totalSteps + 1);
+  };
+
+  const handleStepClick = async (clicked: number) => {
+    if (clicked > currentStep) {
+      if (onBeforeNext) {
+        const canProceed = await onBeforeNext(currentStep);
+        if (!canProceed) return;
+      }
+    }
+    setDirection(clicked > currentStep ? 1 : -1);
+    updateStep(clicked);
   };
 
   return (
@@ -92,10 +113,7 @@ export default function Stepper({
                   renderStepIndicator({
                     step: stepNumber,
                     currentStep,
-                    onStepClick: clicked => {
-                      setDirection(clicked > currentStep ? 1 : -1);
-                      updateStep(clicked);
-                    }
+                    onStepClick: handleStepClick,
                   })
                 ) : (
                   <StepIndicator
@@ -103,10 +121,7 @@ export default function Stepper({
                     disableStepIndicators={disableStepIndicators}
                     currentStep={currentStep}
                     accentColor={accentColor}
-                    onClickStep={clicked => {
-                      setDirection(clicked > currentStep ? 1 : -1);
-                      updateStep(clicked);
-                    }}
+                    onClickStep={handleStepClick}
                   />
                 )}
                 {isNotLastStep && <StepConnector isComplete={currentStep > stepNumber} accentColor={accentColor} />}

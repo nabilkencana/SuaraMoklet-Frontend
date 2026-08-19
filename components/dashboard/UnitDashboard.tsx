@@ -144,7 +144,7 @@ export default function UnitDashboard() {
     if (mounted && isAuthenticated && (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN")) {
       fetchComplaints();
     }
-  }, [mounted, isAuthenticated, user, fetchComplaints]);
+  }, [mounted, isAuthenticated, user, activeTab, fetchComplaints]);
 
   // Filter
   const filteredComplaints = complaints.filter((c) => {

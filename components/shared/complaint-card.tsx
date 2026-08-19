@@ -10,6 +10,7 @@ export type ComplaintCategory =
   | "Kesiswaan"
   | "Kebersihan"
   | "Keamanan"
+  | "Umum"
   | "Umum (ISO)"
   | "Hubin"
   | "Tata Usaha";
@@ -52,6 +53,7 @@ export const CATEGORY_COLOR_MAP: Record<string, string> = {
   Kesiswaan: "bg-rose-50 text-rose-700 border border-rose-200/80",
   Kebersihan: "bg-teal-50 text-teal-700 border border-teal-200/80",
   Keamanan: "bg-orange-50 text-orange-700 border border-orange-200/80",
+  Umum: "bg-slate-100 text-slate-700 border border-slate-200/80",
   "Umum (ISO)": "bg-slate-100 text-slate-700 border border-slate-200/80",
   Hubin: "bg-indigo-50 text-indigo-700 border border-indigo-200/80",
   "Tata Usaha": "bg-pink-50 text-pink-700 border border-pink-200/80",

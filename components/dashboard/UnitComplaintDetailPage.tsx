@@ -42,6 +42,21 @@ import { cn } from "@/lib/utils";
 import UnitSidebar from "@/components/dashboard/UnitSidebar";
 import AdminSidebar from "@/components/dashboard/AdminSidebar";
 
+const UNIT_META_MAP: Record<string, { icon: any; name: string; description: string }> = {
+  SARPRA: { icon: Building2, name: "Sarana & Prasarana", description: "Gedung, peralatan & infrastruktur" },
+  Sarpras: { icon: Building2, name: "Sarana & Prasarana", description: "Gedung, peralatan & infrastruktur" },
+  KESISWAAN: { icon: Users, name: "Kesiswaan", description: "Kedisiplinan, OSIS & kegiatan siswa" },
+  Kesiswaan: { icon: Users, name: "Kesiswaan", description: "Kedisiplinan, OSIS & kegiatan siswa" },
+  KURIKULUM: { icon: BookOpen, name: "Kurikulum", description: "Akademik, jadwal kelas & ujian" },
+  Kurikulum: { icon: BookOpen, name: "Kurikulum", description: "Akademik, jadwal kelas & ujian" },
+  HUBINKOM: { icon: Briefcase, name: "Hubin / Humas", description: "Hubungan industri & PKL" },
+  Hubin: { icon: Briefcase, name: "Hubin / Humas", description: "Hubungan industri & PKL" },
+  TATA_USAHA: { icon: FileText, name: "Tata Usaha (TU)", description: "Administrasi & keuangan" },
+  "Tata Usaha": { icon: FileText, name: "Tata Usaha (TU)", description: "Administrasi & keuangan" },
+  ISO: { icon: Building2, name: "Umum", description: "Kebijakan mutu & operasional umum" },
+  Umum: { icon: Building2, name: "Umum", description: "Kebijakan mutu & operasional umum" },
+};
+
 export default function UnitComplaintDetailPage({ complaintId }: { complaintId: string }) {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -71,6 +86,27 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   const [isForwardModalOpen, setIsForwardModalOpen] = useState(false);
   const [forwardUnitId, setForwardUnitId] = useState("");
   const [forwardNote, setForwardNote] = useState("");
+  const [availableUnits, setAvailableUnits] = useState<any[]>([]);
+
+  // Load available units for forward modal
+  useEffect(() => {
+    const fetchUnits = async () => {
+      try {
+        const data = await apiClient.units.getAll();
+        if (Array.isArray(data) && data.length > 0) {
+          setAvailableUnits(data);
+          if (!forwardUnitId) {
+            setForwardUnitId(data[0].id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load units for forward:", err);
+      }
+    };
+    if (mounted && isAuthenticated) {
+      fetchUnits();
+    }
+  }, [mounted, isAuthenticated, forwardUnitId]);
 
   const loadComplaintData = async () => {
     setIsLoading(true);
@@ -79,7 +115,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
       try {
         activeDetail = await apiClient.complaints.getById(complaintId);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to load complaint by ID:", err);
       }
 
@@ -100,7 +136,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       }
       setComments(loadedComments);
 
-    } catch (e) {
+    } catch (e: any) {
       toast.error("Gagal memuat detail keluhan");
     } finally {
       setIsLoading(false);
@@ -109,8 +145,6 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
   // Set mounted
   useEffect(() => {
-    if (typeof window !== "undefined") {
-    }
     const timer = setTimeout(() => setMounted(true), 0);
     return () => clearTimeout(timer);
   }, []);
@@ -149,8 +183,9 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       await loadComplaintData();
       setReplyText("");
       toast.success("Tanggapan terkirim!");
-    } catch {
-      toast.error("Gagal mengirimkan tanggapan.");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Gagal mengirimkan tanggapan.";
+      toast.error(msg);
     } finally {
       setIsSendingReply(false);
     }
@@ -162,13 +197,15 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     if (!rencanaText.trim() || !complaint) return;
     setIsSubmittingOpen(true);
     try {
-      await apiClient.complaints.updateStatus(complaint.id, "OPEN" as any, rencanaText.trim());
+      await apiClient.complaints.updateStatus(complaint.id, "OPEN", rencanaText.trim());
       await loadComplaintData();
       setIsOpenModal(false);
       setRencanaText("");
       toast.success("Laporan sedang diproses!");
-    } catch {
-      toast.error("Gagal memproses laporan.");
+    } catch (err: any) {
+      console.error("Failed to process complaint:", err);
+      const msg = err?.response?.data?.message || "Gagal memproses laporan. Pastikan Anda memiliki izin PIC Unit.";
+      toast.error(msg);
     } finally {
       setIsSubmittingOpen(false);
     }
@@ -180,13 +217,15 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     if (!solusiText.trim() || !complaint) return;
     setIsSubmittingClose(true);
     try {
-      await apiClient.complaints.updateStatus(complaint.id, "DONE" as any, undefined, solusiText.trim());
+      await apiClient.complaints.updateStatus(complaint.id, "DONE", undefined, solusiText.trim());
       await loadComplaintData();
       setIsCloseModal(false);
       setSolusiText("");
       toast.success("Keluhan berhasil ditutup!");
-    } catch {
-      toast.error("Gagal menutup keluhan.");
+    } catch (err: any) {
+      console.error("Failed to close complaint:", err);
+      const msg = err?.response?.data?.message || "Gagal menutup keluhan. Pastikan Anda memiliki izin PIC Unit.";
+      toast.error(msg);
     } finally {
       setIsSubmittingClose(false);
     }
@@ -196,22 +235,19 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     e.preventDefault();
     if (!forwardUnitId || !complaint) return;
 
-    toast.promise(
-      (async () => {
-        await apiClient.complaints.forward(complaint.id, {
-          toUnitId: forwardUnitId,
-          forwardNote: forwardNote
-        });
-        setIsForwardModalOpen(false);
-        toast.success(`Keluhan berhasil diteruskan ke Unit ID: ${forwardUnitId}`);
-        router.push("/dashboard");
-      })(),
-      {
-        loading: "Meneruskan keluhan...",
-        success: "Keluhan berhasil didelegasikan ulang!",
-        error: "Gagal meneruskan keluhan."
-      }
-    );
+    try {
+      await apiClient.complaints.forward(complaint.id, {
+        toUnitId: forwardUnitId,
+        forwardNote: forwardNote
+      });
+      setIsForwardModalOpen(false);
+      toast.success("Keluhan berhasil didelegasikan ulang!");
+      router.push("/dashboard");
+    } catch (err: any) {
+      console.error("Failed to forward complaint:", err);
+      const msg = err?.response?.data?.message || "Gagal meneruskan keluhan. Pastikan Anda memiliki izin PIC Unit.";
+      toast.error(msg);
+    }
   };
 
   const handleLogoutClick = () => {
@@ -551,15 +587,15 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
                 {/* PIC Info */}
                 <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">PIC Unit Bertanggung Jawab</span>
+                  <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Unit Penanggung Jawab</span>
 
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 rounded-full bg-red-50 text-red-600 border border-red-100 flex items-center justify-center font-extrabold text-xs shrink-0 select-none shadow-3xs">
-                      RH
+                      {complaint.unit.slice(0, 2).toUpperCase()}
                     </div>
                     <div className="space-y-0.5">
-                      <span className="block font-bold text-slate-800 text-xs leading-none">Rahmat Hidayat</span>
-                      <span className="block text-[10px] text-slate-400 font-bold">Teknisi Senior - Sarpras</span>
+                      <span className="block font-bold text-slate-800 text-xs leading-none">Unit {complaint.unit}</span>
+                      <span className="block text-[10px] text-slate-400 font-bold">Tim Pengelola &amp; Penanganan Resmi</span>
                     </div>
                   </div>
                 </div>
@@ -586,9 +622,9 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                   </button>
 
                   {/* Tutup / Reopen */}
-                  {(user.role === "SUPERADMIN" || user.role === "SUPER_PIC") && complaint.status === "DONE" ? (
+                  {(user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC") && complaint.status === "DONE" ? (
                     <button
-                      onClick={() => apiClient.complaints.updateStatus(complaint.id, "OPEN" as any).then(() => loadComplaintData())}
+                      onClick={() => apiClient.complaints.updateStatus(complaint.id, "OPEN").then(() => loadComplaintData())}
                       className="w-full h-11 bg-white hover:bg-amber-50/50 border border-amber-200 text-amber-600 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
                     >
                       <RefreshCw className="h-4 w-4 text-amber-600" />
@@ -716,7 +752,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                     <button
                       key={tpl}
                       type="button"
-                      onClick={() => setRencanaText((prev) => prev ? `${prev}\n${tpl}` : tpl)}
+                      onClick={() => setRencanaText(tpl)}
                       className="px-2.5 py-1 bg-slate-100 hover:bg-red-50 hover:text-red-600 border border-slate-200 text-slate-600 font-semibold text-[11px] rounded-lg transition-all cursor-pointer active:scale-95"
                     >
                       + {tpl}
@@ -839,7 +875,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                     <button
                       key={tpl}
                       type="button"
-                      onClick={() => setSolusiText((prev) => prev ? `${prev}\n${tpl}` : tpl)}
+                      onClick={() => setSolusiText(tpl)}
                       className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 text-slate-600 font-semibold text-[11px] rounded-lg transition-all cursor-pointer active:scale-95"
                     >
                       + {tpl}
@@ -945,50 +981,29 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                     Pilih Unit Kerja Tujuan <span className="text-red-500">*</span>
                   </label>
                   {forwardUnitId && (
-                    <span className="text-[10px] text-red-600 font-bold">Terpilih: {forwardUnitId}</span>
+                    <span className="text-[10px] text-red-600 font-bold">
+                      Terpilih: {availableUnits.find((u) => u.id === forwardUnitId)?.name || forwardUnitId}
+                    </span>
                   )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {[
-                    {
-                      id: "Sarpras",
-                      name: "Sarana & Prasarana",
-                      description: "Gedung, peralatan & infrastruktur",
+                  {(availableUnits.length > 0
+                    ? availableUnits
+                    : [
+                        { id: "Sarpras", name: "Sarpras", description: "Gedung, peralatan & infrastruktur" },
+                        { id: "Kesiswaan", name: "Kesiswaan", description: "Kedisiplinan, OSIS & kegiatan siswa" },
+                        { id: "Kurikulum", name: "Kurikulum", description: "Akademik, jadwal kelas & ujian" },
+                        { id: "Hubin", name: "Hubin", description: "Hubungan industri & PKL" },
+                        { id: "Tata Usaha", name: "Tata Usaha", description: "Administrasi & keuangan" },
+                      ]
+                  ).map((unit) => {
+                    const meta = UNIT_META_MAP[unit.name] || {
                       icon: Building2,
-                    },
-                    {
-                      id: "Kesiswaan",
-                      name: "Kesiswaan",
-                      description: "Kedisiplinan, OSIS & kegiatan siswa",
-                      icon: Users,
-                    },
-                    {
-                      id: "Kurikulum",
-                      name: "Kurikulum",
-                      description: "Akademik, jadwal kelas & ujian",
-                      icon: BookOpen,
-                    },
-                    {
-                      id: "Hubin",
-                      name: "Hubin / Humas",
-                      description: "Hubungan industri & PKL",
-                      icon: Briefcase,
-                    },
-                    {
-                      id: "Tata Usaha",
-                      name: "Tata Usaha (TU)",
-                      description: "Administrasi & keuangan",
-                      icon: FileText,
-                    },
-                    {
-                      id: "BK",
-                      name: "Bimbingan Konseling",
-                      description: "Konseling & bimbingan siswa",
-                      icon: HeartHandshake,
-                    },
-                  ].map((unit) => {
-                    const IconComp = unit.icon;
+                      name: unit.name,
+                      description: unit.description || "Pengelolaan operasional sekolah",
+                    };
+                    const IconComp = meta.icon;
                     const isSelected = forwardUnitId === unit.id;
                     return (
                       <div
@@ -1001,18 +1016,25 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                             : "border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50/80"
                         )}
                       >
-                        <div className={cn(
-                          "h-8 w-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition-colors",
-                          isSelected ? "bg-red-600 text-white" : "bg-slate-100 text-slate-600"
-                        )}>
+                        <div
+                          className={cn(
+                            "h-8 w-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition-colors",
+                            isSelected ? "bg-red-600 text-white" : "bg-slate-100 text-slate-600"
+                          )}
+                        >
                           <IconComp className="h-4 w-4" />
                         </div>
                         <div className="space-y-0.5 min-w-0 pr-4">
-                          <span className={cn("block text-xs font-bold leading-tight", isSelected ? "text-red-950" : "text-slate-800")}>
-                            {unit.name}
+                          <span
+                            className={cn(
+                              "block text-xs font-bold leading-tight",
+                              isSelected ? "text-red-950" : "text-slate-800"
+                            )}
+                          >
+                            {meta.name}
                           </span>
                           <span className="block text-[10px] text-slate-400 leading-snug line-clamp-2">
-                            {unit.description}
+                            {meta.description}
                           </span>
                         </div>
                         {isSelected && (

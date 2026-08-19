@@ -44,7 +44,7 @@ const TOPICS = [
   "Fasilitas",
   "Kesiswaan",
   "Kurikulum",
-  "Umum (ISO)",
+  "Umum",
   "Lingkungan",
 ];
 
@@ -70,7 +70,7 @@ const TOPIC_CONFIGS = [
     icon: BookOpen,
   },
   {
-    label: "Umum (ISO)",
+    label: "Umum",
     icon: Building2,
   },
   {

@@ -34,6 +34,7 @@ export interface RegisterResponse {
 
 export function mapFrontendUnitToBackend(unit: string): string {
   switch (unit) {
+    case "Umum":
     case "Umum (ISO)":
       return "ISO";
     case "Sarpras":
@@ -54,7 +55,7 @@ export function mapFrontendUnitToBackend(unit: string): string {
 export function mapBackendUnitToFrontend(name: string): ComplaintUnit {
   switch (name) {
     case "ISO":
-      return "Umum (ISO)" as ComplaintUnit;
+      return "Umum" as ComplaintUnit;
     case "SARPRA":
       return "Sarpras" as ComplaintUnit;
     case "KURIKULUM":
@@ -71,7 +72,7 @@ export function mapBackendUnitToFrontend(name: string): ComplaintUnit {
 }
 
 export function mapBackendComplaintToFrontend(c: any): Complaint {
-  let mappedUnit: ComplaintUnit = "Umum (ISO)";
+  let mappedUnit: ComplaintUnit = "Umum";
   if (c.unit && c.unit.name) {
     mappedUnit = mapBackendUnitToFrontend(c.unit.name);
   } else if (c.forwardedToUnit && c.forwardedToUnit.name) {

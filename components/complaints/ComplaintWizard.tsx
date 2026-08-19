@@ -26,15 +26,15 @@ import imageCompression from "browser-image-compression";
 
 const complaintSchema = z.object({
   title: z.string().min(5, "Judul keluhan minimal harus 5 karakter"),
-  description: z.string().min(1, "Deskripsi keluhan tidak boleh kosong"),
+  description: z.string().min(1, "Deskripsi keluhan tidak boleh kosong").trim().refine((val) => val.length > 0, "Deskripsi keluhan wajib diisi"),
   expectedOutput: z.string().optional(),
-  unit: z.enum(["Umum (ISO)", "Sarpras", "Kurikulum", "Kesiswaan", "Hubin", "Tata Usaha"] as const),
+  unit: z.enum(["Umum", "Umum (ISO)", "Sarpras", "Kurikulum", "Kesiswaan", "Hubin", "Tata Usaha"] as const),
   isAnonymous: z.boolean(),
 });
 
 const UNIT_DETAILS = [
   {
-    name: "Umum (ISO)" as const,
+    name: "Umum" as const,
     desc: "Kebijakan mutu pelayanan, kritik operasional umum, tata kelola, dan koordinasi sekolah.",
   },
   {
@@ -89,7 +89,7 @@ export default function ComplaintWizard() {
       title: "",
       description: "",
       expectedOutput: "",
-      unit: "Umum (ISO)",
+      unit: "Umum",
       isAnonymous: false,
     },
   });
@@ -223,6 +223,12 @@ export default function ComplaintWizard() {
   };
 
   const handleFinalSubmit = async () => {
+    const isFormValid = await trigger();
+    if (!isFormValid) {
+      toast.error("Mohon lengkapi data keluhan yang wajib diisi.");
+      return;
+    }
+
     setIsSubmitting(true);
     const payload = {
       title: getValues("title"),
@@ -247,6 +253,7 @@ export default function ComplaintWizard() {
       <Stepper
         initialStep={currentStep}
         onStepChange={(s) => handleStepChange(s)}
+        onBeforeNext={validateStep}
         onFinalStepCompleted={handleFinalSubmit}
         nextButtonText={isSubmitting ? "Mengirim..." : "Lanjut"}
         nextButtonProps={{ disabled: isSubmitting || isUploading }}

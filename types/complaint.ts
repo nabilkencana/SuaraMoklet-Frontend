@@ -1,6 +1,7 @@
 export type ComplaintStatus = "NEW" | "OPEN" | "DONE";
 
 export type ComplaintUnit =
+  | "Umum"
   | "Umum (ISO)"
   | "Sarpras"
   | "Kurikulum"

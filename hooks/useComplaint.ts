@@ -55,7 +55,7 @@ export function useComplaint(complaintId?: string, options?: { skipFetchUnits?: 
       if (Array.isArray(data)) {
         // Map backend UnitModel name to frontend ComplaintUnit format
         const mappedUnits = data.map((u: any) => {
-          if (u.name === "ISO") return "Umum (ISO)" as ComplaintUnit;
+          if (u.name === "ISO") return "Umum" as ComplaintUnit;
           if (u.name === "SARPRA") return "Sarpras" as ComplaintUnit;
           if (u.name === "KURIKULUM") return "Kurikulum" as ComplaintUnit;
           if (u.name === "KESISWAAN") return "Kesiswaan" as ComplaintUnit;

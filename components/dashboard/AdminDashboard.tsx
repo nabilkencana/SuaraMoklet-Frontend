@@ -100,6 +100,85 @@ const getUnitPIC = (unitId: string, unitName: string, unitMembers: UnitMember[])
   return { name: "Belum Ditunjuk", email: "-", initials: "BD" };
 };
 
+interface TablePaginationProps {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
+  itemName?: string;
+}
+
+function TablePagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  itemsPerPage,
+  onPageChange,
+  itemName = "data",
+}: TablePaginationProps) {
+  if (totalItems === 0) return null;
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  const pages: number[] = [];
+  const maxButtons = 5;
+  let startPage = Math.max(1, currentPage - 2);
+  let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+  if (endPage - startPage < maxButtons - 1) {
+    startPage = Math.max(1, endPage - maxButtons + 1);
+  }
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-slate-100 text-xs text-slate-400 font-semibold">
+      <span>
+        Menampilkan {startItem}-{endItem} dari {totalItems} {itemName}
+      </span>
+
+      <div className="flex items-center gap-1 border border-slate-200 rounded-xl p-1 bg-white">
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage <= 1}
+          className="h-7 w-7 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer disabled:cursor-not-allowed"
+          title="Halaman Sebelumnya"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+
+        {pages.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onPageChange(p)}
+            className={cn(
+              "h-7 min-w-7 px-1.5 rounded-lg flex items-center justify-center text-xs font-bold transition-all cursor-pointer",
+              p === currentPage
+                ? "bg-[#b61722] text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50"
+            )}
+          >
+            {p}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage >= totalPages}
+          className="h-7 w-7 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer disabled:cursor-not-allowed"
+          title="Halaman Berikutnya"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const VALID_ADMIN_TABS: ("dashboard" | "complaints" | "units" | "members" | "whatsapp" | "audit_logs")[] = [
   "dashboard",
   "complaints",
@@ -169,6 +248,20 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [unitFilter, setUnitFilter] = useState("ALL");
 
+  // Pagination states
+  const [complaintPage, setComplaintPage] = useState(1);
+  const complaintPageSize = 10;
+  const [complaintsListPage, setComplaintsListPage] = useState(1);
+  const complaintsListPageSize = 10;
+  const [userPage, setUserPage] = useState(1);
+  const userPageSize = 10;
+
+  // Reset pagination on filter change
+  useEffect(() => {
+    setComplaintPage(1);
+    setComplaintsListPage(1);
+  }, [tableTab, searchQuery, unitFilter]);
+
   // CRUD modal/form states
   const [newUnitName, setNewUnitName] = useState("");
   const [newUnitDesc, setNewUnitDesc] = useState("");
@@ -200,6 +293,10 @@ export default function AdminDashboard() {
   const [userRoleFilter, setUserRoleFilter] = useState("All");
   const [userStatusFilter, setUserStatusFilter] = useState("All");
   const [selectedUserForView, setSelectedUserForView] = useState<any>(null);
+
+  useEffect(() => {
+    setUserPage(1);
+  }, [userSearchQuery, userRoleFilter, userStatusFilter]);
 
   // User Form Modal states
   const [isUserFormModalOpen, setIsUserFormModalOpen] = useState(false);
@@ -403,7 +500,7 @@ export default function AdminDashboard() {
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [mounted, isAuthenticated, user]);
+  }, [mounted, isAuthenticated, user, activeTab]);
 
   // Toggle Visibility
   const handleToggleVisibility = async (id: string, current: string) => {
@@ -806,6 +903,25 @@ export default function AdminDashboard() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
+  // Paginated Data
+  const totalComplaintPages = Math.max(1, Math.ceil(filteredComplaints.length / complaintPageSize));
+  const paginatedDashboardComplaints = filteredComplaints.slice(
+    (complaintPage - 1) * complaintPageSize,
+    complaintPage * complaintPageSize
+  );
+
+  const totalComplaintsListPages = Math.max(1, Math.ceil(filteredComplaints.length / complaintsListPageSize));
+  const paginatedComplaintsList = filteredComplaints.slice(
+    (complaintsListPage - 1) * complaintsListPageSize,
+    complaintsListPage * complaintsListPageSize
+  );
+
+  const totalUserPages = Math.max(1, Math.ceil(filteredUsers.length / userPageSize));
+  const paginatedUsers = filteredUsers.slice(
+    (userPage - 1) * userPageSize,
+    userPage * userPageSize
+  );
+
   const handleLogoutClick = () => {
     logout();
     toast.success("Berhasil keluar");
@@ -1059,7 +1175,7 @@ export default function AdminDashboard() {
                           </tr>
                         ))
                       ) : (
-                        filteredComplaints.map((c) => {
+                        paginatedDashboardComplaints.map((c) => {
                           // Map units to friendly names
                           let friendlyUnitName = c.unit;
                           if (c.unit === "Sarpras") friendlyUnitName = "Sarana & Prasarana" as ComplaintUnit;
@@ -1078,7 +1194,7 @@ export default function AdminDashboard() {
                             <td className="py-5 pl-2 max-w-xs md:max-w-md">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span 
-                                  onClick={() => router.push(`/dashboard/complaints/${c.id}`)}
+                                   onClick={() => router.push(`/dashboard/complaints/${c.id}`)}
                                   className="font-bold text-[#b61722] hover:underline cursor-pointer leading-snug"
                                 >
                                   {c.title}
@@ -1101,7 +1217,7 @@ export default function AdminDashboard() {
 
                             {/* Assigned Unit */}
                             <td className="py-5 font-medium text-slate-500">
-                              {friendlyUnitName || "Umum (ISO)"}
+                              {friendlyUnitName || "Umum"}
                             </td>
 
                             {/* Status Badge */}
@@ -1184,27 +1300,14 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Pagination */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-slate-100 text-xs text-slate-400 font-semibold">
-                  <span>Menampilkan 1-{filteredComplaints.length} dari {complaints.length} keluhan</span>
-
-                  <div className="flex items-center gap-1 border border-slate-200 rounded-xl p-1 bg-white">
-                    <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <button className="h-7 w-7 rounded-lg bg-[#b61722] flex items-center justify-center text-white font-bold">
-                      1
-                    </button>
-                    <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-500 transition-all cursor-pointer">
-                      2
-                    </button>
-                    <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-500 transition-all cursor-pointer">
-                      3
-                    </button>
-                    <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
+                <TablePagination
+                  currentPage={complaintPage}
+                  totalPages={totalComplaintPages}
+                  totalItems={filteredComplaints.length}
+                  itemsPerPage={complaintPageSize}
+                  onPageChange={setComplaintPage}
+                  itemName="keluhan"
+                />
               </div>
 
               {/* Performance Heatmap & ISO Audit Trail Section */}
@@ -1396,7 +1499,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {filteredComplaints.map((c) => {
+                      {paginatedComplaintsList.map((c) => {
                         let friendlyUnitName = c.unit;
                         if (c.unit === "Sarpras") friendlyUnitName = "Sarana & Prasarana" as ComplaintUnit;
 
@@ -1433,7 +1536,7 @@ export default function AdminDashboard() {
                             </td>
 
                             <td className="py-5 font-medium text-slate-500">
-                              {friendlyUnitName || "Umum (ISO)"}
+                              {friendlyUnitName || "Umum"}
                             </td>
 
                             <td className="py-5">
@@ -1512,27 +1615,14 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Pagination */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-slate-100 text-xs text-slate-400 font-semibold">
-                  <span>Menampilkan 1-{filteredComplaints.length} dari {complaints.length} keluhan</span>
-
-                  <div className="flex items-center gap-1 border border-slate-200 rounded-xl p-1 bg-white">
-                    <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <button className="h-7 w-7 rounded-lg bg-[#b61722] flex items-center justify-center text-white font-bold">
-                      1
-                    </button>
-                    <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-500 transition-all cursor-pointer">
-                      2
-                    </button>
-                    <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-500 transition-all cursor-pointer">
-                      3
-                    </button>
-                    <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
+                <TablePagination
+                  currentPage={complaintsListPage}
+                  totalPages={totalComplaintsListPages}
+                  totalItems={filteredComplaints.length}
+                  itemsPerPage={complaintsListPageSize}
+                  onPageChange={setComplaintsListPage}
+                  itemName="keluhan"
+                />
               </div>
             </div>
           ) : activeTab === "units" ? (
@@ -1932,7 +2022,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {filteredUsers.map((u) => {
+                      {paginatedUsers.map((u) => {
                         const initials = getInitials(u.name);
                         const isPicUnit = u.role.includes("PIC");
                         const isTeacher = u.role.includes("Guru");
@@ -2038,27 +2128,14 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Pagination Footer */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-slate-100 text-xs text-slate-400 font-semibold">
-                  <span>Showing 1-{filteredUsers.length} of {allUsers.length} entries</span>
-
-                  <div className="flex items-center gap-1 border border-slate-200 rounded-xl p-1 bg-white">
-                    <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <button className="h-7 w-7 rounded-lg bg-[#b61722] flex items-center justify-center text-white font-bold">
-                      1
-                    </button>
-                    <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-500 transition-all cursor-pointer">
-                      2
-                    </button>
-                    <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-500 transition-all cursor-pointer">
-                      3
-                    </button>
-                    <button className="h-7 w-7 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer">
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
+                <TablePagination
+                  currentPage={userPage}
+                  totalPages={totalUserPages}
+                  totalItems={filteredUsers.length}
+                  itemsPerPage={userPageSize}
+                  onPageChange={setUserPage}
+                  itemName="pengguna"
+                />
               </div>
             </div>
           ) : activeTab === "whatsapp" ? (
