@@ -28,23 +28,36 @@ interface ExtendedComplaint extends Complaint {
   reporterName: string;
 }
 
+const VALID_UNIT_TABS: ("dashboard" | "keluhan")[] = ["dashboard", "keluhan"];
+
 export default function UnitDashboard() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "keluhan">("dashboard");
-
-  useEffect(() => {
+  const [activeTab, setActiveTab] = useState<"dashboard" | "keluhan">(() => {
     if (typeof window !== "undefined") {
-      const savedTab = localStorage.getItem("unitActiveTab") as "dashboard" | "keluhan";
-      if (savedTab) setActiveTab(savedTab);
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get("tab") as any;
+      if (tabParam && VALID_UNIT_TABS.includes(tabParam)) {
+        return tabParam;
+      }
+      const savedTab = localStorage.getItem("unitActiveTab") as any;
+      if (savedTab && VALID_UNIT_TABS.includes(savedTab)) {
+        return savedTab;
+      }
     }
-  }, []);
+    return "dashboard";
+  });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("unitActiveTab", activeTab);
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("tab") !== activeTab) {
+        url.searchParams.set("tab", activeTab);
+        window.history.replaceState({}, "", url.toString());
+      }
     }
   }, [activeTab]);
 
@@ -131,7 +144,7 @@ export default function UnitDashboard() {
     if (mounted && isAuthenticated && (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN")) {
       fetchComplaints();
     }
-  }, [mounted, isAuthenticated, user, fetchComplaints]);
+  }, [mounted, isAuthenticated, user, activeTab, fetchComplaints]);
 
   // Filter
   const filteredComplaints = complaints.filter((c) => {

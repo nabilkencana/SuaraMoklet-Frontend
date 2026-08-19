@@ -41,7 +41,7 @@ export function mapBackendUnitToFrontend(name: string): ComplaintUnit {
 }
 
 export function mapBackendComplaintToFrontend(c: any): Complaint {
-  let mappedUnit: ComplaintUnit = "Umum (ISO)";
+  let mappedUnit: ComplaintUnit = "Umum";
   if (c.unit && c.unit.name) {
     mappedUnit = mapBackendUnitToFrontend(c.unit.name);
   } else if (c.forwardedToUnit && c.forwardedToUnit.name) {
