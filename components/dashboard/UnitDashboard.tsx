@@ -28,6 +28,8 @@ interface ExtendedComplaint extends Complaint {
   reporterName: string;
 }
 
+const VALID_UNIT_TABS: ("dashboard" | "keluhan")[] = ["dashboard", "keluhan"];
+
 export default function UnitDashboard() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -37,14 +39,30 @@ export default function UnitDashboard() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedTab = localStorage.getItem("unitActiveTab") as "dashboard" | "keluhan";
-      if (savedTab) setActiveTab(savedTab);
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get("tab") as any;
+      if (tabParam && VALID_UNIT_TABS.includes(tabParam)) {
+        setActiveTab(tabParam);
+      } else {
+        const savedTab = localStorage.getItem("unitActiveTab") as "dashboard" | "keluhan";
+        if (savedTab && VALID_UNIT_TABS.includes(savedTab)) {
+          setActiveTab(savedTab);
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set("tab", savedTab);
+          window.history.replaceState({}, "", newUrl.toString());
+        }
+      }
     }
   }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("unitActiveTab", activeTab);
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("tab") !== activeTab) {
+        url.searchParams.set("tab", activeTab);
+        window.history.replaceState({}, "", url.toString());
+      }
     }
   }, [activeTab]);
 

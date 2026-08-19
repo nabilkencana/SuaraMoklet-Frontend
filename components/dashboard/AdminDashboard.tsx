@@ -100,18 +100,52 @@ const getUnitPIC = (unitId: string, unitName: string, unitMembers: UnitMember[])
   return { name: "Belum Ditunjuk", email: "-", initials: "BD" };
 };
 
+const VALID_ADMIN_TABS: ("dashboard" | "complaints" | "units" | "members" | "whatsapp" | "audit_logs")[] = [
+  "dashboard",
+  "complaints",
+  "units",
+  "members",
+  "whatsapp",
+  "audit_logs",
+];
+
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"dashboard" | "complaints" | "units" | "members" | "whatsapp" | "audit_logs">("dashboard");
 
+  // Load initial tab from URL param or localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedTab = localStorage.getItem("adminActiveTab") as "dashboard" | "complaints" | "units" | "members" | "whatsapp" | "audit_logs";
-      if (savedTab) setActiveTab(savedTab);
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get("tab") as any;
+      if (tabParam && VALID_ADMIN_TABS.includes(tabParam)) {
+        setActiveTab(tabParam);
+      } else {
+        const savedTab = localStorage.getItem("adminActiveTab") as any;
+        if (savedTab && VALID_ADMIN_TABS.includes(savedTab)) {
+          setActiveTab(savedTab);
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set("tab", savedTab);
+          window.history.replaceState({}, "", newUrl.toString());
+        }
+      }
     }
   }, []);
+
+  // Sync tab change to URL param and localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("adminActiveTab", activeTab);
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("tab") !== activeTab) {
+        url.searchParams.set("tab", activeTab);
+        window.history.replaceState({}, "", url.toString());
+      }
+    }
+  }, [activeTab]);
+
   const [isLoading, setIsLoading] = useState(true);
 
   // States
