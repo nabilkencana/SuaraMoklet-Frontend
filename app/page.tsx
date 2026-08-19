@@ -65,18 +65,18 @@ function SectionEyebrow({
 const STEPS = [
   {
     num: 1,
-    title: "Tulis Laporanmu",
-    description: "Sampaikan isu atau ide perubahan dengan jelas dan konstruktif.",
+    title: "Tulis Laporan",
+    description: "Sampaikan keluhanmu beserta bukti pendukung.",
   },
   {
     num: 2,
-    title: "Kumpulkan Keluhan",
-    description: "Bagikan laporanmu agar teman-teman lain ikut mendukung.",
+    title: "Proses Penanganan",
+    description: "Unit sekolah langsung meninjau dan menindaklanjuti.",
   },
   {
     num: 3,
-    title: "Tindakan Sekolah",
-    description: "Laporan dengan dukungan tinggi akan ditindaklanjuti oleh pihak tata kelola.",
+    title: "Selesai & Evaluasi",
+    description: "Masalah terselesaikan dan kamu dapat memberi penilaian.",
   },
 ];
 
@@ -88,23 +88,23 @@ interface FaqItem {
 const FAQ_DATA: FaqItem[] = [
   {
     question: "Apa itu SuaraMoklet?",
-    answer: "SuaraMoklet adalah platform aspirasi dan pengaduan resmi untuk seluruh siswa SMK Telkom Malang guna menyampaikan masukan, ide, dan keluhan terkait sarana prasarana, kurikulum, kesiswaan, dan tata kelola sekolah secara transparan.",
+    answer: "SuaraMoklet adalah platform aspirasi dan pengaduan resmi untuk seluruh civitas SMK Telkom Malang guna menyampaikan masukan, ide, dan keluhan terkait sarana prasarana, kurikulum, kesiswaan, hubungan industri, dan tata kelola sekolah secara transparan.",
   },
   {
     question: "Apakah saya bisa melapor secara anonim?",
-    answer: "Ya! Pada langkah terakhir pengisian laporan (Langkah 5), Anda dapat mengaktifkan opsi 'Kirim Sebagai Anonim'. Nama Anda tidak akan ditampilkan kepada publik, namun tetap tersimpan secara aman di sistem untuk kebutuhan verifikasi pihak sekolah.",
+    answer: "Ya! Pada langkah terakhir pengisian laporan (Langkah 5), Anda dapat mengaktifkan opsi 'Kirim Sebagai Anonim'. Identitas Anda akan disembunyikan dari publik dan petugas unit, namun tetap tersimpan secara aman di sistem untuk kebutuhan verifikasi resmi.",
   },
   {
-    question: "Bagaimana proses tindak lanjut dari laporan saya?",
-    answer: "Setiap laporan akan diverifikasi admin terlebih dahulu. Jika valid, laporan akan diteruskan ke Unit Kerja terkait (seperti Sarpras atau Kesiswaan) dan statusnya akan diubah menjadi 'PROSES'. Anda dapat memantau progres detailnya melalui visual timeline di halaman detail laporan.",
+    question: "Bagaimana alur tindak lanjut dari laporan saya?",
+    answer: "Setiap laporan baru (NEW) akan langsung masuk ke dashboard Unit Kerja terkait (seperti Sarpras atau Kesiswaan) dan diproses (OPEN). Anda dapat memantau progres penanganan secara transparan melalui linimasa dan saling bertukar tanggapan hingga status selesai (DONE).",
   },
   {
     question: "Apa fungsi fitur 'Dukung Laporan'?",
-    answer: "Fitur dukungan memungkinkan siswa lain memberikan suara dukungan pada laporan Anda. Laporan dengan dukungan yang tinggi (mencapai target dukungan) akan diprioritaskan untuk segera ditindaklanjuti oleh manajemen sekolah.",
+    answer: "Fitur dukungan (upvote) memungkinkan sesama siswa memberikan suara dukungan pada laporan Anda. Laporan dengan dukungan yang tinggi akan menjadi prioritas utama untuk segera ditindaklanjuti oleh manajemen sekolah.",
   },
   {
     question: "Format dokumen bukti apa saja yang didukung?",
-    answer: "Kami mendukung berkas lampiran berupa gambar (JPG, JPEG, PNG) atau dokumen digital (PDF) dengan batas ukuran file maksimal sebesar 5MB untuk mempermudah unit pengelola melakukan inspeksi lapangan.",
+    answer: "Kami mendukung berkas lampiran berupa foto/gambar (JPG, JPEG, PNG) atau dokumen digital (PDF) dengan batas ukuran maksimal 5MB untuk mempermudah unit pengelola melakukan inspeksi dan verifikasi di lapangan.",
   },
 ];
 
@@ -349,7 +349,7 @@ export default function LandingPage() {
           </h1>
 
           <SplitText
-            text="Platform tata kelola sekolah yang transparan. Suarakan pendapatmu, kumpulkan dukungan, dan wujudkan lingkungan belajar yang lebih baik bersama-sama."
+            text="Platform pengaduan dan aspirasi terintegrasi SMK Telkom Malang. Laporkan kendala sarana, kurikulum, hingga kesiswaan secara transparan untuk lingkungan sekolah yang lebih baik."
             className="mt-6 sm:mt-8 text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed"
             delay={30}
             duration={0.8}
@@ -372,7 +372,7 @@ export default function LandingPage() {
                   type="text"
                   value={petitionTitle}
                   onChange={(e) => setPetitionTitle(e.target.value)}
-                  placeholder="Apa yang ingin kamu ubah di sekolah?"
+                  placeholder="Tuliskan keluhan atau ide perbaikan di sekolahmu..."
                   className="flex-1 px-2 sm:px-3 text-sm sm:text-base text-slate-900 placeholder:text-slate-400 bg-transparent outline-none py-1 sm:py-3 font-medium"
                 />
               </div>
@@ -381,7 +381,7 @@ export default function LandingPage() {
                 type="submit"
                 className="w-full sm:w-auto sm:shrink-0 h-12 sm:h-11 px-6 rounded-2xl sm:rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.97] text-white text-sm font-bold transition-all shadow-md shadow-red-200/60 flex items-center justify-center gap-2 cursor-pointer"
               >
-                Mulai Petisi
+                Laporkan Masalah
                 <ArrowRight className="h-4 w-4" />
               </button>
             </form>
@@ -403,7 +403,7 @@ export default function LandingPage() {
                 <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">+</span>
               </div>
               <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-55">
-                Total keluhan &amp; aspirasi publik yang diajukan.
+                Total keluhan &amp; aspirasi yang dilaporkan siswa.
               </p>
             </div>
 
@@ -430,7 +430,7 @@ export default function LandingPage() {
                 </span>
               </div>
               <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-55">
-                Tingkat komitmen penanganan isu oleh sekolah.
+                Tingkat komitmen tindak lanjut oleh sekolah.
               </p>
             </div>
 
@@ -444,7 +444,7 @@ export default function LandingPage() {
                 <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-red-600">+</span>
               </div>
               <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-55">
-                Rata-rata dukungan publik per laporan dari siswa.
+                Rata-rata dukungan suara per laporan dari siswa.
               </p>
             </div>
           </div>
@@ -459,9 +459,9 @@ export default function LandingPage() {
             <div>
               <SectionEyebrow label="Trending Minggu Ini" icon={TrendingUp} />
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                Trending &amp; Suka Terbanyak
+                Trending &amp; Dukungan Terbanyak
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1">Laporan dengan keterlibatan dan suka tertinggi dari warga sekolah</p>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">Laporan dengan interaksi dan dukungan suara terbanyak dari warga sekolah</p>
             </div>
 
             {/* Navigation Arrows */}
@@ -604,8 +604,8 @@ export default function LandingPage() {
             <SectionEyebrow label="Terbaru" icon={FileText} />
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Suara Terbaru</h2>
-                <p className="text-xs sm:text-sm text-slate-500 mt-1">Laporan dan aspirasi yang baru saja masuk ke sistem</p>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Laporan Terbaru</h2>
+                <p className="text-xs sm:text-sm text-slate-500 mt-1">Aspirasi dan pengaduan yang baru saja dilaporkan oleh siswa</p>
               </div>
               <Link
                 href="/search"
@@ -668,7 +668,7 @@ export default function LandingPage() {
         {/* TextLoop: absolute background, pointer-events-none so card stays interactive */}
         <div className="absolute inset-0 flex items-center pointer-events-none select-none">
           <TextLoop
-            text="Suaramu Penting ✦ Laporkan Sekarang ✦ Bersama Kita Bisa Berubah ✦ Transparan & Terpercaya"
+            text="Suaramu Penting ✦ Laporkan Masalah ✦ Bersama Membangun Moklet ✦ Transparan & Terpercaya"
             shape="wave"
             speed={80}
             direction="forward"
@@ -697,10 +697,10 @@ export default function LandingPage() {
             <div className="relative z-10">
               <SectionEyebrow label="Ayo Beraksi" variant="light" />
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight mt-1">
-                Suaramu Bisa Membawa Perubahan
+                Suaramu Membawa Perubahan Nyata
               </h2>
               <p className="mt-4 text-red-100 text-sm sm:text-base max-w-lg mx-auto leading-relaxed font-medium">
-                Ayo mulai laporkan ide, masukan, atau permasalahan yang ada di sekolahmu dan jadilah bagian dari perubahan.
+                Ayo laporkan kendala sarana, fasilitas, atau aspirasi belajarmu dan kawal penyelesaiannya bersama civitas Moklet.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
                 <Link
@@ -714,7 +714,7 @@ export default function LandingPage() {
                   href="/help"
                   className="inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/20 active:scale-[0.98] transition-all"
                 >
-                  Pelajari Lebih Lanjut
+                  Panduan Penggunaan
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
