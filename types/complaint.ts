@@ -1,12 +1,6 @@
 export type ComplaintStatus = "NEW" | "OPEN" | "DONE";
 
-export type ComplaintUnit =
-  | "Umum (ISO)"
-  | "Sarpras"
-  | "Kurikulum"
-  | "Kesiswaan"
-  | "Hubin"
-  | "Tata Usaha";
+export type ComplaintUnit = string;
 
 export interface UnitModel {
   id: string;

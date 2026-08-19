@@ -114,24 +114,9 @@ export default function IsoDashboard() {
       setSelectedComplaint(null);
       setForwardNote("");
       fetchData();
-    } catch (err) {
-      // Simulate frontend state update on error
-      setComplaints((prev) =>
-        prev.map((c) =>
-          c.id === selectedComplaint.id
-            ? {
-                ...c,
-                status: "OPEN",
-                unit: (targetUnit?.name || "Sarpras") as ComplaintUnit,
-              }
-            : c
-        )
-      );
-      toast.success("Keluhan Berhasil Diteruskan (Simulated)!", {
-        description: `Laporan didelegasikan ke Unit ${targetUnit?.name || "Sarpras"}.`,
-      });
-      setSelectedComplaint(null);
-      setForwardNote("");
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Gagal meneruskan keluhan");
     } finally {
       setIsSubmitting(false);
     }

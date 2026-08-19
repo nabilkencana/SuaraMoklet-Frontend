@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import useComplaint from "@/hooks/useComplaint";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ComplaintUnit } from "@/types/complaint";
+import { ComplaintUnit, UnitModel } from "@/types/complaint";
 import { apiClient } from "@/lib/api";
 import imageCompression from "browser-image-compression";
 
@@ -28,36 +28,9 @@ const complaintSchema = z.object({
   title: z.string().min(5, "Judul keluhan minimal harus 5 karakter"),
   description: z.string().min(1, "Deskripsi keluhan tidak boleh kosong"),
   expectedOutput: z.string().optional(),
-  unit: z.enum(["Umum (ISO)", "Sarpras", "Kurikulum", "Kesiswaan", "Hubin", "Tata Usaha"] as const),
+  unit: z.string().min(1, "Pilih unit tujuan"),
   isAnonymous: z.boolean(),
 });
-
-const UNIT_DETAILS = [
-  {
-    name: "Umum (ISO)" as const,
-    desc: "Kebijakan mutu pelayanan, kritik operasional umum, tata kelola, dan koordinasi sekolah.",
-  },
-  {
-    name: "Sarpras" as const,
-    desc: "Kerusakan sarana prasarana sekolah, fasilitas kelas, AC/listrik, kebersihan, dan gedung.",
-  },
-  {
-    name: "Kurikulum" as const,
-    desc: "Proses pembelajaran kelas, jadwal pelajaran, kegiatan akademis, ujian/tes, dan rapor.",
-  },
-  {
-    name: "Kesiswaan" as const,
-    desc: "Tata tertib, kedisiplinan siswa, beasiswa, ekstrakurikuler, OSIS/MPK, dan pembinaan karakter.",
-  },
-  {
-    name: "Hubin" as const,
-    desc: "Kerjasama luar, program magang/PKL, kunjungan industri, dan hubungan alumni/karir.",
-  },
-  {
-    name: "Tata Usaha" as const,
-    desc: "Surat-menyurat, legalisir ijazah/rapor, kartu pelajar, keuangan, dan dokumen administrasi.",
-  },
-];
 
 type ComplaintFormData = z.infer<typeof complaintSchema>;
 
@@ -68,6 +41,7 @@ export default function ComplaintWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const { createComplaint } = useComplaint(undefined, { skipFetchUnits: true });
 
+  const [units, setUnits] = useState<UnitModel[]>([]);
   // File Upload State
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
@@ -75,6 +49,10 @@ export default function ComplaintWizard() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    apiClient.units.getAll().then(setUnits).catch(console.error);
+  }, []);
 
   const {
     register,
@@ -89,7 +67,7 @@ export default function ComplaintWizard() {
       title: "",
       description: "",
       expectedOutput: "",
-      unit: "Umum (ISO)",
+      unit: "",
       isAnonymous: false,
     },
   });
@@ -354,9 +332,9 @@ export default function ComplaintWizard() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              {UNIT_DETAILS.map((item) => (
+              {units.map((item) => (
                 <label 
-                  key={item.name}
+                  key={item.id}
                   className={`flex items-start gap-3.5 p-3.5 rounded-2xl border-2 cursor-pointer select-none transition-all ${
                     watchedUnit === item.name 
                       ? "border-red-650 bg-red-50/50 text-red-750 shadow-xs" 
@@ -374,7 +352,7 @@ export default function ComplaintWizard() {
                     <span className={`text-[10px] leading-relaxed block transition-colors ${
                       watchedUnit === item.name ? "text-red-700/80 font-medium" : "text-slate-400"
                     }`}>
-                      {item.desc}
+                      {item.description || "Tidak ada deskripsi"}
                     </span>
                   </div>
                 </label>

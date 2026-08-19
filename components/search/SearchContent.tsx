@@ -101,6 +101,7 @@ export default function SearchContent() {
   const [sortBy, setSortBy] = useState(sortParam);
 
   const [complaints, setComplaints] = useState<(Complaint & { category?: string; location?: string })[]>([]);
+  const [topicConfigs, setTopicConfigs] = useState(TOPIC_CONFIGS);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -122,8 +123,8 @@ export default function SearchContent() {
           const filtered = data.filter((item) => !dislikedIds.includes(item.id));
           const mapped = filtered.map((item) => ({
             ...item,
-            category: item.unit,
-            location: (item as any).location || "Gedung Sekolah",
+            category: typeof item.unit === 'string' ? item.unit : (item.unit as any)?.name || "Umum",
+            location: (item as any).location || "Gedung Utama",
           }));
           setComplaints(mapped);
         }
@@ -135,7 +136,31 @@ export default function SearchContent() {
         }
       }
     }
+
+    async function loadUnits() {
+      try {
+        const units = await apiClient.units.getAll();
+        if (active && units.length > 0) {
+          const dynamicTopics = units.map(u => {
+             const norm = u.name.toLowerCase();
+             let icon = Building2;
+             if (norm.includes("kurikulum") || norm.includes("akademik")) icon = BookOpen;
+             else if (norm.includes("pendidikan")) icon = GraduationCap;
+             else if (norm.includes("fasilitas") || norm.includes("sarpras")) icon = Wrench;
+             else if (norm.includes("kesiswaan") || norm.includes("siswa")) icon = Users;
+             else if (norm.includes("lingkungan") || norm.includes("taman")) icon = Leaf;
+             return { label: u.name, icon };
+          });
+          setTopicConfigs([{ label: "Semua Topik", icon: Globe }, ...dynamicTopics]);
+        }
+      } catch(e) { 
+        console.error("Gagal memuat daftar unit:", e);
+      }
+    }
+
     loadComplaints();
+    loadUnits();
+
     return () => {
       active = false;
     };
@@ -295,7 +320,7 @@ export default function SearchContent() {
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-slate-800 tracking-tight">Topik</h3>
               <div className="flex flex-wrap gap-2.5">
-                {TOPIC_CONFIGS.map((topic) => (
+                {topicConfigs.map((topic) => (
                   <button
                     key={topic.label}
                     onClick={() => handleCategorySelect(topic.label)}

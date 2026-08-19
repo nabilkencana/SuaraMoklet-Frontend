@@ -33,41 +33,11 @@ export interface RegisterResponse {
 // ─── Mapper Helpers ───────────────────────────────────────────────────────────
 
 export function mapFrontendUnitToBackend(unit: string): string {
-  switch (unit) {
-    case "Umum (ISO)":
-      return "ISO";
-    case "Sarpras":
-      return "SARPRA";
-    case "Kurikulum":
-      return "KURIKULUM";
-    case "Kesiswaan":
-      return "KESISWAAN";
-    case "Hubin":
-      return "HUBINKOM";
-    case "Tata Usaha":
-      return "TATA_USAHA";
-    default:
-      return "ISO";
-  }
+  return unit;
 }
 
 export function mapBackendUnitToFrontend(name: string): ComplaintUnit {
-  switch (name) {
-    case "ISO":
-      return "Umum (ISO)" as ComplaintUnit;
-    case "SARPRA":
-      return "Sarpras" as ComplaintUnit;
-    case "KURIKULUM":
-      return "Kurikulum" as ComplaintUnit;
-    case "KESISWAAN":
-      return "Kesiswaan" as ComplaintUnit;
-    case "HUBINKOM":
-      return "Hubin" as ComplaintUnit;
-    case "TATA_USAHA":
-      return "Tata Usaha" as ComplaintUnit;
-    default:
-      return name as ComplaintUnit;
-  }
+  return name as ComplaintUnit;
 }
 
 export function mapBackendComplaintToFrontend(c: any): Complaint {

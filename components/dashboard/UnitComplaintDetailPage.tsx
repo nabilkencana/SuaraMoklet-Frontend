@@ -33,6 +33,9 @@ import {
   FileText,
   HeartHandshake,
   Check,
+  CheckCircle2,
+  GraduationCap,
+  Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
@@ -71,6 +74,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   const [isForwardModalOpen, setIsForwardModalOpen] = useState(false);
   const [forwardUnitId, setForwardUnitId] = useState("");
   const [forwardNote, setForwardNote] = useState("");
+  const [availableUnits, setAvailableUnits] = useState<any[]>([]);
 
   const loadComplaintData = async () => {
     setIsLoading(true);
@@ -100,8 +104,13 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       }
       setComments(loadedComments);
 
-    } catch (e) {
-      toast.error("Gagal memuat detail keluhan");
+      if (user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC") {
+        const u = await apiClient.units.getAll();
+        setAvailableUnits(u);
+      }
+
+    } catch (error) {
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -358,7 +367,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                 <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100 text-xs">
                   <div className="space-y-0.5">
                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Unit Terkait</span>
-                    <span className="block font-bold text-slate-700">Sarana &amp; Prasarana (Sarpras)</span>
+                    <span className="block font-bold text-slate-700">{complaint.unit}</span>
                   </div>
                   <div className="space-y-0.5">
                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tanggal Dibuat</span>
@@ -950,75 +959,56 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {[
-                    {
-                      id: "Sarpras",
-                      name: "Sarana & Prasarana",
-                      description: "Gedung, peralatan & infrastruktur",
-                      icon: Building2,
-                    },
-                    {
-                      id: "Kesiswaan",
-                      name: "Kesiswaan",
-                      description: "Kedisiplinan, OSIS & kegiatan siswa",
-                      icon: Users,
-                    },
-                    {
-                      id: "Kurikulum",
-                      name: "Kurikulum",
-                      description: "Akademik, jadwal kelas & ujian",
-                      icon: BookOpen,
-                    },
-                    {
-                      id: "Hubin",
-                      name: "Hubin / Humas",
-                      description: "Hubungan industri & PKL",
-                      icon: Briefcase,
-                    },
-                    {
-                      id: "Tata Usaha",
-                      name: "Tata Usaha (TU)",
-                      description: "Administrasi & keuangan",
-                      icon: FileText,
-                    },
-                    {
-                      id: "BK",
-                      name: "Bimbingan Konseling",
-                      description: "Konseling & bimbingan siswa",
-                      icon: HeartHandshake,
-                    },
-                  ].map((unit) => {
-                    const IconComp = unit.icon;
-                    const isSelected = forwardUnitId === unit.id;
+                  {availableUnits.map((unit) => {
+                    const norm = unit.name.toLowerCase();
+                    let IconComp = Building2;
+                    let desc = "Unit Layanan SuaraMoklet";
+                    
+                    if (norm.includes("kurikulum") || norm.includes("akademik")) {
+                      IconComp = BookOpen;
+                      desc = "Akademik, jadwal & ujian";
+                    } else if (norm.includes("pendidikan") || norm.includes("guru")) {
+                      IconComp = GraduationCap;
+                    } else if (norm.includes("fasilitas") || norm.includes("sarpras")) {
+                      IconComp = Wrench;
+                      desc = "Gedung & infrastruktur";
+                    } else if (norm.includes("kesiswaan") || norm.includes("siswa")) {
+                      IconComp = Users;
+                      desc = "Kedisiplinan & OSIS";
+                    } else if (norm.includes("hubin")) {
+                      IconComp = Briefcase;
+                      desc = "Hubungan industri & PKL";
+                    } else if (norm.includes("tata usaha")) {
+                      IconComp = FileText;
+                      desc = "Administrasi & keuangan";
+                    } else if (norm.includes("bk") || norm.includes("konseling")) {
+                      IconComp = HeartHandshake;
+                      desc = "Konseling & bimbingan siswa";
+                    }
+
                     return (
                       <div
                         key={unit.id}
-                        onClick={() => setForwardUnitId(unit.id)}
+                        onClick={() => setForwardUnitId(unit.name)}
                         className={cn(
-                          "p-3 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 relative select-none",
-                          isSelected
-                            ? "border-2 border-red-600 bg-red-50/40 shadow-xs"
-                            : "border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50/80"
+                          "flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all active:scale-[0.98]",
+                          forwardUnitId === unit.name
+                            ? "border-red-600 bg-red-50/50 shadow-sm"
+                            : "border-slate-100 bg-white hover:border-red-200 hover:bg-slate-50"
                         )}
                       >
                         <div className={cn(
-                          "h-8 w-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition-colors",
-                          isSelected ? "bg-red-600 text-white" : "bg-slate-100 text-slate-600"
+                          "p-2 rounded-lg shrink-0",
+                          forwardUnitId === unit.name ? "bg-red-600 text-white" : "bg-slate-100 text-slate-500"
                         )}>
                           <IconComp className="h-4 w-4" />
                         </div>
-                        <div className="space-y-0.5 min-w-0 pr-4">
-                          <span className={cn("block text-xs font-bold leading-tight", isSelected ? "text-red-950" : "text-slate-800")}>
-                            {unit.name}
-                          </span>
-                          <span className="block text-[10px] text-slate-400 leading-snug line-clamp-2">
-                            {unit.description}
-                          </span>
+                        <div className="flex-1 min-w-0 pt-0.5">
+                          <h4 className="text-xs font-bold text-slate-800 leading-none mb-1 truncate">{unit.name}</h4>
+                          <p className="text-[10px] text-slate-500 font-medium leading-tight line-clamp-2">{desc}</p>
                         </div>
-                        {isSelected && (
-                          <div className="absolute top-2.5 right-2.5 h-4 w-4 rounded-full bg-red-600 text-white flex items-center justify-center shadow-3xs">
-                            <Check className="h-2.5 w-2.5 stroke-3" />
-                          </div>
+                        {forwardUnitId === unit.name && (
+                          <CheckCircle2 className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
                         )}
                       </div>
                     );
