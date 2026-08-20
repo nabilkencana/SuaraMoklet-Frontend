@@ -44,7 +44,7 @@ export default function ComplaintWizard() {
       title: "",
       description: "",
       expectedOutput: "",
-      unit: "",
+      unit: undefined,
       isAnonymous: false,
     },
   });
@@ -126,7 +126,7 @@ export default function ComplaintWizard() {
 
       setFile(fileToUpload);
 
-      const response = await apiClient.upload(fileToUpload);
+      const response = await apiClient.upload.uploadFile(fileToUpload);
       if (response && response.url) {
         setFileUrl(response.url);
         toast.success("Foto berhasil diunggah");
@@ -183,8 +183,8 @@ export default function ComplaintWizard() {
   return (
     <div className="w-full">
       <Stepper
-        currentStep={currentStep}
-        onStepChange={handleStepChange}
+        initialStep={1}
+        onStepChange={(step) => setCurrentStep(step)}
         onBeforeNext={async (step) => {
           if (step === 1) return await trigger("title");
           if (step === 2) return await trigger(["description", "expectedOutput"]);
@@ -195,47 +195,12 @@ export default function ComplaintWizard() {
           const values = getValues();
           onSubmit(values);
         }}
-        isSubmitting={isSubmitting}
-        renderCustomButton={(step, isFinal, isCurrent, nextStep, prevStep) => {
-          if (!isCurrent) return null;
-          return (
-            <div className="flex items-center justify-between mt-8 pt-4 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={prevStep}
-                disabled={step === 1 || isSubmitting}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-800 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors cursor-pointer"
-              >
-                Kembali
-              </button>
-
-              <button
-                type="button"
-                onClick={async () => {
-                  const isValid = await validateStep(step);
-                  if (isValid) {
-                    if (isFinal) {
-                      const values = getValues();
-                      onSubmit(values);
-                    } else {
-                      nextStep();
-                    }
-                  }
-                }}
-                disabled={isSubmitting || (step === 4 && isUploading)}
-                className="px-6 py-2.5 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center gap-2"
-              >
-                {isSubmitting ? (
-                  <span>Mengirim...</span>
-                ) : isFinal ? (
-                  <span>Kirim Laporan</span>
-                ) : (
-                  <span>Lanjutkan</span>
-                )}
-              </button>
-            </div>
-          );
+        nextButtonProps={{
+          disabled: isSubmitting || (currentStep === 4 && isUploading),
         }}
+        nextButtonText={
+          isSubmitting ? "Mengirim..." : currentStep === 5 ? "Kirim Laporan" : "Lanjutkan"
+        }
       >
         <Step>
           <StepTitle register={register} errors={errors} />

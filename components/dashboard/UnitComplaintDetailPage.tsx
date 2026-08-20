@@ -102,7 +102,13 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
         router.push("/login");
         return;
       }
-      if (user && user.role !== "SUPERADMIN" && user.role !== "SUPER_PIC" && user.role !== "PIC") {
+      if (
+        user &&
+        user.role !== "SUPERADMIN" &&
+        user.role !== "SUPER_PIC" &&
+        user.role !== "UNIT_PIC" &&
+        user.role !== "UNIT_MEMBER"
+      ) {
         router.push("/login");
         return;
       }
@@ -119,7 +125,6 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     try {
       const newComment = await apiClient.comments.create(complaintId, {
         content: replyText.trim(),
-        isOfficialResponse: true,
       });
 
       setComments((prev) => [...prev, newComment]);
@@ -138,9 +143,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
     setIsSubmittingOpen(true);
     try {
-      await apiClient.complaints.updateStatus(complaintId, "OPEN", {
-        handlingPlan: rencanaText.trim(),
-      });
+      await apiClient.complaints.updateStatus(complaintId, "OPEN", rencanaText.trim());
       toast.success("Status keluhan diperbarui menjadi DIPROSES");
       setIsOpenModal(false);
       setRencanaText("");
@@ -158,9 +161,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
     setIsSubmittingClose(true);
     try {
-      await apiClient.complaints.updateStatus(complaintId, "DONE", {
-        resolution: solusiText.trim(),
-      });
+      await apiClient.complaints.updateStatus(complaintId, "DONE", undefined, solusiText.trim());
       toast.success("Keluhan berhasil ditutup dan diselesaikan");
       setIsCloseModal(false);
       setSolusiText("");
@@ -212,12 +213,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       {user?.role === "SUPERADMIN" ? (
         <AdminSidebar activeTab="complaints" />
       ) : (
-        <UnitSidebar
-          activeTab="dashboard"
-          userRole={user?.role}
-          unitName={complaint?.unit || user?.unit?.name || "Unit"}
-          badgeCount={0}
-        />
+        <UnitSidebar activeTab="dashboard" />
       )}
 
       {/* Main Workspace */}

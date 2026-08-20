@@ -8,7 +8,7 @@ interface StepMediaUploadProps {
   isDragOver: boolean;
   fileInputRef: RefObject<HTMLInputElement | null>;
   onDragOver: (e: React.DragEvent) => void;
-  onDragLeave: () => void;
+  onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveFile: () => void;
