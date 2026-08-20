@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import Header from "@/components/shared/Header";
 import Footer from "@/components/shared/Footer";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Globe } from "lucide-react";
 
 export default function CreditsPage() {
   const creditsList = [
@@ -16,66 +16,24 @@ export default function CreditsPage() {
       image: "/images/nabilkencana.jpg",
       bgClass: "bg-slate-900",
       socials: {
+        website: "https://canadev.my.id",
         github: "https://github.com/nabilkencana",
         linkedin: "https://linkedin.com/in/nabilkencana",
         instagram: "https://instagram.com/nabill.anwr",
       },
     },
     {
-      id: "frontend-team",
-      name: "Moklet Frontend",
-      role: '"UI/UX & Motion Specialist"',
-      description: "Pengembang Antarmuka Fluid Glass, Responsive & GSAP ScrollTrigger",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop",
-      bgClass: "bg-neutral-800",
+      id: "alfareza",
+      name: "Alfareza",
+      role: '"Backend Developer"',
+      description: "Backend Developer sekaligus Pembuat Folder suaramoklet-backend",
+      image: "/images/alfareza.jpg",
+      bgClass: "bg-slate-900",
       socials: {
-        github: "https://github.com",
-        instagram: "https://instagram.com",
-      },
-    },
-    {
-      id: "backend-team",
-      name: "Moklet Backend",
-      role: '"Database & API Engineer"',
-      description: "Pengelola Database PostgreSQL, Prisma ORM & SSO Auth Integration",
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=800&auto=format&fit=crop",
-      bgClass: "bg-amber-500",
-      socials: {
-        github: "https://github.com",
-        linkedin: "https://linkedin.com",
-      },
-    },
-    {
-      id: "qa-team",
-      name: "Moklet System QA",
-      role: '"Quality & Compliance"',
-      description: "Penjamin Mutu Sistem & Validasi Alur Pengaduan ISO Sekolah",
-      image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=800&auto=format&fit=crop",
-      bgClass: "bg-red-900",
-      socials: {
-        github: "https://github.com",
-      },
-    },
-    {
-      id: "design-team",
-      name: "Moklet Creative",
-      role: '"Visual & Brand Designer"',
-      description: "Perancang Identitas Visual, Typography & Color Palette Red Moklet",
-      image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=800&auto=format&fit=crop",
-      bgClass: "bg-cyan-700",
-      socials: {
-        instagram: "https://instagram.com",
-      },
-    },
-    {
-      id: "school-support",
-      name: "SMK Telkom Malang",
-      role: '"Project Supervisor & Institution"',
-      description: "Pembina, Pengarah & Penyedia Fasilitas Inovasi Digital Sekolah",
-      image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=800&auto=format&fit=crop",
-      bgClass: "bg-yellow-400",
-      socials: {
-        instagram: "https://instagram.com/smktelkommalang",
+        website: "https://www.alfareza.site",
+        github: "https://github.com/Alfareza-dev",
+        linkedin: "https://www.linkedin.com/in/alfareza-dev",
+        instagram: "https://www.instagram.com/alfareza.dev",
       },
     },
   ];
@@ -107,8 +65,8 @@ export default function CreditsPage() {
           </p>
         </div>
 
-        {/* Grid Showcase Cards (Exact Ref Image Layout) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 sm:gap-12 pt-6">
+        {/* Grid Showcase Cards (2 Columns Centered) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 sm:gap-14 pt-6 max-w-4xl mx-auto">
           {creditsList.map((item) => (
             <div
               key={item.id}
@@ -126,6 +84,17 @@ export default function CreditsPage() {
 
                 {/* Social Overlay on Hover */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4 backdrop-blur-[2px]">
+                  {item.socials.website && (
+                    <a
+                      href={item.socials.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="h-10 w-10 rounded-full bg-white text-slate-900 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-md"
+                      aria-label="Website"
+                    >
+                      <Globe className="h-5 w-5" />
+                    </a>
+                  )}
                   {item.socials.github && (
                     <a
                       href={item.socials.github}
