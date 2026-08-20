@@ -1,16 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Loader2, QrCode, Smartphone, Bot, Zap, CheckCircle, AlertTriangle, LogOut, RefreshCw, Save, Check, X, Search, Filter, Send } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
+
+// WhatsApp Submodules
+import { WaConnectionStatus, WhatsAppLog, WhatsAppTemplate } from "./whatsapp/types";
+import WhatsAppStatusCard from "./whatsapp/WhatsAppStatusCard";
+import WhatsAppLogsCard from "./whatsapp/WhatsAppLogsCard";
+import WhatsAppTemplatesCard from "./whatsapp/WhatsAppTemplatesCard";
+import WhatsAppTestCard from "./whatsapp/WhatsAppTestCard";
 
 interface WhatsAppManagerProps {
   isActive: boolean;
 }
 
 export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
-  const [waStatus, setWaStatus] = useState<"offline" | "disconnected" | "online" | "connecting">("offline");
+  const [waStatus, setWaStatus] = useState<WaConnectionStatus>("offline");
   const [isWaLoading, setIsWaLoading] = useState(false);
   const [waQrCode, setWaQrCode] = useState<string>("");
   const [waQrExpiresIn, setWaQrExpiresIn] = useState<number>(0);
@@ -19,16 +25,16 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
   const [waConnectedAt, setWaConnectedAt] = useState<number | null>(null);
   const [runtimeStr, setRuntimeStr] = useState<string>("-");
 
-  // State for Logs
-  const [logs, setLogs] = useState<any[]>([]);
+  // Logs State
+  const [logs, setLogs] = useState<WhatsAppLog[]>([]);
   const [isLogsLoading, setIsLogsLoading] = useState(false);
   const [logPage, setLogPage] = useState(1);
   const [logTotalPages, setLogTotalPages] = useState(1);
   const [logSearch, setLogSearch] = useState("");
   const [logStatusFilter, setLogStatusFilter] = useState("");
 
-  // State for Templates
-  const [templates, setTemplates] = useState<any[]>([]);
+  // Templates State
+  const [templates, setTemplates] = useState<WhatsAppTemplate[]>([]);
   const [isTemplatesLoading, setIsTemplatesLoading] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
@@ -69,7 +75,7 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
               setWaQrExpired(true);
             }
           }
-        } catch (e) {
+        } catch {
           // Ignore
         }
       };
@@ -102,16 +108,16 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
       const updateRuntime = () => {
         const diffMs = Date.now() - waConnectedAt;
         const diffSecs = Math.max(0, Math.floor(diffMs / 1000));
-        
+
         const h = Math.floor(diffSecs / 3600);
         const m = Math.floor((diffSecs % 3600) / 60);
         const s = diffSecs % 60;
-        
+
         if (h > 0) setRuntimeStr(`${h}j ${m}m ${s}s`);
         else if (m > 0) setRuntimeStr(`${m}m ${s}s`);
         else setRuntimeStr(`${s}s`);
       };
-      
+
       updateRuntime();
       runtimeInterval = setInterval(updateRuntime, 1000);
     } else {
@@ -125,10 +131,10 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
     if (isActive && waStatus === "online") {
       fetchLogs();
       fetchTemplates();
-      
+
       const logsInterval = setInterval(() => {
         fetchLogs(logPage, false);
-      }, 10000); // Polling every 10s for realtime logs
+      }, 10000);
       return () => clearInterval(logsInterval);
     }
   }, [isActive, waStatus, logPage, logStatusFilter]);
@@ -151,7 +157,7 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
           setWaConnectedAt(null);
         }
       }
-    } catch (e) {
+    } catch {
       setWaStatus("offline");
       setWaConnectedAt(null);
     }
@@ -164,7 +170,7 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
         page,
         limit: 10,
         status: logStatusFilter,
-        search: logSearch
+        search: logSearch,
       });
       if (res && res.data) {
         setLogs(res.data);
@@ -216,15 +222,11 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
       setWaQrCode("");
       setWaQrExpired(false);
       setWaStatus("disconnected");
-    } catch (e: any) {
+    } catch {
       toast.error("Gagal membatalkan proses");
     } finally {
       setIsWaLoading(false);
     }
-  };
-
-  const handleDisconnect = async () => {
-    setIsDisconnectModalOpen(true);
   };
 
   const confirmDisconnect = async () => {
@@ -236,7 +238,7 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
       setWaQrCode("");
       setWaUser(null);
       setWaStatus("disconnected");
-    } catch (e: any) {
+    } catch {
       toast.error("Gagal disconnect bot");
     } finally {
       setIsWaLoading(false);
@@ -249,7 +251,7 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
       toast.success("Template berhasil disimpan!");
       setEditingTemplate(null);
       fetchTemplates();
-    } catch (e) {
+    } catch {
       toast.error("Gagal menyimpan template");
     }
   };
@@ -270,15 +272,11 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
       toast.success("Pesan percobaan terkirim!");
       setTestMessage("");
       fetchLogs(1, false);
-    } catch (e) {
+    } catch {
       toast.error("Gagal mengirim pesan percobaan");
     } finally {
       setIsTestSending(false);
     }
-  };
-
-  const handleResendFailed = async () => {
-    setIsResendModalOpen(true);
   };
 
   const confirmResendFailed = async () => {
@@ -288,17 +286,11 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
       await apiClient.whatsapp.resendFailed();
       toast.success("Permintaan kirim ulang berhasil dijalankan");
       fetchLogs(1, false);
-    } catch (e) {
+    } catch {
       toast.error("Gagal melakukan kirim ulang");
     } finally {
       setIsResending(false);
     }
-  };
-
-  const handleSearchLog = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLogPage(1);
-    fetchLogs(1);
   };
 
   return (
@@ -310,390 +302,79 @@ export default function WhatsAppManager({ isActive }: WhatsAppManagerProps) {
         </p>
       </div>
 
-      <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm">
-        {waStatus === "offline" && (
-          <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-            <div className="h-20 w-20 bg-slate-100 rounded-full flex items-center justify-center mb-2">
-              <Bot className="h-10 w-10 text-slate-400" />
-            </div>
-            <div className="space-y-2 max-w-sm">
-              <h3 className="text-lg font-bold text-slate-800">Status: OFFLINE</h3>
-              <p className="text-sm text-slate-500">Layanan WhatsApp saat ini sedang tidak tersedia atau dalam masa pemeliharaan. Silakan hubungi tim dukungan teknis untuk bantuan lebih lanjut.</p>
-            </div>
-          </div>
-        )}
-
-        {waStatus === "disconnected" && (
-          <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-            <div className="h-20 w-20 bg-blue-50 rounded-full flex items-center justify-center mb-2">
-              <Smartphone className="h-10 w-10 text-blue-500" />
-            </div>
-            <div className="space-y-2 max-w-sm">
-              <h3 className="text-lg font-bold text-slate-800">Status: DISCONNECTED</h3>
-              <p className="text-sm text-slate-500">Sistem WhatsApp Bot belum terhubung ke sesi aktif. Silakan mulai inisialisasi untuk menghubungkan perangkat Anda.</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={handleWaInit} disabled={isWaLoading} className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
-                {isWaLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <QrCode className="h-5 w-5" />}
-                <span>Dapatkan QR</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {waStatus === "connecting" && (
-          <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-            <div className="h-20 w-20 bg-amber-50 rounded-full flex items-center justify-center mb-2 relative">
-              <Zap className="h-10 w-10 text-amber-500 animate-pulse" />
-              {isWaLoading && (
-                <div className="absolute inset-0 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin"></div>
-              )}
-            </div>
-            <div className="space-y-2 max-w-sm">
-              <h3 className="text-lg font-bold text-slate-800">Status: CONNECTING</h3>
-              <p className="text-sm text-slate-500">
-                {!waQrCode ? "Menyiapkan QR Code dari server..." : "Scan QR Code di bawah dengan aplikasi WhatsApp Anda"}
-              </p>
-            </div>
-            
-            {waQrCode && !waQrExpired && (
-              <div className="mt-6 flex flex-col items-center gap-4">
-                <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm inline-block">
-                  <img src={waQrCode} alt="WhatsApp QR Code" className="w-64 h-64 object-contain" />
-                </div>
-                <div className="flex items-center gap-2 text-sm font-bold text-slate-600 bg-slate-100 px-4 py-2 rounded-xl">
-                  <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
-                  <span>Menunggu scan... ({waQrExpiresIn}s)</span>
-                </div>
-              </div>
-            )}
-
-            {waQrExpired && (
-              <div className="mt-6 flex flex-col items-center gap-4">
-                <div className="p-8 bg-red-50 rounded-2xl border border-red-100 flex flex-col items-center gap-2 text-red-600">
-                  <AlertTriangle className="h-10 w-10" />
-                  <span className="font-bold">QR Code Expired</span>
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center gap-3 mt-4">
-              {waQrExpired ? (
-                <button onClick={handleWaInit} disabled={isWaLoading} className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
-                  {isWaLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
-                  <span>Get QR Ulang</span>
-                </button>
-              ) : (
-                <button onClick={handleWaCancel} disabled={isWaLoading} className="h-11 px-6 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
-                  <span>Batal</span>
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+      <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm space-y-8">
+        <WhatsAppStatusCard
+          waStatus={waStatus}
+          isWaLoading={isWaLoading}
+          waQrCode={waQrCode}
+          waQrExpiresIn={waQrExpiresIn}
+          waQrExpired={waQrExpired}
+          waUser={waUser}
+          runtimeStr={runtimeStr}
+          onInit={handleWaInit}
+          onCancel={handleWaCancel}
+          onDisconnect={() => setIsDisconnectModalOpen(true)}
+        />
 
         {waStatus === "online" && (
-          <div className="space-y-8">
-            {/* Status Header */}
-            <div className="flex flex-col md:flex-row items-center justify-between bg-slate-50 p-6 rounded-2xl border border-slate-200">
-              <div className="flex items-center gap-4 mb-4 md:mb-0">
-                <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="h-8 w-8 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800">Status: ONLINE</h3>
-                  <div className="flex flex-wrap gap-4 mt-1 text-sm text-slate-600">
-                    <span className="font-semibold">Nama: {waUser?.name || "WhatsApp Bot"}</span>
-                    <span className="hidden md:inline">•</span>
-                    <span className="font-semibold">Nomor: {waUser?.id?.split(':')[0] || waUser?.id || "-"}</span>
-                    <span className="hidden md:inline">•</span>
-                    <span className="font-semibold text-blue-600">Runtime: {runtimeStr}</span>
-                  </div>
-                </div>
-              </div>
-              <button onClick={handleDisconnect} disabled={isWaLoading} className="h-11 px-6 bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50">
-                {isWaLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
-                <span>Disconnect Bot</span>
-              </button>
-            </div>
-
+          <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* WhatsApp Logs */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col h-[500px]">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                    Log Pesan Terkirim
-                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                      Realtime
-                    </span>
-                  </h4>
-                  <button onClick={() => fetchLogs(logPage)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                    <RefreshCw className={`h-4 w-4 ${isLogsLoading ? 'animate-spin' : ''}`} />
-                  </button>
-                </div>
-                
-                <form onSubmit={handleSearchLog} className="flex gap-2 mb-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <input 
-                      type="text" 
-                      placeholder="Cari nomor/pesan..." 
-                      className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={logSearch}
-                      onChange={(e) => setLogSearch(e.target.value)}
-                    />
-                  </div>
-                  <select 
-                    className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={logStatusFilter}
-                    onChange={(e) => {
-                      setLogStatusFilter(e.target.value);
-                      setLogPage(1);
-                    }}
-                  >
-                    <option value="">Semua Status</option>
-                    <option value="SUCCESS">Berhasil</option>
-                    <option value="FAILED">Gagal</option>
-                  </select>
-                  <button type="submit" className="px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold flex items-center justify-center">
-                    Cari
-                  </button>
-                </form>
+              <WhatsAppLogsCard
+                logs={logs}
+                isLogsLoading={isLogsLoading}
+                logPage={logPage}
+                logTotalPages={logTotalPages}
+                logSearch={logSearch}
+                logStatusFilter={logStatusFilter}
+                onSearchChange={setLogSearch}
+                onStatusFilterChange={(st) => {
+                  setLogStatusFilter(st);
+                  setLogPage(1);
+                }}
+                onSearchSubmit={(e) => {
+                  e.preventDefault();
+                  setLogPage(1);
+                  fetchLogs(1);
+                }}
+                onRefresh={() => fetchLogs(logPage)}
+                onPageChange={setLogPage}
+              />
 
-                <div className="flex-1 overflow-y-auto pr-2 space-y-3">
-                  {logs.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                      <Bot className="h-10 w-10 mb-2 opacity-50" />
-                      <p className="text-sm">Tidak ada log pesan ditemukan.</p>
-                    </div>
-                  ) : (
-                    logs.map((log) => (
-                      <div key={log.id} className="p-3 rounded-xl border border-slate-100 bg-slate-50 flex flex-col gap-1.5">
-                        <div className="flex justify-between items-start">
-                          <span className="text-xs font-bold text-slate-800">{log.to}</span>
-                          <span className="text-[10px] font-medium text-slate-400">{new Date(log.createdAt).toLocaleString('id-ID')}</span>
-                        </div>
-                        <p className="text-[11px] text-slate-600 leading-relaxed whitespace-pre-wrap">{log.message}</p>
-                        <div className="flex justify-between items-center mt-1">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${log.status === 'SUCCESS' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                            {log.status === 'SUCCESS' ? 'Terkirim' : 'Gagal'}
-                          </span>
-                          {log.errorMessage && <span className="text-[10px] text-red-500 truncate max-w-[150px]" title={log.errorMessage}>{log.errorMessage}</span>}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Pagination */}
-                {logTotalPages > 1 && (
-                  <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-100">
-                    <button 
-                      disabled={logPage === 1}
-                      onClick={() => setLogPage(p => p - 1)}
-                      className="px-3 py-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-xs font-bold text-slate-700 rounded-lg"
-                    >
-                      Prev
-                    </button>
-                    <span className="text-xs font-medium text-slate-500">Hal {logPage} dari {logTotalPages}</span>
-                    <button 
-                      disabled={logPage === logTotalPages}
-                      onClick={() => setLogPage(p => p + 1)}
-                      className="px-3 py-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-xs font-bold text-slate-700 rounded-lg"
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Notification Templates */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col h-[500px]">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-base font-bold text-slate-800">Template Pesan Otomatis</h4>
-                  <button onClick={fetchTemplates} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
-                    <RefreshCw className={`h-4 w-4 ${isTemplatesLoading ? 'animate-spin' : ''}`} />
-                  </button>
-                </div>
-                
-                <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl mb-4 text-xs text-blue-700 flex gap-2 items-start">
-                  <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <p>
-                    Gunakan variabel (dibungkus kurung kurawal) di bawah ini sesuai template: <br/>
-                    <strong>{`{title}`}</strong>: Judul Keluhan<br/>
-                    <strong>{`{name}`}</strong>: Nama Pembuat Keluhan<br/>
-                    <strong>{`{status}`}</strong>: Status (NEW, OPEN, DONE)<br/>
-                    <strong>{`{unit}`}</strong>: Nama Unit<br/>
-                    <strong>{`{note}`}</strong>: Catatan Forward
-                  </p>
-                </div>
-
-                <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-                  {templates.length === 0 && !isTemplatesLoading && (
-                    <div className="text-center text-slate-400 py-4 text-sm">Tidak ada template.</div>
-                  )}
-                  {templates.map((tpl) => (
-                    <div key={tpl.id} className="border border-slate-200 rounded-xl overflow-hidden">
-                      <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex justify-between items-center">
-                        <span className="text-xs font-extrabold text-slate-800">{tpl.name}</span>
-                        {editingTemplate !== tpl.name ? (
-                          <button 
-                            onClick={() => {
-                              setEditingTemplate(tpl.name);
-                              setEditContent(tpl.content);
-                            }}
-                            className="text-[11px] font-bold text-blue-600 hover:text-blue-700"
-                          >
-                            Edit
-                          </button>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => setEditingTemplate(null)} className="text-[11px] font-bold text-slate-500 hover:text-slate-700">Batal</button>
-                            <button onClick={() => handleSaveTemplate(tpl.name)} className="text-[11px] font-bold text-green-600 hover:text-green-700 flex items-center gap-1">
-                              <Save className="h-3 w-3" /> Simpan
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-4 bg-white">
-                        {editingTemplate === tpl.name ? (
-                          <textarea 
-                            className="w-full min-h-[100px] text-xs p-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                            value={editContent}
-                            onChange={(e) => setEditContent(e.target.value)}
-                          />
-                        ) : (
-                          <p className="text-xs text-slate-600 whitespace-pre-wrap">{tpl.content}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <WhatsAppTemplatesCard
+                templates={templates}
+                isTemplatesLoading={isTemplatesLoading}
+                editingTemplate={editingTemplate}
+                editContent={editContent}
+                onRefresh={fetchTemplates}
+                onStartEdit={(name, content) => {
+                  setEditingTemplate(name);
+                  setEditContent(content);
+                }}
+                onCancelEdit={() => setEditingTemplate(null)}
+                onContentChange={setEditContent}
+                onSaveTemplate={handleSaveTemplate}
+              />
             </div>
 
-            {/* Testing & Utilities */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-              {/* Testing Form */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                    Testing Pengiriman
-                  </h4>
-                </div>
-                <form onSubmit={handleTestSend} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Nomor Tujuan (WhatsApp)</label>
-                    <input 
-                      type="text" 
-                      required
-                      placeholder="08xxxxxxxxxx atau 628xxxxxxxxxx" 
-                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={testNumber}
-                      onChange={(e) => setTestNumber(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Isi Pesan</label>
-                    <textarea 
-                      required
-                      placeholder="Ketik pesan percobaan di sini..." 
-                      className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
-                      value={testMessage}
-                      onChange={(e) => setTestMessage(e.target.value)}
-                    />
-                  </div>
-                  <button type="submit" disabled={isTestSending} className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors">
-                    {isTestSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    Kirim Pesan
-                  </button>
-                </form>
-              </div>
-
-              {/* Utility Section */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-base font-bold text-slate-800">Utilitas & Maintenance</h4>
-                </div>
-                <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl flex-1">
-                  <h5 className="font-bold text-orange-800 text-sm mb-2">Kirim Ulang Pesan Gagal</h5>
-                  <p className="text-xs text-orange-700 mb-4 leading-relaxed">
-                    Jika terdapat banyak log pesan dengan status "Gagal" (misalnya karena bot sempat offline atau koneksi terputus), Anda dapat mencoba mengirimkan ulang semua pesan tersebut ke antrean.
-                  </p>
-                  <button 
-                    onClick={handleResendFailed}
-                    disabled={isResending}
-                    className="w-full py-2.5 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors"
-                  >
-                    {isResending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                    Kirim Ulang Semua Pesan Gagal
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+            <WhatsAppTestCard
+              testNumber={testNumber}
+              testMessage={testMessage}
+              isTestSending={isTestSending}
+              isResending={isResending}
+              isDisconnectModalOpen={isDisconnectModalOpen}
+              isResendModalOpen={isResendModalOpen}
+              onTestNumberChange={setTestNumber}
+              onTestMessageChange={setTestMessage}
+              onTestSend={handleTestSend}
+              onOpenResendModal={() => setIsResendModalOpen(true)}
+              onCloseResendModal={() => setIsResendModalOpen(false)}
+              onConfirmResend={confirmResendFailed}
+              onCloseDisconnectModal={() => setIsDisconnectModalOpen(false)}
+              onConfirmDisconnect={confirmDisconnect}
+            />
+          </>
         )}
-        {/* Disconnect Modal */}
-      {isDisconnectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsDisconnectModalOpen(false)}></div>
-          <div className="relative bg-white rounded-3xl shadow-xl border border-slate-100 p-6 w-full max-w-sm flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
-            <div className="h-16 w-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
-              <LogOut className="h-8 w-8" />
-            </div>
-            <h3 className="text-lg font-black text-slate-800 mb-2">Putus Koneksi Bot?</h3>
-            <p className="text-sm text-slate-500 mb-6">
-              Bot WhatsApp akan logout dan tidak bisa mengirim pesan secara otomatis sampai Anda menghubungkannya kembali dengan QR Code baru.
-            </p>
-            <div className="flex w-full gap-3">
-              <button
-                onClick={() => setIsDisconnectModalOpen(false)}
-                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={confirmDisconnect}
-                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-md shadow-red-500/20 transition-all hover:shadow-lg hover:shadow-red-500/30 active:scale-95"
-              >
-                Ya, Putuskan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Resend Modal */}
-      {isResendModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsResendModalOpen(false)}></div>
-          <div className="relative bg-white rounded-3xl shadow-xl border border-slate-100 p-6 w-full max-w-sm flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
-            <div className="h-16 w-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-4">
-              <RefreshCw className="h-8 w-8" />
-            </div>
-            <h3 className="text-lg font-black text-slate-800 mb-2">Kirim Ulang Pesan Gagal?</h3>
-            <p className="text-sm text-slate-500 mb-6">
-              Sistem akan memproses dan mengirim ulang semua log notifikasi WhatsApp yang sebelumnya berstatus gagal. Lanjutkan?
-            </p>
-            <div className="flex w-full gap-3">
-              <button
-                onClick={() => setIsResendModalOpen(false)}
-                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={confirmResendFailed}
-                className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-md shadow-amber-500/20 transition-all hover:shadow-lg hover:shadow-amber-500/30 active:scale-95"
-              >
-                Kirim Ulang
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
     </div>
   );
 }

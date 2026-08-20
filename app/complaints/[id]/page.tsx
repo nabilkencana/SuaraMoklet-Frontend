@@ -2,74 +2,17 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import {
-  ArrowLeft,
-  Calendar,
-  User as UserIcon,
-  Tag,
-  FileText,
-  EyeOff,
-  AlertCircle,
-  HelpCircle,
-  Building2,
-  ChevronDown,
-  Search,
-  Megaphone,
-  LogIn,
-  LayoutDashboard,
-  Menu,
-  X,
-  ThumbsUp,
-  CheckCircle2,
-  MessageCircle,
-  RefreshCw,
-} from "lucide-react";
-import SupportWidget from "@/components/complaints/SupportWidget";
-import Timeline from "@/components/complaints/Timeline";
-import RatingWidget from "@/components/complaints/RatingWidget";
-import CommentSection from "@/components/comments/CommentSection";
+import { ArrowLeft, AlertCircle, EyeOff, LogIn } from "lucide-react";
 import useComplaint from "@/hooks/useComplaint";
 import { useAuthStore } from "@/app/store/auth.store";
-import { cn } from "@/lib/utils";
-import { ComplaintStatus, TimelineEvent } from "@/types/complaint";
+import { TimelineEvent } from "@/types/complaint";
 import Header from "@/components/shared/Header";
-
 import FullScreenLoader from "@/components/shared/FullScreenLoader";
 
-
-// NAV_LINKS has been removed in favor of the unified Header component
-
-const STATUS_CONFIG: Record<ComplaintStatus | "FORWARDED", { label: string; classes: string }> = {
-  NEW: { label: "BARU", classes: "bg-red-50 text-red-600 border border-red-200" },
-  OPEN: { label: "DIPROSES", classes: "bg-amber-50 text-amber-700 border border-amber-200" },
-  DONE: { label: "SELESAI", classes: "bg-emerald-50 text-emerald-700 border border-emerald-200" },
-  FORWARDED: { label: "FORWARDED", classes: "bg-purple-50 text-purple-600 border border-purple-200" },
-};
-
-function Accordion({ title, icon: Icon, children, defaultOpen = false }: {
-  title: string;
-  icon: React.ComponentType<{ className?: string }>;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-4 cursor-pointer"
-      >
-        <span className="flex items-center gap-2 text-sm font-bold text-slate-800 uppercase tracking-wider">
-          <Icon className="h-4 w-4 text-red-500" />
-          {title}
-        </span>
-        <ChevronDown className={cn("h-4 w-4 text-slate-400 transition-transform duration-200", open && "rotate-180")} />
-      </button>
-      {open && <div className="px-5 pb-5 text-xs text-slate-650 leading-relaxed">{children}</div>}
-    </div>
-  );
-}
+// Detail Subcomponents
+import ComplaintHeader from "@/components/complaints/detail/ComplaintHeader";
+import ComplaintBody from "@/components/complaints/detail/ComplaintBody";
+import ComplaintSidebar from "@/components/complaints/detail/ComplaintSidebar";
 
 export default function ComplaintDetailPage() {
   const params = useParams();
@@ -77,13 +20,15 @@ export default function ComplaintDetailPage() {
   const complaintId = params.id as string;
 
   const { isAuthenticated, user } = useAuthStore();
-  const { currentComplaint, isLoading, fetchComplaintById, supportComplaint } = useComplaint(complaintId, { skipFetchUnits: true });
+  const { currentComplaint, isLoading, fetchComplaintById, supportComplaint } =
+    useComplaint(complaintId, { skipFetchUnits: true });
   const [mounted, setMounted] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [isDisliked, setIsDisliked] = useState(false);
 
-  // True when logged-in user is the owner of this complaint
-  const isOwner = !!(user && currentComplaint?.reporter?.id && user.id === currentComplaint.reporter.id);
+  const isOwner = Boolean(
+    user && currentComplaint?.reporter?.id && user.id === currentComplaint.reporter.id
+  );
 
   const checkDislikeStatus = () => {
     if (typeof window !== "undefined") {
@@ -115,8 +60,6 @@ export default function ComplaintDetailPage() {
     }
   }, [mounted, complaintId]);
 
-
-
   const safeISO = (base: string | undefined, offsetMs = 0): string => {
     const ts = base ? new Date(base).getTime() : NaN;
     const resolved = isNaN(ts) ? 1700000000000 : ts;
@@ -134,10 +77,12 @@ export default function ComplaintDetailPage() {
               <AlertCircle className="h-8 w-8 text-red-400" />
             </div>
             <h2 className="text-lg font-extrabold text-slate-800">Keluhan Tidak Ditemukan</h2>
-            <p className="text-sm text-slate-500">Keluhan yang Anda cari tidak ada atau sudah dihapus.</p>
+            <p className="text-sm text-slate-500">
+              Keluhan yang Anda cari tidak ada atau sudah dihapus.
+            </p>
             <button
               onClick={() => router.push("/search")}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 hover:text-red-700 transition-colors cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4" />
               Kembali ke Pencarian
@@ -153,7 +98,7 @@ export default function ComplaintDetailPage() {
     return <FullScreenLoader />;
   }
 
-  // Visibility guard: block unauthenticated users from PRIVATE complaints
+  // Visibility guard
   if (!isAuthenticated && currentComplaint.visibility === "PRIVATE") {
     return (
       <div className="min-h-screen bg-[#FAFAFA] text-slate-800 pt-16">
@@ -166,12 +111,13 @@ export default function ComplaintDetailPage() {
             <div className="space-y-2">
               <h2 className="text-lg font-extrabold text-slate-800">Keluhan Ini Bersifat Privat</h2>
               <p className="text-sm text-slate-500 leading-relaxed">
-                Keluhan ini hanya dapat dilihat oleh pengguna yang sudah masuk. Silakan login untuk melanjutkan.
+                Keluhan ini hanya dapat dilihat oleh pengguna yang sudah masuk. Silakan login untuk
+                melanjutkan.
               </p>
             </div>
             <button
               onClick={() => router.push(`/login?redirect=/complaints/${complaintId}`)}
-              className="inline-flex items-center gap-2 h-10 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold transition-colors"
+              className="inline-flex items-center gap-2 h-10 px-6 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold transition-colors cursor-pointer"
             >
               <LogIn className="h-4 w-4" />
               Masuk untuk Melihat
@@ -182,7 +128,6 @@ export default function ComplaintDetailPage() {
     );
   }
 
-
   const displayTimeline: TimelineEvent[] = currentComplaint.timeline || [
     {
       id: "created",
@@ -191,31 +136,40 @@ export default function ComplaintDetailPage() {
       createdAt: safeISO(currentComplaint.createdAt),
     },
     ...(currentComplaint.status !== "OPEN"
-      ? [{
-          id: "forwarded",
-          title: "Diteruskan ke Unit",
-          description: `Laporan diteruskan ke Unit ${currentComplaint.unit}.`,
-          createdAt: safeISO(currentComplaint.createdAt, 60 * 60 * 1000),
-        }]
+      ? [
+          {
+            id: "forwarded",
+            title: "Diteruskan ke Unit",
+            description: `Laporan diteruskan ke Unit ${currentComplaint.unit}.`,
+            createdAt: safeISO(currentComplaint.createdAt, 60 * 60 * 1000),
+          },
+        ]
       : []),
     ...(currentComplaint.status === "DONE"
-      ? [{
-          id: "closed",
-          title: "Keluhan Diselesaikan",
-          description: "Isu laporan telah ditangani dan dinyatakan selesai.",
-          createdAt: safeISO(currentComplaint.createdAt, 2 * 24 * 60 * 60 * 1000),
-        }]
+      ? [
+          {
+            id: "closed",
+            title: "Keluhan Diselesaikan",
+            description: "Isu laporan telah ditangani dan dinyatakan selesai.",
+            createdAt: safeISO(currentComplaint.createdAt, 2 * 24 * 60 * 60 * 1000),
+          },
+        ]
       : []),
   ];
 
-  const statusInfo = STATUS_CONFIG[currentComplaint.status] || STATUS_CONFIG.OPEN;
+  const handleRestoreDisliked = () => {
+    const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
+    const updated = dislikedList.filter((id: string) => id !== complaintId);
+    localStorage.setItem("disliked_complaints", JSON.stringify(updated));
+    setIsDisliked(false);
+    window.dispatchEvent(new Event("local-disliked-change"));
+  };
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-slate-800 pt-16">
       <Header />
 
       <main className="grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-4 lg:space-y-6">
-
         {/* Back button */}
         <button
           onClick={() => router.back()}
@@ -225,261 +179,28 @@ export default function ComplaintDetailPage() {
           <span>Kembali</span>
         </button>
 
-        {/* ── MOBILE COMPACT HEADER CARD ─────────────────────── */}
-        <div className="lg:hidden bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
-          {/* Badges row */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide", statusInfo.classes)}>
-              {statusInfo.label}
-            </span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600">
-              <Tag className="h-3 w-3" />
-              {currentComplaint.unit}
-            </span>
-          </div>
-          {/* Title */}
-          <h1 className="text-base font-extrabold tracking-tight text-slate-900 leading-snug">
-            {currentComplaint.title}
-          </h1>
-          {/* Signature count */}
-          <div className="flex items-center gap-1.5 text-xs font-bold text-red-600">
-            <ThumbsUp className="h-4 w-4" />
-            <span>{(currentComplaint.supports || 0).toLocaleString("id-ID")} Suka</span>
-          </div>
-          {/* Meta row */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-semibold text-slate-400">
-            <span className="flex items-center gap-1">
-              {currentComplaint.isAnonymous
-                ? <><EyeOff className="h-3.5 w-3.5" />Anonim</>
-                : <><UserIcon className="h-3.5 w-3.5" />{currentComplaint.reporter?.name || "Siswa"}</>
-              }
-            </span>
-            <span>·</span>
-            <span className="flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5" />
-              {new Date(safeISO(currentComplaint.createdAt)).toLocaleDateString("id-ID", {
-                day: "numeric", month: "short", year: "numeric",
-              })}
-            </span>
-          </div>
-        </div>
+        {/* Header */}
+        <ComplaintHeader complaint={currentComplaint} />
 
-        {/* ── DESKTOP FULL HERO BANNER ─────────────────────────── */}
-        <div className="hidden lg:flex relative border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-white min-h-70 flex-col justify-end">
-          <div className="absolute inset-0 bg-slate-100">
-            {currentComplaint.evidenceUrl ? (
-              <img
-                src={currentComplaint.evidenceUrl}
-                alt={currentComplaint.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            ) : (
-              <div className="w-full h-full bg-linear-to-tr from-red-500/10 to-amber-500/10 flex items-center justify-center">
-                <Building2 className="h-16 w-16 text-red-500/20" />
-              </div>
-            )}
-            <div className="absolute inset-0 bg-linear-to-t from-neutral-900 via-neutral-900/50 to-neutral-900/10" />
-          </div>
-          <div className="relative z-10 p-8 space-y-3 text-white">
-            <div className="flex flex-wrap gap-2.5 items-center">
-              <span className={cn("inline-flex items-center px-3 py-0.5 rounded-full text-[10px] font-bold tracking-wide backdrop-blur-sm shadow-sm", statusInfo.classes)}>
-                {statusInfo.label}
-              </span>
-              <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/15 text-white backdrop-blur-sm border border-white/10">
-                <Tag className="h-3 w-3" />Unit {currentComplaint.unit}
-              </span>
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight leading-tight max-w-4xl">
-              {currentComplaint.title}
-            </h1>
-            <div className="flex items-center gap-1.5 text-sm font-bold text-red-300">
-              <ThumbsUp className="h-4 w-4" />
-              <span>{(currentComplaint.supports || 0).toLocaleString("id-ID")} Suka</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-neutral-300">
-              <span className="flex items-center gap-1.5">
-                {currentComplaint.isAnonymous
-                  ? <><EyeOff className="h-4 w-4 text-neutral-400" />Diajukan Anonim {currentComplaint.unit ? `- dituju ke unit ${currentComplaint.unit}` : ''}</>
-                  : <><UserIcon className="h-4 w-4 text-neutral-400" />Diajukan oleh: {currentComplaint.reporter?.name || "Siswa"} {currentComplaint.unit ? `- dituju ke unit ${currentComplaint.unit}` : ''}</>
-                }
-              </span>
-              <span className="h-1.5 w-1.5 rounded-full bg-neutral-600" />
-              <span className="flex items-center gap-1.5">
-                <Calendar className="h-4 w-4 text-neutral-400" />
-                {new Date(safeISO(currentComplaint.createdAt)).toLocaleDateString("id-ID", {
-                  day: "numeric", month: "long", year: "numeric",
-                })}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* ── CONTENT GRID ─────────────────────────────────────── */}
+        {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-start">
-
-          {/* Left Column */}
-          <div className="lg:col-span-8 space-y-4 lg:space-y-6">
-            {isDisliked ? (
-              <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-center space-y-4 py-12">
-                <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-450">
-                  <EyeOff className="h-6 w-6 text-slate-500" />
-                </div>
-                <div className="space-y-1.5">
-                  <h3 className="text-base font-bold text-slate-800">Aspirasi Ini Disembunyikan</h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                    Anda memberikan dislike pada aspirasi ini. Isinya disembunyikan agar kenyamanan penelusuran Anda tetap terjaga.
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
-                    const updated = dislikedList.filter((id: string) => id !== complaintId);
-                    localStorage.setItem("disliked_complaints", JSON.stringify(updated));
-                    setIsDisliked(false);
-                    window.dispatchEvent(new Event("local-disliked-change"));
-                  }}
-                  className="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-5 py-2.5 rounded-xl mx-auto block cursor-pointer transition-colors"
-                >
-                  Tampilkan Kembali Aspirasi
-                </button>
-              </div>
-            ) : (
-              <>
-                {/* Mobile: accordion sections */}
-                <div className="lg:hidden space-y-3">
-                  <Accordion title="Permasalahan" icon={AlertCircle} defaultOpen={true}>
-                    <p className="whitespace-pre-wrap">{currentComplaint.description || <span className="text-slate-400 italic">Deskripsi belum tersedia.</span>}</p>
-                    
-                    {currentComplaint.status === "OPEN" && currentComplaint.handlingPlan && (
-                      <div className="mt-4 pt-4 border-t border-slate-100">
-                        <span className="block text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">Rencana Penanganan (Diproses)</span>
-                        <p className="text-xs text-slate-600 whitespace-pre-wrap">{currentComplaint.handlingPlan}</p>
-                      </div>
-                    )}
-                    
-                    {currentComplaint.status === "DONE" && currentComplaint.resolution && (
-                      <div className="mt-4 pt-4 border-t border-slate-100">
-                        <span className="block text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Solusi Resmi (Selesai)</span>
-                        <p className="text-xs text-slate-600 whitespace-pre-wrap">{currentComplaint.resolution}</p>
-                      </div>
-                    )}
-                  </Accordion>
-
-                  {currentComplaint.expectedOutput && (
-                    <Accordion title="Yang Diharapkan" icon={HelpCircle}>
-                      <p className="whitespace-pre-wrap">{currentComplaint.expectedOutput}</p>
-                    </Accordion>
-                  )}
-
-                  {currentComplaint.evidenceUrl && (
-                    <Accordion title="Lampiran Bukti" icon={FileText}>
-                      <div className="relative h-48 rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
-                        <img
-                          src={currentComplaint.evidenceUrl}
-                          alt="Lampiran Bukti"
-                          className="w-full h-full object-cover cursor-pointer"
-                          onClick={() => window.open(currentComplaint.evidenceUrl, "_blank")}
-                        />
-                      </div>
-                    </Accordion>
-                  )}
-                </div>
-
-                {/* Desktop: full expanded cards */}
-                <div className="hidden lg:block space-y-6">
-                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-3">
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-                      <AlertCircle className="h-4.5 w-4.5 text-red-500" />Permasalahan
-                    </h3>
-                    <p className="text-xs text-slate-655 leading-relaxed whitespace-pre-wrap">
-                      {currentComplaint.description || <span className="text-slate-400 italic">Deskripsi belum tersedia.</span>}
-                    </p>
-                    
-                    {currentComplaint.status === "OPEN" && currentComplaint.handlingPlan && (
-                      <div className="mt-4 pt-4 border-t border-slate-100">
-                        <span className="block text-xs font-bold text-amber-600 uppercase tracking-wider mb-2">Rencana Penanganan (Diproses)</span>
-                        <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">{currentComplaint.handlingPlan}</p>
-                      </div>
-                    )}
-                    
-                    {currentComplaint.status === "DONE" && currentComplaint.resolution && (
-                      <div className="mt-4 pt-4 border-t border-slate-100">
-                        <span className="block text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2">Solusi Resmi (Selesai)</span>
-                        <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">{currentComplaint.resolution}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {currentComplaint.expectedOutput && (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-3">
-                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-                        <HelpCircle className="h-4.5 w-4.5 text-red-500" />Yang Diharapkan
-                      </h3>
-                      <p className="text-xs text-slate-655 leading-relaxed whitespace-pre-wrap">{currentComplaint.expectedOutput}</p>
-                    </div>
-                  )}
-
-                  {currentComplaint.evidenceUrl && (
-                    <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-3">
-                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-                        <FileText className="h-4.5 w-4.5 text-red-500" />Lampiran Bukti
-                      </h3>
-                      <div className="relative max-w-md h-64 rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
-                        <img
-                          src={currentComplaint.evidenceUrl}
-                          alt="Lampiran Bukti"
-                          className="w-full h-full object-cover hover:scale-102 transition-transform duration-300 cursor-pointer"
-                          onClick={() => window.open(currentComplaint.evidenceUrl, "_blank")}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shrink-0">
-                      <Building2 className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tujuan Keluhan</span>
-                      <h4 className="text-sm font-bold text-slate-800 mt-0.5">Unit {currentComplaint.unit}</h4>
-                    </div>
-                  </div>
-                </div>
-
-
-
-                {/* Private Discussion — only visible to complaint owner (pelapor) */}
-                <CommentSection
-                  complaintId={currentComplaint.id}
-                  isClosed={currentComplaint.status === "DONE"}
-                  isOwner={isOwner}
-                />
-
-              </>
-            )}
+          <div className="lg:col-span-8">
+            <ComplaintBody
+              complaint={currentComplaint}
+              isDisliked={isDisliked}
+              isOwner={isOwner}
+              onRestoreDisliked={handleRestoreDisliked}
+            />
           </div>
 
-          {/* Right Column: Support + Timeline + Rating */}
-          <div className="lg:col-span-4 space-y-4 lg:space-y-6">
-            {currentComplaint.visibility === "PUBLIC" && (
-              <SupportWidget
-                complaintId={currentComplaint.id}
-                supports={currentComplaint.supports}
-                isSupported={currentComplaint.isSupported}
-                isOwner={isOwner}
-                onSupport={supportComplaint}
-              />
-            )}
-            <Timeline events={displayTimeline} />
-            {/* Rating: only show to complaint owner after DONE */}
-            {isOwner && currentComplaint.status === "DONE" && (
-              <RatingWidget complaintId={currentComplaint.id} existingRating={currentComplaint.rating} />
-            )}
+          <div className="lg:col-span-4">
+            <ComplaintSidebar
+              complaint={currentComplaint}
+              isOwner={isOwner}
+              displayTimeline={displayTimeline}
+              onSupport={supportComplaint}
+            />
           </div>
-
         </div>
       </main>
     </div>

@@ -52,7 +52,7 @@ export default function AdminSidebar({ activeTab, onTabChange }: AdminSidebarPro
           <div className="mb-10">
             <button
               onClick={() => router.push("/")}
-              className="w-full h-11 bg-[#b61722] hover:bg-[#a7151e] text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
+              className="w-full h-11 bg-[#b61722] hover:bg-red-650 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
             >
               <House className="h-5 w-5" />
               <span>Kembali Beranda</span>
@@ -69,7 +69,7 @@ export default function AdminSidebar({ activeTab, onTabChange }: AdminSidebarPro
             )}
           >
             {activeTab === "dashboard" && (
-              <div className="absolute left-[-24px] top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
+              <div className="absolute -left-6 top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
             )}
             <LayoutDashboard className="h-4.5 w-4.5" />
             <span>Dashboard</span>
@@ -85,7 +85,7 @@ export default function AdminSidebar({ activeTab, onTabChange }: AdminSidebarPro
             )}
           >
             {activeTab === "complaints" && (
-              <div className="absolute left-[-24px] top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
+              <div className="absolute -left-6 top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
             )}
             <MessageSquare className="h-4.5 w-4.5" />
             <span>Keluhan</span>
@@ -101,7 +101,7 @@ export default function AdminSidebar({ activeTab, onTabChange }: AdminSidebarPro
             )}
           >
             {activeTab === "units" && (
-              <div className="absolute left-[-24px] top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
+              <div className="absolute -left-6 top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
             )}
             <Building className="h-4.5 w-4.5" />
             <span>Units</span>
@@ -117,7 +117,7 @@ export default function AdminSidebar({ activeTab, onTabChange }: AdminSidebarPro
             )}
           >
             {activeTab === "members" && (
-              <div className="absolute left-[-24px] top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
+              <div className="absolute -left-6 top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
             )}
             <Users className="h-4.5 w-4.5" />
             <span>Manajemen Pengguna</span>
@@ -133,7 +133,7 @@ export default function AdminSidebar({ activeTab, onTabChange }: AdminSidebarPro
             )}
           >
             {activeTab === "whatsapp" && (
-              <div className="absolute left-[-24px] top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
+              <div className="absolute -left-6 top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
             )}
             <Bot className="h-4.5 w-4.5" />
             <span>WhatsApp Bot</span>
@@ -149,7 +149,7 @@ export default function AdminSidebar({ activeTab, onTabChange }: AdminSidebarPro
             )}
           >
             {activeTab === "audit_logs" && (
-              <div className="absolute left-[-24px] top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
+              <div className="absolute -left-6 top-1.5 bottom-1.5 w-1.5 bg-[#b61722] rounded-r-md" />
             )}
             <ScrollText className="h-4.5 w-4.5" />
             <span>Log Sistem</span>

@@ -3,252 +3,72 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/app/store/auth.store";
-import {
-  Loader2,
-  Building,
-  Users,
-  MessageSquare,
-  Plus,
-  Eye,
-  EyeOff,
-  Trash2,
-  Upload,
-  User,
-  QrCode,
-  Smartphone,
-  Bot,
-  UserPlus,
-  ShieldCheck,
-  Sliders,
-  Settings,
-  Bell,
-  Search,
-  Zap,
-  AlertTriangle,
-  CheckCircle,
-  HelpCircle,
-  LogOut,
-  ChevronRight,
-  ChevronLeft,
-  Download,
-  Filter,
-  PlusCircle,
-  ArrowRight,
-  TrendingUp,
-  Clock,
-  LayoutDashboard,
-  X,
-  Forward,
-  MoreVertical,
-  GraduationCap,
-  BookOpen,
-  Briefcase,
-  Pencil,
-  Ban,
-  House,
-  RefreshCw,
-  FileText
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient, mapBackendUnitToFrontend } from "@/lib/api";
-import { Complaint, ComplaintUnit, UnitModel, ComplaintVisibility } from "@/types/complaint";
-import { cn } from "@/lib/utils";
+import { Complaint, ComplaintUnit, UnitModel } from "@/types/complaint";
 import AdminSidebar from "@/components/dashboard/AdminSidebar";
 import WhatsAppManager from "@/components/dashboard/WhatsAppManager";
 import AuditLogsManager from "@/components/dashboard/AuditLogsManager";
 
-interface UnitMember {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  isPic: boolean;
-  unitId: string;
-  unitName: string;
-}
+// Admin Submodules
+import { AdminTab, UnitMember, AdminUserRow } from "./admin/types";
+import OverviewTab from "./admin/tabs/OverviewTab";
+import ComplaintsTab from "./admin/tabs/ComplaintsTab";
+import UnitsTab from "./admin/tabs/UnitsTab";
+import MembersTab from "./admin/tabs/MembersTab";
 
-const getUnitIcon = (name: string) => {
-  const norm = name.toLowerCase();
-  if (norm.includes("kesiswaan")) return <GraduationCap className="h-5 w-5 text-white" />;
-  if (norm.includes("kurikulum")) return <BookOpen className="h-5 w-5 text-white" />;
-  if (norm.includes("humas") || norm.includes("hubinkom") || norm.includes("relations")) return <Briefcase className="h-5 w-5 text-white" />;
-  return <Building className="h-5 w-5 text-white" />;
-};
-
-const getUnitIconBg = (name: string) => {
-  const norm = name.toLowerCase();
-  if (norm.includes("kesiswaan") || norm.includes("kurikulum")) return "bg-[#b61722]";
-  return "bg-slate-700";
-};
-
-const getUnitDescription = (unit: UnitModel) => {
-  if (unit.description) return unit.description;
-  const norm = unit.name.toLowerCase();
-  if (norm.includes("kurikulum")) return "Academic planning, syllabus management, and educational processes.";
-  if (norm.includes("kesiswaan")) return "Student affairs, discipline, extracurricular activities, and counseling.";
-  if (norm.includes("humas") || norm.includes("hubinkom")) return "Public relations, industry partnerships, and external relations.";
-  if (norm.includes("sarpras")) return "Facilities, infrastructure maintenance, and resource management.";
-  return "Management and operation of department resources.";
-};
-
-const getInitials = (name: string) => {
-  return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
-};
-const getUnitPIC = (unitId: string, unitName: string, unitMembers: UnitMember[]) => {
-  const pic = unitMembers.find((m) => m.unitId === unitId && m.isPic);
-  if (pic) return pic;
-  return { name: "Belum Ditunjuk", email: "-", initials: "BD" };
-};
-
-interface TablePaginationProps {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  itemsPerPage: number;
-  onPageChange: (page: number) => void;
-  itemName?: string;
-}
-
-function TablePagination({
-  currentPage,
-  totalPages,
-  totalItems,
-  itemsPerPage,
-  onPageChange,
-  itemName = "data",
-}: TablePaginationProps) {
-  if (totalItems === 0) return null;
-  const startItem = (currentPage - 1) * itemsPerPage + 1;
-  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
-
-  const pages: number[] = [];
-  const maxButtons = 5;
-  let startPage = Math.max(1, currentPage - 2);
-  let endPage = Math.min(totalPages, startPage + maxButtons - 1);
-  if (endPage - startPage < maxButtons - 1) {
-    startPage = Math.max(1, endPage - maxButtons + 1);
-  }
-  for (let i = startPage; i <= endPage; i++) {
-    pages.push(i);
-  }
-
-  return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-slate-100 text-xs text-slate-400 font-semibold">
-      <span>
-        Menampilkan {startItem}-{endItem} dari {totalItems} {itemName}
-      </span>
-
-      <div className="flex items-center gap-1 border border-slate-200 rounded-xl p-1 bg-white">
-        <button
-          type="button"
-          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-          disabled={currentPage <= 1}
-          className="h-7 w-7 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer disabled:cursor-not-allowed"
-          title="Halaman Sebelumnya"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-
-        {pages.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPageChange(p)}
-            className={cn(
-              "h-7 min-w-7 px-1.5 rounded-lg flex items-center justify-center text-xs font-bold transition-all cursor-pointer",
-              p === currentPage
-                ? "bg-[#b61722] text-white shadow-xs"
-                : "text-slate-600 hover:bg-slate-50"
-            )}
-          >
-            {p}
-          </button>
-        ))}
-
-        <button
-          type="button"
-          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-          disabled={currentPage >= totalPages}
-          className="h-7 w-7 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:hover:bg-transparent flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all cursor-pointer disabled:cursor-not-allowed"
-          title="Halaman Berikutnya"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-const VALID_ADMIN_TABS: ("dashboard" | "complaints" | "units" | "members" | "whatsapp" | "audit_logs")[] = [
-  "dashboard",
-  "complaints",
-  "units",
-  "members",
-  "whatsapp",
-  "audit_logs",
-];
+// Admin Modals
+import ForwardComplaintModal from "./admin/modals/ForwardComplaintModal";
+import CreateUnitModal from "./admin/modals/CreateUnitModal";
+import EditUnitModal from "./admin/modals/EditUnitModal";
+import AddMemberModal from "./admin/modals/AddMemberModal";
+import AutoCloseConfigModal from "./admin/modals/AutoCloseConfigModal";
+import ImportUsersModal from "./admin/modals/ImportUsersModal";
+import UserFormModal from "./admin/modals/UserFormModal";
+import ViewUserModal from "./admin/modals/ViewUserModal";
+import DetailComplaintModal from "./admin/modals/DetailComplaintModal";
+import DeleteComplaintModal from "./admin/modals/DeleteComplaintModal";
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { user, logout, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "complaints" | "units" | "members" | "whatsapp" | "audit_logs">(() => {
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Tab State
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => {
     if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const tabParam = urlParams.get("tab") as any;
-      if (tabParam && VALID_ADMIN_TABS.includes(tabParam)) {
-        return tabParam;
-      }
-      const savedTab = localStorage.getItem("adminActiveTab") as any;
-      if (savedTab && VALID_ADMIN_TABS.includes(savedTab)) {
-        return savedTab;
+      const saved = localStorage.getItem("adminActiveTab") as AdminTab;
+      if (
+        saved &&
+        ["dashboard", "complaints", "units", "members", "whatsapp", "audit_logs"].includes(saved)
+      ) {
+        return saved;
       }
     }
     return "dashboard";
   });
 
-  // Sync tab change to URL param and localStorage
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("adminActiveTab", activeTab);
-      const url = new URL(window.location.href);
-      if (url.searchParams.get("tab") !== activeTab) {
-        url.searchParams.set("tab", activeTab);
-        window.history.replaceState({}, "", url.toString());
-      }
-    }
-  }, [activeTab]);
-
-  // Handle browser back/forward navigation
-  useEffect(() => {
-    const handlePopState = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const tabParam = urlParams.get("tab") as any;
-      if (tabParam && VALID_ADMIN_TABS.includes(tabParam)) {
-        setActiveTab(tabParam);
-      }
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
-  const [isLoading, setIsLoading] = useState(true);
-
-  // States
-  const [units, setUnits] = useState<UnitModel[]>([]);
+  // Global Data States
   const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [units, setUnits] = useState<UnitModel[]>([]);
   const [unitMembers, setUnitMembers] = useState<UnitMember[]>([]);
-  const [stats, setStats] = useState<any>(null);
   const [allDbUsers, setAllDbUsers] = useState<any[]>([]);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
-  // Filtering states
+  // Filter States
   const [tableTab, setTableTab] = useState<"ALL" | "NEW" | "OPEN" | "DONE">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [unitFilter, setUnitFilter] = useState("ALL");
+  const [unitSearchQuery, setUnitSearchQuery] = useState("");
+  const [selectedUnitId, setSelectedUnitId] = useState("");
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState("All");
+  const [userStatusFilter, setUserStatusFilter] = useState("All");
 
-  // Pagination states
+  // Pagination States
   const [complaintPage, setComplaintPage] = useState(1);
   const complaintPageSize = 10;
   const [complaintsListPage, setComplaintsListPage] = useState(1);
@@ -256,49 +76,34 @@ export default function AdminDashboard() {
   const [userPage, setUserPage] = useState(1);
   const userPageSize = 10;
 
-  // Reset pagination on filter change
-  useEffect(() => {
-    setComplaintPage(1);
-    setComplaintsListPage(1);
-  }, [tableTab, searchQuery, unitFilter]);
-
-  // CRUD modal/form states
-  const [newUnitName, setNewUnitName] = useState("");
-  const [newUnitDesc, setNewUnitDesc] = useState("");
-  const [newMemberEmail, setNewMemberEmail] = useState("");
-  const [selectedUnitForMember, setSelectedUnitForMember] = useState("");
-  const [memberIsPic, setMemberIsPic] = useState(false);
+  // Modal Visibility & Form States
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Delegasi modal
   const [selectedComplaintForForward, setSelectedComplaintForForward] = useState<Complaint | null>(null);
   const [forwardUnitId, setForwardUnitId] = useState("");
   const [forwardNote, setForwardNote] = useState("");
 
-  // Units tab custom states
-  const [selectedUnitId, setSelectedUnitId] = useState("");
   const [isCreateUnitModalOpen, setIsCreateUnitModalOpen] = useState(false);
+  const [newUnitName, setNewUnitName] = useState("");
+  const [newUnitDesc, setNewUnitDesc] = useState("");
+
   const [isEditUnitModalOpen, setIsEditUnitModalOpen] = useState(false);
   const [editUnitName, setEditUnitName] = useState("");
   const [editUnitDesc, setEditUnitDesc] = useState("");
-  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
-  const [unitSearchQuery, setUnitSearchQuery] = useState("");
 
-  // User management tab custom states
+  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+  const [selectedUnitForMember, setSelectedUnitForMember] = useState("");
+  const [newMemberEmail, setNewMemberEmail] = useState("");
+  const [memberIsPic, setMemberIsPic] = useState(false);
+
+  const [isAutoCloseModalOpen, setIsAutoCloseModalOpen] = useState(false);
+  const [autoCloseDays, setAutoCloseDays] = useState(7);
+  const [isUpdatingAutoClose, setIsUpdatingAutoClose] = useState(false);
+
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importStep, setImportStep] = useState(1);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importData, setImportData] = useState<any[]>([]);
-  const [userSearchQuery, setUserSearchQuery] = useState("");
-  const [userRoleFilter, setUserRoleFilter] = useState("All");
-  const [userStatusFilter, setUserStatusFilter] = useState("All");
-  const [selectedUserForView, setSelectedUserForView] = useState<any>(null);
 
-  useEffect(() => {
-    setUserPage(1);
-  }, [userSearchQuery, userRoleFilter, userStatusFilter]);
-
-  // User Form Modal states
   const [isUserFormModalOpen, setIsUserFormModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [userFormData, setUserFormData] = useState({
@@ -307,84 +112,34 @@ export default function AdminDashboard() {
     password: "",
     phone_number: "",
     role: "USER",
-    userType: "SISWA"
+    userType: "SISWA",
   });
-  const [showPassword, setShowPassword] = useState(false);
 
-  // Auto-close configuration state
-  const [isAutoCloseModalOpen, setIsAutoCloseModalOpen] = useState(false);
-  const [autoCloseDays, setAutoCloseDays] = useState(7);
-  const [isUpdatingAutoClose, setIsUpdatingAutoClose] = useState(false);
+  const [selectedUserForView, setSelectedUserForView] = useState<AdminUserRow | null>(null);
 
-
-  // Detail Modal states
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [detailModalData, setDetailModalData] = useState<any>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
 
-  // Delete Modal states
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [complaintIdToDelete, setComplaintIdToDelete] = useState<string | null>(null);
 
-  const handleOpenDetailModal = async (id: string) => {
-    setIsDetailModalOpen(true);
-    setIsDetailLoading(true);
-    try {
-      const data = await apiClient.complaints.getAdminDetail(id);
-      setDetailModalData(data);
-    } catch(err) {
-      toast.error("Gagal memuat detail");
-      setIsDetailModalOpen(false);
-    } finally {
-      setIsDetailLoading(false);
-    }
-  };
-
-  const handleDownloadLogs = async () => {
-    try {
-      const auditData = await apiClient.auditLogs.getAll({ limit: 1000 });
-      const logs = auditData?.data || [];
-      if (logs.length === 0) {
-        toast.error("Tidak ada log untuk diunduh");
-        return;
-      }
-      
-      const csvRows = [
-        ["ID", "Waktu", "Aksi", "Tipe Entitas", "Oleh", "Role"],
-        ...logs.map((log: any) => [
-          log.id,
-          new Date(log.createdAt).toLocaleString('id-ID'),
-          log.action,
-          log.entityType,
-          log.user?.name || "Sistem",
-          log.user?.role || "-"
-        ])
-      ];
-      
-      const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `iso_audit_trail_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.success("Log berhasil diunduh");
-    } catch (err) {
-      console.error(err);
-      toast.error("Gagal mengunduh log");
-    }
-  };
-
-
-
-  // Sync activeTab with localStorage to persist on refresh
+  // Sync activeTab with localStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("adminActiveTab", activeTab);
     }
   }, [activeTab]);
+
+  // Reset pagination on filter changes
+  useEffect(() => {
+    setComplaintPage(1);
+    setComplaintsListPage(1);
+  }, [tableTab, searchQuery, unitFilter]);
+
+  useEffect(() => {
+    setUserPage(1);
+  }, [userSearchQuery, userRoleFilter, userStatusFilter]);
 
   // Fetch Data Function
   const fetchData = async () => {
@@ -400,9 +155,15 @@ export default function AdminDashboard() {
       }
       setUnits(loadedUnits);
       if (loadedUnits.length > 0) {
-        setSelectedUnitForMember(prev => prev && loadedUnits.some(u => u.id === prev) ? prev : loadedUnits[0].id);
-        setForwardUnitId(prev => prev && loadedUnits.some(u => u.id === prev) ? prev : loadedUnits[0].id);
-        setSelectedUnitId(prev => prev && loadedUnits.some(u => u.id === prev) ? prev : loadedUnits[0].id);
+        setSelectedUnitForMember((prev) =>
+          prev && loadedUnits.some((u) => u.id === prev) ? prev : loadedUnits[0].id
+        );
+        setForwardUnitId((prev) =>
+          prev && loadedUnits.some((u) => u.id === prev) ? prev : loadedUnits[0].id
+        );
+        setSelectedUnitId((prev) =>
+          prev && loadedUnits.some((u) => u.id === prev) ? prev : loadedUnits[0].id
+        );
       }
 
       // 2. Fetch complaints
@@ -444,7 +205,7 @@ export default function AdminDashboard() {
         console.error("Failed to fetch stats:", err);
       }
 
-      // 5. Fetch all users for User Management
+      // 5. Fetch all users
       try {
         const usersData = await apiClient.users.getAll();
         setAllDbUsers(Array.isArray(usersData) ? usersData : []);
@@ -452,21 +213,13 @@ export default function AdminDashboard() {
         console.error("Failed to fetch users:", err);
       }
 
-      // 6. Fetch recent notifications for timeline
-      try {
-        const notifData = await apiClient.notifications.getAll({ limit: 5 });
-        setNotifications(Array.isArray(notifData) ? notifData : []);
-      } catch (err) {
-        console.error("Failed to fetch notifications:", err);
-      }
-
-      // 7. Fetch auto-close config
+      // 6. Fetch auto-close config
       try {
         const configData = await apiClient.complaints.getAutoCloseConfig();
         if (configData && configData.daysToClose) setAutoCloseDays(configData.daysToClose);
       } catch (err) {}
 
-      // 8. Fetch audit logs for ISO Audit Trail
+      // 7. Fetch audit logs
       try {
         const auditData = await apiClient.auditLogs.getAll({ limit: 5 });
         setAuditLogs(auditData?.data || []);
@@ -479,20 +232,21 @@ export default function AdminDashboard() {
       setIsLoading(false);
     }
   };
-  // Set mounted
+
+  // Mount
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
     return () => clearTimeout(timer);
   }, []);
 
-  // Check auth
+  // Auth Guard
   useEffect(() => {
     if (mounted && (!isAuthenticated || (user?.role !== "SUPERADMIN" && user?.role !== "SUPER_PIC"))) {
       router.replace("/complaints");
     }
   }, [mounted, isAuthenticated, user, router]);
 
-  // Load data
+  // Load data on mount / tab change
   useEffect(() => {
     if (mounted && isAuthenticated && (user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC")) {
       const timer = setTimeout(() => {
@@ -502,7 +256,7 @@ export default function AdminDashboard() {
     }
   }, [mounted, isAuthenticated, user, activeTab]);
 
-  // Toggle Visibility
+  // Handler: Toggle Visibility
   const handleToggleVisibility = async (id: string, current: string) => {
     const nextVisibility = current === "PUBLIC" ? "PRIVATE" : "PUBLIC";
     try {
@@ -518,53 +272,49 @@ export default function AdminDashboard() {
     }
   };
 
-  // WhatsApp Bot Handlers
-  // WA Logic moved to WhatsAppManager component
-
-  // Create Unit
+  // Handler: Create Unit
   const handleCreateUnit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUnitName.trim()) return;
 
     setIsSubmitting(true);
     try {
-      const mappedName = newUnitName.trim();
-      await apiClient.units.create({ name: mappedName, description: newUnitDesc });
+      await apiClient.units.create({ name: newUnitName.trim(), description: newUnitDesc });
       toast.success("Unit Baru Berhasil Dibuat");
       setNewUnitName("");
       setNewUnitDesc("");
+      setIsCreateUnitModalOpen(false);
       fetchData();
     } catch (err: any) {
       toast.error("Gagal Membuat Unit", {
-        description: err.response?.data?.message || "Terjadi kesalahan pada server",
+        description: err?.response?.data?.message || "Terjadi kesalahan pada server",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Update Unit
+  // Handler: Update Unit
   const handleUpdateUnit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editUnitName.trim() || !selectedUnitId) return;
 
     setIsSubmitting(true);
     try {
-      const mappedName = editUnitName.trim();
-      await apiClient.units.update(selectedUnitId, { name: mappedName, description: editUnitDesc });
+      await apiClient.units.update(selectedUnitId, { name: editUnitName.trim(), description: editUnitDesc });
       toast.success("Data Unit Berhasil Diperbarui");
       setIsEditUnitModalOpen(false);
       fetchData();
     } catch (err: any) {
       toast.error("Gagal Memperbarui Unit", {
-        description: err.response?.data?.message || "Terjadi kesalahan pada server",
+        description: err?.response?.data?.message || "Terjadi kesalahan pada server",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Delete Unit
+  // Handler: Delete Unit
   const handleDeleteUnit = async (id: string) => {
     try {
       await apiClient.units.delete(id);
@@ -572,12 +322,12 @@ export default function AdminDashboard() {
       fetchData();
     } catch (err: any) {
       toast.error("Gagal Menghapus Unit", {
-        description: err.response?.data?.message || "Terjadi kesalahan",
+        description: err?.response?.data?.message || "Terjadi kesalahan",
       });
     }
   };
 
-  // Add Member to Unit
+  // Handler: Add Member
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMemberEmail.trim()) return;
@@ -590,30 +340,18 @@ export default function AdminDashboard() {
       });
       toast.success("Anggota berhasil ditambahkan ke unit");
       setNewMemberEmail("");
+      setIsAddMemberModalOpen(false);
       fetchData();
     } catch (err: any) {
       toast.error("Gagal Menambah Anggota", {
-        description: err.response?.data?.message || "Terjadi kesalahan",
+        description: err?.response?.data?.message || "Terjadi kesalahan",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Toggle PIC Role for Member
-  const handleTogglePic = async (memberId: string, unitId: string, currentIsPic: boolean) => {
-    try {
-      await apiClient.units.updateMemberPic(unitId, memberId, { isPic: !currentIsPic });
-      toast.success("Peran PIC Anggota Diperbarui");
-      fetchData();
-    } catch (err: any) {
-      toast.error("Gagal Memperbarui Peran", {
-        description: err.response?.data?.message || "Terjadi kesalahan",
-      });
-    }
-  };
-
-  // Remove Member
+  // Handler: Remove Member
   const handleRemoveMember = (memberId: string, unitId: string) => {
     toast.error("Hapus Anggota", {
       description: "Apakah Anda yakin ingin menghapus anggota ini dari unit?",
@@ -626,19 +364,19 @@ export default function AdminDashboard() {
             fetchData();
           } catch (err: any) {
             toast.error("Gagal Menghapus Anggota", {
-              description: err.response?.data?.message || "Terjadi kesalahan",
+              description: err?.response?.data?.message || "Terjadi kesalahan",
             });
           }
-        }
+        },
       },
       cancel: {
         label: "Batal",
-        onClick: () => {}
-      }
+        onClick: () => {},
+      },
     });
   };
 
-  // Auto-close configuration handler
+  // Handler: Auto-Close Save
   const handleSaveAutoCloseConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     if (autoCloseDays < 1) {
@@ -652,14 +390,13 @@ export default function AdminDashboard() {
       toast.success(`Konfigurasi auto-close diperbarui (${autoCloseDays} hari)`);
       setIsAutoCloseModalOpen(false);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Gagal memperbarui konfigurasi auto-close";
-      toast.error(msg);
+      toast.error(err?.response?.data?.message || "Gagal memperbarui konfigurasi auto-close");
     } finally {
       setIsUpdatingAutoClose(false);
     }
   };
 
-  // Delegasi / Forward action
+  // Handler: Forward Complaint
   const handleForwardComplaint = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedComplaintForForward) return;
@@ -682,18 +419,13 @@ export default function AdminDashboard() {
             : c
         )
       );
-      toast.success("Keluhan didelegasikan (Simulated)");
+      toast.success("Keluhan didelegasikan");
       setSelectedComplaintForForward(null);
       setForwardNote("");
     }
   };
 
-  // Delete Complaint Modal Handlers
-  const promptDeleteComplaint = (id: string) => {
-    setComplaintIdToDelete(id);
-    setIsDeleteModalOpen(true);
-  };
-
+  // Handler: Delete Complaint Confirmation
   const confirmDeleteComplaint = async () => {
     if (!complaintIdToDelete) return;
     setIsSubmitting(true);
@@ -705,14 +437,29 @@ export default function AdminDashboard() {
       setComplaintIdToDelete(null);
     } catch (err: any) {
       toast.error("Gagal menghapus keluhan", {
-        description: err.response?.data?.message || "Terjadi kesalahan pada server",
+        description: err?.response?.data?.message || "Terjadi kesalahan pada server",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Export Users
+  // Handler: Open Detail Modal
+  const handleOpenDetailModal = async (id: string) => {
+    setIsDetailModalOpen(true);
+    setIsDetailLoading(true);
+    try {
+      const data = await apiClient.complaints.getAdminDetail(id);
+      setDetailModalData(data);
+    } catch (err) {
+      toast.error("Gagal memuat detail");
+      setIsDetailModalOpen(false);
+    } finally {
+      setIsDetailLoading(false);
+    }
+  };
+
+  // Handler: Export Users
   const handleExportUsers = () => {
     if (filteredUsers.length === 0) {
       toast.error("Tidak ada data pengguna untuk diekspor");
@@ -720,17 +467,17 @@ export default function AdminDashboard() {
     }
     const csvRows = [
       ["ID", "Nama", "Email", "Nomor HP", "Role", "Tipe User", "Status Aktif"],
-      ...filteredUsers.map(u => [
+      ...filteredUsers.map((u) => [
         u.id,
         u.name,
         u.email,
         u.phone_number || "-",
         u.role,
         u.userType || "-",
-        u.isActive ? "Aktif" : "Tidak Aktif"
-      ])
+        u.isActive ? "Aktif" : "Tidak Aktif",
+      ]),
     ];
-    const csvContent = "data:text/csv;charset=utf-8," + csvRows.map(e => e.join(",")).join("\n");
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.map((e) => e.join(",")).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -741,13 +488,12 @@ export default function AdminDashboard() {
     toast.success("Data pengguna berhasil diekspor");
   };
 
-  // Save (Create/Update) User
+  // Handler: Save User (Create/Update)
   const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
       if (editingUserId) {
-        // Exclude password if empty during edit
         const payload = { ...userFormData };
         if (!payload.password) {
           delete (payload as any).password;
@@ -762,14 +508,14 @@ export default function AdminDashboard() {
       fetchData();
     } catch (err: any) {
       toast.error(editingUserId ? "Gagal memperbarui pengguna" : "Gagal menambahkan pengguna", {
-        description: err.response?.data?.message || "Terjadi kesalahan",
+        description: err?.response?.data?.message || "Terjadi kesalahan",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Delete User
+  // Handler: Delete User
   const handleDeleteUser = (userId: string, userName: string) => {
     toast.error("Hapus Pengguna", {
       description: `Apakah Anda yakin ingin menonaktifkan akun ${userName}?`,
@@ -782,19 +528,19 @@ export default function AdminDashboard() {
             fetchData();
           } catch (err: any) {
             toast.error("Gagal menonaktifkan pengguna", {
-              description: err.response?.data?.message || "Terjadi kesalahan",
+              description: err?.response?.data?.message || "Terjadi kesalahan",
             });
           }
-        }
+        },
       },
       cancel: {
         label: "Batal",
-        onClick: () => {}
-      }
+        onClick: () => {},
+      },
     });
   };
 
-  // Restore User
+  // Handler: Restore User
   const handleRestoreUser = (userId: string, userName: string) => {
     toast.error("Aktifkan Pengguna", {
       description: `Apakah Anda yakin ingin mengaktifkan kembali akun ${userName}?`,
@@ -807,18 +553,57 @@ export default function AdminDashboard() {
             fetchData();
           } catch (err: any) {
             toast.error("Gagal mengaktifkan pengguna", {
-              description: err.response?.data?.message || "Terjadi kesalahan",
+              description: err?.response?.data?.message || "Terjadi kesalahan",
             });
           }
-        }
+        },
       },
       cancel: {
         label: "Batal",
-        onClick: () => {}
-      }
+        onClick: () => {},
+      },
     });
   };
 
+  // Handler: Download Logs
+  const handleDownloadLogs = async () => {
+    try {
+      const auditData = await apiClient.auditLogs.getAll({ limit: 1000 });
+      const logs = auditData?.data || [];
+      if (logs.length === 0) {
+        toast.error("Tidak ada log untuk diunduh");
+        return;
+      }
+
+      const csvRows = [
+        ["ID", "Waktu", "Aksi", "Tipe Entitas", "Oleh", "Role"],
+        ...logs.map((log: any) => [
+          log.id,
+          new Date(log.createdAt).toLocaleString("id-ID"),
+          log.action,
+          log.entityType,
+          log.user?.name || "Sistem",
+          log.user?.role || "-",
+        ]),
+      ];
+
+      const csvContent = "data:text/csv;charset=utf-8," + csvRows.map((e) => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `iso_audit_trail_${new Date().toISOString().split("T")[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success("Log berhasil diunduh");
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal mengunduh log");
+    }
+  };
+
+  // Filtered & Paginated Complaints
   const filteredComplaints = complaints.filter((c) => {
     if (tableTab === "NEW" && c.status !== "NEW") return false;
     if (tableTab === "OPEN" && c.status !== "OPEN") return false;
@@ -828,7 +613,6 @@ export default function AdminDashboard() {
       if (c.unit !== mappedFilter) return false;
     }
     if (searchQuery.trim()) {
-
       const q = searchQuery.toLowerCase();
       return (
         c.title.toLowerCase().includes(q) ||
@@ -839,17 +623,30 @@ export default function AdminDashboard() {
     return true;
   });
 
+  const totalComplaintPages = Math.max(1, Math.ceil(filteredComplaints.length / complaintPageSize));
+  const paginatedDashboardComplaints = filteredComplaints.slice(
+    (complaintPage - 1) * complaintPageSize,
+    complaintPage * complaintPageSize
+  );
+
+  const totalComplaintsListPages = Math.max(1, Math.ceil(filteredComplaints.length / complaintsListPageSize));
+  const paginatedComplaintsList = filteredComplaints.slice(
+    (complaintsListPage - 1) * complaintsListPageSize,
+    complaintsListPage * complaintsListPageSize
+  );
+
+  // Filtered Units
   const filteredUnits = units.filter((u) => {
     const normSearch = unitSearchQuery.toLowerCase();
     const matchesName = u.name.toLowerCase().includes(normSearch);
     const matchesDesc = (u.description || "").toLowerCase().includes(normSearch);
-    const pic = getUnitPIC(u.id, u.name, unitMembers);
-    const matchesPIC = pic.name.toLowerCase().includes(normSearch);
+    const pic = unitMembers.find((m) => m.unitId === u.id && m.isPic);
+    const matchesPIC = (pic?.name || "").toLowerCase().includes(normSearch);
     return matchesName || matchesDesc || matchesPIC;
   });
 
-  const dynamicUsers = allDbUsers.map((u) => {
-    // Map role name
+  // Formatted & Filtered Users
+  const allUsers: AdminUserRow[] = allDbUsers.map((u) => {
     let roleName = "User";
     if (u.role === "SUPERADMIN") roleName = "Superadmin";
     else if (u.role === "SUPER_PIC") roleName = "Super PIC";
@@ -862,7 +659,6 @@ export default function AdminDashboard() {
       else if (u.userType === "KARYAWAN") roleName = "Karyawan";
     }
 
-    // Map unit name
     let unitName = "Umum";
     if (u.unitMemberships && u.unitMemberships.length > 0) {
       unitName = u.unitMemberships.map((m: any) => m.unit?.name).join(", ");
@@ -883,11 +679,9 @@ export default function AdminDashboard() {
       originalRole: u.role,
       originalUserType: u.userType,
       userType: u.userType || "-",
-      isActive: u.isActive
+      isActive: u.isActive,
     };
   });
-
-  const allUsers = dynamicUsers;
 
   const filteredUsers = allUsers.filter((u) => {
     const normSearch = userSearchQuery.toLowerCase();
@@ -903,30 +697,11 @@ export default function AdminDashboard() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  // Paginated Data
-  const totalComplaintPages = Math.max(1, Math.ceil(filteredComplaints.length / complaintPageSize));
-  const paginatedDashboardComplaints = filteredComplaints.slice(
-    (complaintPage - 1) * complaintPageSize,
-    complaintPage * complaintPageSize
-  );
-
-  const totalComplaintsListPages = Math.max(1, Math.ceil(filteredComplaints.length / complaintsListPageSize));
-  const paginatedComplaintsList = filteredComplaints.slice(
-    (complaintsListPage - 1) * complaintsListPageSize,
-    complaintsListPage * complaintsListPageSize
-  );
-
   const totalUserPages = Math.max(1, Math.ceil(filteredUsers.length / userPageSize));
   const paginatedUsers = filteredUsers.slice(
     (userPage - 1) * userPageSize,
     userPage * userPageSize
   );
-
-  const handleLogoutClick = () => {
-    logout();
-    toast.success("Berhasil keluar");
-    router.push("/");
-  };
 
   if (!mounted || !isAuthenticated || (user?.role !== "SUPERADMIN" && user?.role !== "SUPER_PIC")) {
     return (
@@ -941,29 +716,31 @@ export default function AdminDashboard() {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#f9f9f9] flex font-sans antialiased text-slate-800">
-
-      {/* ─── 1. LEFT SIDEBAR (Dark UI) ─── */}
+      {/* ─── 1. LEFT SIDEBAR ─── */}
       <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* ─── 2. MAIN CONTAINER ─── */}
       <div className="grow h-full flex flex-col min-w-0 overflow-hidden bg-[#f9f9f9]">
-
         {/* Top Header Bar */}
         <header className="h-16 bg-white border-b border-slate-200/80 px-8 flex items-center justify-between shrink-0 shadow-xs z-10">
-          {/* Spacer */}
           <div className="relative w-96"></div>
-
-          {/* Right Header Utilities */}
           <div className="flex items-center gap-6">
-
-            {/* Profile Avatar Pill */}
             <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
               <div className="text-right">
-                <span className="block text-xs font-bold text-slate-800 leading-tight">Admin ISO</span>
-                <span className="block text-[10px] font-medium text-slate-400 uppercase tracking-wider">Superadmin</span>
+                <span className="block text-xs font-bold text-slate-800 leading-tight">
+                  {user?.name || "Admin ISO"}
+                </span>
+                <span className="block text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                  {user?.role === "SUPERADMIN" ? "Superadmin" : "Super PIC"}
+                </span>
               </div>
               <div className="h-9 w-9 rounded-full bg-[#b61722] text-white flex items-center justify-center font-bold text-sm shadow-sm select-none">
-                AI
+                {(user?.name || "Admin")
+                  .split(" ")
+                  .map((n: string) => n[0])
+                  .join("")
+                  .substring(0, 2)
+                  .toUpperCase()}
               </div>
             </div>
           </div>
@@ -971,2086 +748,254 @@ export default function AdminDashboard() {
 
         {/* ─── WORKSPACE (Internal Scroll) ─── */}
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
-
           {activeTab === "dashboard" ? (
-            /* Command Center Dashboard View */
-            <div className="space-y-8">
-
-              {/* Title Section */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Pusat Kontrol</h1>
-                  <p className="text-slate-500 text-sm mt-1">
-                    Pengawasan holistik terhadap tata kelola sekolah dan protokol respons yang tegas.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setIsAutoCloseModalOpen(true)}
-                    className="h-11 px-4 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
-                  >
-                    <Clock className="h-4.5 w-4.5 text-slate-500" />
-                    <span className="flex items-center gap-1">Auto-Close ({isLoading ? <span className="inline-block w-3 h-4 bg-slate-200 animate-pulse rounded blur-[2px]" /> : autoCloseDays} Hari)</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* 4 Stats Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Card 1 */}
-                <div className="bg-white border border-[rgba(228,190,186,0.3)] p-6 rounded-2xl shadow-sm flex flex-col gap-4">
-                  <div className="flex items-center justify-between w-full">
-                    <div className="bg-[#fdf2f2] p-2.5 rounded-xl border border-[#fee2e2] text-[#b61722]">
-                      <MessageSquare className="h-5 w-5" />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="block text-[13px] font-medium text-slate-500">Total Keluhan</span>
-                    <span className={cn("block text-4xl font-extrabold tracking-tight transition-all duration-300", isLoading ? "text-transparent bg-slate-200 blur-[3px] animate-pulse rounded-lg w-16 h-10 select-none" : "text-slate-900")}>
-                      {isLoading ? "0" : (stats?.totalCount ?? complaints.length)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card 2 */}
-                <div className="bg-white border border-[rgba(228,190,186,0.3)] p-6 rounded-2xl shadow-sm flex flex-col gap-4">
-                  <div className="flex items-center justify-between w-full">
-                    <div className="bg-[#eff6ff] p-2.5 rounded-xl border border-[#dbeafe] text-[#2563eb]">
-                      <Zap className="h-5 w-5 fill-[#2563eb]" />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="block text-[13px] font-medium text-slate-500">Rata-rata Rating</span>
-                    <span className={cn("block text-4xl font-extrabold tracking-tight transition-all duration-300", isLoading ? "text-transparent bg-slate-200 blur-[3px] animate-pulse rounded-lg w-24 h-10 select-none" : "text-slate-900")}>
-                      {isLoading ? "0" : (stats?.averageRating ? `${stats.averageRating} ★` : "0 ★")}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card 3 */}
-                <div className="bg-white border border-[rgba(228,190,186,0.3)] p-6 rounded-2xl shadow-sm flex flex-col gap-4">
-                  <div className="flex items-center justify-between w-full">
-                    <div className="bg-[#fdf2f2] p-2.5 rounded-xl border border-[#fee2e2] text-[#b61722]">
-                      <AlertTriangle className="h-5 w-5" />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="block text-[13px] font-medium text-slate-500">Belum Ditangani</span>
-                    <span className={cn("block text-4xl font-extrabold tracking-tight transition-all duration-300", isLoading ? "text-transparent bg-slate-200 blur-[3px] animate-pulse rounded-lg w-16 h-10 select-none" : "text-slate-900")}>
-                      {isLoading ? "0" : (stats?.pendingCount ?? complaints.filter(c => c.status === "NEW").length)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card 4 */}
-                <div className="bg-white border border-[rgba(228,190,186,0.3)] p-6 rounded-2xl shadow-sm flex flex-col gap-4">
-                  <div className="flex items-center justify-between w-full">
-                    <div className="bg-[#f0fdf4] p-2.5 rounded-xl border border-[#dcfce7] text-[#16a34a]">
-                      <CheckCircle className="h-5 w-5" />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="block text-[13px] font-medium text-slate-500">Terselesaikan</span>
-                    <span className={cn("block text-4xl font-extrabold tracking-tight transition-all duration-300", isLoading ? "text-transparent bg-slate-200 blur-[3px] animate-pulse rounded-lg w-16 h-10 select-none" : "text-slate-900")}>
-                      {isLoading ? "0" : (stats?.resolvedCount ?? complaints.filter(c => c.status === "DONE").length)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-
-              {/* Global Complaint List Table Card */}
-              <div className="bg-white rounded-2xl border border-[rgba(228,190,186,0.3)] shadow-sm p-6 space-y-6">
-
-                {/* Header & Tabs */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                  <div className="flex items-center gap-6">
-                    <h3 className="font-bold text-slate-900 text-lg tracking-tight">Semua Aspirasi</h3>
-
-                    <div className="flex items-center gap-2 bg-[#f9f9f9] p-1 rounded-full border border-slate-200/60">
-                      <button
-                        onClick={() => setTableTab("ALL")}
-                        className={cn(
-                          "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "ALL" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
-                        )}
-                      >
-                        Semua
-                      </button>
-                      <button
-                        onClick={() => setTableTab("NEW")}
-                        className={cn(
-                          "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "NEW" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
-                        )}
-                      >
-                        Baru
-                      </button>
-                      <button
-                        onClick={() => setTableTab("OPEN")}
-                        className={cn(
-                          "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "OPEN" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
-                        )}
-                      >
-                        Diproses
-                      </button>
-                      <button
-                        onClick={() => setTableTab("DONE")}
-                        className={cn(
-                          "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "DONE" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
-                        )}
-                      >
-                        Selesai
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                    <select
-                      value={unitFilter}
-                      onChange={(e) => setUnitFilter(e.target.value)}
-                      className="h-9 px-3 text-xs font-semibold rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-red-400 transition-all text-slate-700 w-full sm:w-auto"
-                    >
-                      <option value="ALL">Semua Unit</option>
-                      {units.map((u) => (
-                        <option key={u.id} value={u.name}>
-                          Unit {u.name}
-                        </option>
-                      ))}
-                    </select>
-
-                    <div className="relative w-full sm:w-auto">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <input
-                        type="text"
-                        placeholder="Cari keluhan..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-9 pl-9 pr-3 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-red-400 transition-all w-full sm:w-64"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-200">
-                    <thead>
-                      <tr className="text-slate-500 font-semibold text-xs border-b border-slate-100">
-                        <th className="pb-4 pl-2 font-semibold">Judul Keluhan</th>
-                        <th className="pb-4 font-semibold">Unit Pelaksana</th>
-                        <th className="pb-4 font-semibold">Status</th>
-                        <th className="pb-4 font-semibold">Visibility</th>
-                        <th className="pb-4 text-right pr-2 font-semibold">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {isLoading ? (
-                        Array.from({ length: 5 }).map((_, i) => (
-                          <tr key={`skel-dash-${i}`} className="text-slate-700 text-sm align-middle">
-                            <td className="py-5 pl-2 max-w-xs md:max-w-md">
-                              <div className="flex flex-col gap-2">
-                                <div className="h-4 w-3/4 bg-slate-200 blur-[2px] animate-pulse rounded-md" />
-                                <div className="h-3 w-1/2 bg-slate-100 blur-[2px] animate-pulse rounded-md" />
-                              </div>
-                            </td>
-                            <td className="py-5">
-                               <div className="h-4 w-24 bg-slate-200 blur-[2px] animate-pulse rounded-md" />
-                            </td>
-                            <td className="py-5">
-                               <div className="h-6 w-16 bg-slate-200 blur-[2px] animate-pulse rounded-full" />
-                            </td>
-                            <td className="py-5">
-                               <div className="h-6 w-16 bg-slate-200 blur-[2px] animate-pulse rounded-full" />
-                            </td>
-                            <td className="py-5 text-right pr-2">
-                               <div className="flex justify-end gap-2">
-                                 <div className="h-8 w-8 bg-slate-200 blur-[2px] animate-pulse rounded-lg" />
-                                 <div className="h-8 w-8 bg-slate-200 blur-[2px] animate-pulse rounded-lg" />
-                               </div>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        paginatedDashboardComplaints.map((c) => {
-                          // Map units to friendly names
-                          let friendlyUnitName = c.unit;
-                          if (c.unit === "Sarpras") friendlyUnitName = "Sarana & Prasarana" as ComplaintUnit;
-
-                          // Check status badges
-                          const isNew = c.status === "NEW";
-                          const isWaiting = false;
-                          const isClosed = c.status === "DONE";
-                          const isInProgress = c.status === "OPEN";
-
-                          const infoDetail = `#REQ-${c.id.substring(0, 8).toUpperCase()} • Disubmit ${new Date(c.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`;
-
-                        return (
-                          <tr key={c.id} className="text-slate-700 text-sm hover:bg-slate-50/50 transition-all align-middle">
-                            {/* Title & Info */}
-                            <td className="py-5 pl-2 max-w-xs md:max-w-md">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span 
-                                   onClick={() => router.push(`/dashboard/complaints/${c.id}`)}
-                                  className="font-bold text-[#b61722] hover:underline cursor-pointer leading-snug"
-                                >
-                                  {c.title}
-                                </span>
-                                {isNew && (
-                                  <span className="text-[10px] font-bold text-white bg-[#b61722] px-2 py-0.5 rounded-full">
-                                    48H+
-                                  </span>
-                                )}
-                                {isWaiting && c.title.includes("AC") && (
-                                  <span className="text-[10px] font-bold text-white bg-[#b61722] px-2 py-0.5 rounded-full">
-                                    72H+
-                                  </span>
-                                )}
-                              </div>
-                              <span className="block text-[11px] text-slate-400 mt-1.5 font-medium">
-                                {infoDetail}
-                              </span>
-                            </td>
-
-                            {/* Assigned Unit */}
-                            <td className="py-5 font-medium text-slate-500">
-                              {friendlyUnitName || "Umum"}
-                            </td>
-
-                            {/* Status Badge */}
-                            <td className="py-5">
-                              <span className={`inline-flex items-center text-[10px] font-semibold uppercase px-3 py-1 rounded-full ${isClosed
-                                ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                                : isInProgress
-                                  ? "bg-amber-50 text-amber-600 border border-amber-250"
-                                  : isWaiting
-                                    ? "bg-purple-50 text-purple-600 border border-purple-200"
-                                    : "bg-blue-50 text-blue-600 border border-blue-200" // NEW shows as OPEN (blue)
-                                }`}>
-                                {isNew ? "OPEN" : c.status}
-                              </span>
-                            </td>
-
-                            {/* Visibility Toggle */}
-                            <td className="py-5">
-                              <button
-                                onClick={() => handleToggleVisibility(c.id, c.visibility || "PUBLIC")}
-                                className="flex items-center gap-2 group cursor-pointer focus:outline-none"
-                              >
-                                <div className={`w-10 h-5.5 flex items-center rounded-full p-0.5 transition-all ${c.visibility === "PUBLIC" ? "bg-blue-600" : "bg-slate-300"
-                                  }`}>
-                                  <div className={`bg-white w-4.5 h-4.5 rounded-full shadow-md transform transition-all ${c.visibility === "PUBLIC" ? "translate-x-4.5" : "translate-x-0"
-                                    }`} />
-                                </div>
-                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                                  {c.visibility === "PUBLIC" ? "Public" : "Private"}
-                                </span>
-                              </button>
-                            </td>
-
-                            {/* Action buttons */}
-                            <td className="py-5 text-right pr-2 shrink-0">
-                              <div className="inline-flex items-center gap-2">
-                                <button
-                                  onClick={() => {
-                                    setSelectedComplaintForForward(c);
-                                    setForwardUnitId(units[0]?.id || "");
-                                  }}
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#fdf2f2] text-[#b61722] font-bold rounded-lg text-xs transition-colors border border-[#fde2e2] cursor-pointer"
-                                >
-                                  <Forward className="h-3.5 w-3.5" />
-                                  <span>Teruskan</span>
-                                </button>
-
-                                <button
-                                  onClick={() => handleOpenDetailModal(c.id)}
-                                  className="inline-flex items-center justify-center px-4 py-1.5 bg-[#b61722] hover:bg-red-650 text-white font-bold rounded-lg text-xs shadow-sm transition-all cursor-pointer"
-                                >
-                                  Detail Informasi
-                                </button>
-
-                                <button
-                                  onClick={() => router.push(`/dashboard/complaints/${c.id}`)}
-                                  className="h-8 w-8 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                                  title="Lihat Detail"
-                                >
-                                  <Eye className="h-4.5 w-4.5" />
-                                </button>
-                                
-                                {(user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC") && (
-                                  <button
-                                    onClick={() => promptDeleteComplaint(c.id)}
-                                    className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                                    title="Hapus Keluhan"
-                                  >
-                                    <Trash2 className="h-4.5 w-4.5" />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination */}
-                <TablePagination
-                  currentPage={complaintPage}
-                  totalPages={totalComplaintPages}
-                  totalItems={filteredComplaints.length}
-                  itemsPerPage={complaintPageSize}
-                  onPageChange={setComplaintPage}
-                  itemName="keluhan"
-                />
-              </div>
-
-              {/* Performance Heatmap & ISO Audit Trail Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                {/* Performance Heatmap Card (2/3 width) */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-[rgba(228,190,186,0.3)] p-6 shadow-sm space-y-6">
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-lg tracking-tight">Evaluasi Kinerja Unit</h3>
-                    <p className="text-slate-500 text-xs mt-1">Analisis efisiensi penyelesaian laporan masing-masing unit kerja</p>
-                  </div>
-
-                  <div className="space-y-5">
-                    {units.length > 0 ? (
-                      units.map((unit) => {
-                        const unitStats = stats?.byUnit?.find((u: any) => u.unitId === unit.id || u.unitName === unit.name);
-                        const total = unitStats?.totalComplaints ?? 0;
-                        const rating = unitStats?.averageRating ?? 0;
-                        const resolvedCount = unitStats?.resolvedComplaints ?? 0;
-                        const rate = total > 0 ? Math.round((resolvedCount / total) * 100) : 0;
-
-                        return (
-                          <div key={unit.id} className="space-y-2">
-                            <div className="flex justify-between text-sm font-semibold text-slate-700">
-                              <span>{mapBackendUnitToFrontend(unit.name)}</span>
-                              <span className={cn(rate >= 70 ? "text-[#16a34a]" : rate >= 40 ? "text-[#d97706]" : "text-[#ba1a1a]")}>
-                                {rate}% Efisien ({total} Keluhan, Rating: {rating ? `${rating} ★` : "-"})
-                              </span>
-                            </div>
-                            <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                              <div className={cn("h-full rounded-full", rate >= 70 ? "bg-[#16a34a]" : rate >= 40 ? "bg-[#d97706]" : "bg-[#b61722]")} style={{ width: `${rate}%` }} />
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="text-slate-400 text-xs py-4 text-center">Belum ada unit kerja terdaftar.</div>
-                    )}
-                  </div>
-
-                </div>
-
-                {/* ISO Audit Trail Card (1/3 width) */}
-                <div className="relative h-125 lg:h-auto">
-                  <div className="lg:absolute inset-0 bg-white rounded-2xl border border-[rgba(228,190,186,0.3)] p-6 shadow-sm flex flex-col h-full max-h-full">
-                    <div className="flex flex-col flex-1 min-h-0">
-                    <div className="shrink-0">
-                      <h3 className="font-bold text-slate-900 text-lg tracking-tight">ISO Audit Trail</h3>
-                      <p className="text-slate-500 text-xs mt-1">Riwayat aktivitas pengawasan log sistem</p>
-                    </div>
-
-                    <div className="space-y-4 flex-1 overflow-y-auto mt-5 pr-2 pb-4">
-                      {auditLogs.length > 0 ? (
-                        auditLogs.map((log) => (
-                          <div key={log.id} className="flex gap-3 items-start">
-                            <div className={cn("h-2 w-2 rounded-full mt-1.5 shrink-0", 
-                              log.action === 'FORWARDED' ? 'bg-amber-500' : 
-                              log.action === 'STATUS_CHANGED' ? 'bg-blue-500' : 'bg-[#b61722]')} />
-                            <div className="space-y-1 w-full text-left min-w-0">
-                              <div className="flex justify-between items-start w-full">
-                                <span className="block text-sm font-bold text-slate-800">
-                                  {log.action.replace(/_/g, ' ')}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-mono">#{log.id.substring(0, 8)}</span>
-                              </div>
-                              <div className="block text-xs text-slate-500 font-medium">
-                                <span className="text-slate-700 font-semibold">{log.user?.name || "Sistem"}</span> 
-                                {log.user?.role ? ` (${log.user.role})` : ""} melakukan aksi pada entitas <span className="font-semibold">{log.entityType}</span> (ID: <span className="font-mono text-[10px]">{log.entityId.substring(0, 8)}</span>)
-                              </div>
-                              <span className="block text-[10px] text-slate-400 font-medium">
-                                {new Date(log.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                              </span>
-                              {log.meta && Object.keys(log.meta).length > 0 && (
-                                <div className="mt-1 w-full max-w-full bg-slate-50 p-2 rounded border border-slate-100 text-[10px] font-mono text-slate-600 overflow-x-auto whitespace-nowrap custom-scrollbar">
-                                  {JSON.stringify(log.meta)}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-slate-400 text-xs py-4 text-center">Belum ada log aktivitas baru.</div>
-                      )}
-                    </div>
-                  </div>
-
-                  <button onClick={handleDownloadLogs} className="w-full shrink-0 h-10 mt-4 border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-lg flex items-center justify-center gap-2 transition-all cursor-pointer">
-                    <Download className="h-4 w-4" />
-                    <span>Download System Logs</span>
-                  </button>
-                  </div>
-                </div>
-
-              </div>
-            </div>
+            <OverviewTab
+              isLoading={isLoading}
+              autoCloseDays={autoCloseDays}
+              stats={stats}
+              complaints={complaints}
+              units={units}
+              tableTab={tableTab}
+              setTableTab={setTableTab}
+              unitFilter={unitFilter}
+              setUnitFilter={setUnitFilter}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              paginatedDashboardComplaints={paginatedDashboardComplaints}
+              filteredComplaints={filteredComplaints}
+              complaintPage={complaintPage}
+              totalComplaintPages={totalComplaintPages}
+              complaintPageSize={complaintPageSize}
+              setComplaintPage={setComplaintPage}
+              auditLogs={auditLogs}
+              user={user}
+              onOpenAutoClose={() => setIsAutoCloseModalOpen(true)}
+              onForward={(c) => {
+                setSelectedComplaintForForward(c);
+                setForwardUnitId(units[0]?.id || "");
+              }}
+              onOpenDetail={handleOpenDetailModal}
+              onDelete={(id) => {
+                setComplaintIdToDelete(id);
+                setIsDeleteModalOpen(true);
+              }}
+              onToggleVisibility={handleToggleVisibility}
+              onDownloadLogs={handleDownloadLogs}
+            />
           ) : activeTab === "complaints" ? (
-            /* Full Complaints Workdesk Tab */
-            <div className="space-y-8">
-              <div>
-                <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Daftar Keluhan Global</h1>
-                <p className="text-slate-500 text-xs mt-0.5 font-medium">Monitor, telaah, dan kelola semua keluhan dan aspirasi warga sekolah secara langsung.</p>
-              </div>
-
-              {/* ponytail: reuse the exact table card layout for the dedicated Complaints tab workdesk */}
-              <div className="bg-white rounded-2xl border border-[rgba(228,190,186,0.3)] shadow-sm p-6 space-y-6">
-
-                {/* Header & Tabs */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                  <div className="flex items-center gap-6">
-                    <h3 className="font-bold text-slate-900 text-lg tracking-tight">Semua Aspirasi</h3>
-
-                    <div className="flex items-center gap-2 bg-[#f9f9f9] p-1 rounded-full border border-slate-200/60">
-                      <button
-                        onClick={() => setTableTab("ALL")}
-                        className={cn(
-                          "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "ALL" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
-                        )}
-                      >
-                        Semua
-                      </button>
-                      <button
-                        onClick={() => setTableTab("NEW")}
-                        className={cn(
-                          "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "NEW" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
-                        )}
-                      >
-                        Baru
-                      </button>
-                      <button
-                        onClick={() => setTableTab("OPEN")}
-                        className={cn(
-                          "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "OPEN" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
-                        )}
-                      >
-                        Diproses
-                      </button>
-                      <button
-                        onClick={() => setTableTab("DONE")}
-                        className={cn(
-                          "px-4 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer",
-                          tableTab === "DONE" ? "bg-slate-200 text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
-                        )}
-                      >
-                        Selesai
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-3 sm:mt-0">
-                    <select
-                      value={unitFilter}
-                      onChange={(e) => setUnitFilter(e.target.value)}
-                      className="h-9 px-3 text-xs font-semibold rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-red-400 transition-all text-slate-700 w-full sm:w-auto"
-                    >
-                      <option value="ALL">Semua Unit</option>
-                      {units.map((u) => (
-                        <option key={u.id} value={u.name}>
-                          Unit {u.name}
-                        </option>
-                      ))}
-                    </select>
-
-                    <div className="relative w-full sm:w-auto">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <input
-                        type="text"
-                        placeholder="Cari keluhan..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="h-9 pl-9 pr-3 text-sm rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-red-400 transition-all w-full sm:w-64"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-200">
-                    <thead>
-                      <tr className="text-slate-500 font-semibold text-xs border-b border-slate-100">
-                        <th className="pb-4 pl-2 font-semibold">Judul Keluhan</th>
-                        <th className="pb-4 font-semibold">Unit Pelaksana</th>
-                        <th className="pb-4 font-semibold">Status</th>
-                        <th className="pb-4 font-semibold">Visibility</th>
-                        <th className="pb-4 text-right pr-2 font-semibold">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {paginatedComplaintsList.map((c) => {
-                        let friendlyUnitName = c.unit;
-                        if (c.unit === "Sarpras") friendlyUnitName = "Sarana & Prasarana" as ComplaintUnit;
-
-                        const isNew = c.status === "NEW";
-                        const isWaiting = false;
-                        const isClosed = c.status === "DONE";
-                        const isInProgress = c.status === "OPEN";
-                        const infoDetail = `#REQ-${c.id.substring(0, 8).toUpperCase()} • Disubmit ${new Date(c.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}`;
-
-                        return (
-                          <tr key={c.id} className="text-slate-700 text-sm hover:bg-slate-50/50 transition-all align-middle">
-                            <td className="py-5 pl-2 max-w-xs md:max-w-md">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span 
-                                  onClick={() => router.push(`/dashboard/complaints/${c.id}`)}
-                                  className="font-bold text-[#b61722] hover:underline cursor-pointer leading-snug"
-                                >
-                                  {c.title}
-                                </span>
-                                {isNew && (
-                                  <span className="text-[10px] font-bold text-white bg-[#b61722] px-2 py-0.5 rounded-full">
-                                    48H+
-                                  </span>
-                                )}
-                                {isWaiting && c.title.includes("AC") && (
-                                  <span className="text-[10px] font-bold text-white bg-[#b61722] px-2 py-0.5 rounded-full">
-                                    72H+
-                                  </span>
-                                )}
-                              </div>
-                              <span className="block text-[11px] text-slate-400 mt-1.5 font-medium">
-                                {infoDetail}
-                              </span>
-                            </td>
-
-                            <td className="py-5 font-medium text-slate-500">
-                              {friendlyUnitName || "Umum"}
-                            </td>
-
-                            <td className="py-5">
-                              <span className={`inline-flex items-center text-[10px] font-semibold uppercase px-3 py-1 rounded-full ${isClosed
-                                ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                                : isInProgress
-                                  ? "bg-amber-50 text-amber-600 border border-amber-250"
-                                  : isWaiting
-                                    ? "bg-purple-50 text-purple-600 border border-purple-200"
-                                    : "bg-blue-50 text-blue-600 border border-blue-200"
-                                }`}>
-                                {isNew ? "OPEN" : c.status}
-                              </span>
-                            </td>
-
-                            <td className="py-5">
-                              <button
-                                onClick={() => handleToggleVisibility(c.id, c.visibility || "PUBLIC")}
-                                className="flex items-center gap-2 group cursor-pointer focus:outline-none"
-                              >
-                                <div className={`w-10 h-5.5 flex items-center rounded-full p-0.5 transition-all ${c.visibility === "PUBLIC" ? "bg-blue-600" : "bg-slate-300"
-                                  }`}>
-                                  <div className={`bg-white w-4.5 h-4.5 rounded-full shadow-md transform transition-all ${c.visibility === "PUBLIC" ? "translate-x-4.5" : "translate-x-0"
-                                    }`} />
-                                </div>
-                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                                  {c.visibility === "PUBLIC" ? "Public" : "Private"}
-                                </span>
-                              </button>
-                            </td>
-
-                            <td className="py-5 text-right pr-2 shrink-0">
-                              <div className="inline-flex items-center gap-2">
-                                <button
-                                  onClick={() => {
-                                    setSelectedComplaintForForward(c);
-                                    setForwardUnitId(units[0]?.id || "");
-                                  }}
-                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#fdf2f2] text-[#b61722] font-bold rounded-lg text-xs transition-colors border border-[#fde2e2] cursor-pointer"
-                                >
-                                  <Forward className="h-3.5 w-3.5" />
-                                  <span>Teruskan</span>
-                                </button>
-
-                                <button
-                                  onClick={() => handleOpenDetailModal(c.id)}
-                                  className="inline-flex items-center justify-center px-4 py-1.5 bg-[#b61722] hover:bg-red-650 text-white font-bold rounded-lg text-xs shadow-sm transition-all cursor-pointer"
-                                >
-                                  Detail Informasi
-                                </button>
-
-                                <button
-                                  onClick={() => router.push(`/dashboard/complaints/${c.id}`)}
-                                  className="h-8 w-8 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                                  title="Lihat Detail"
-                                >
-                                  <Eye className="h-4.5 w-4.5" />
-                                </button>
-                                
-                                {(user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC") && (
-                                  <button
-                                    onClick={() => promptDeleteComplaint(c.id)}
-                                    className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                                    title="Hapus Keluhan"
-                                  >
-                                    <Trash2 className="h-4.5 w-4.5" />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination */}
-                <TablePagination
-                  currentPage={complaintsListPage}
-                  totalPages={totalComplaintsListPages}
-                  totalItems={filteredComplaints.length}
-                  itemsPerPage={complaintsListPageSize}
-                  onPageChange={setComplaintsListPage}
-                  itemName="keluhan"
-                />
-              </div>
-            </div>
+            <ComplaintsTab
+              units={units}
+              tableTab={tableTab}
+              setTableTab={setTableTab}
+              unitFilter={unitFilter}
+              setUnitFilter={setUnitFilter}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              paginatedComplaintsList={paginatedComplaintsList}
+              filteredComplaints={filteredComplaints}
+              complaintsListPage={complaintsListPage}
+              totalComplaintsListPages={totalComplaintsListPages}
+              complaintsListPageSize={complaintsListPageSize}
+              setComplaintsListPage={setComplaintsListPage}
+              user={user}
+              onForward={(c) => {
+                setSelectedComplaintForForward(c);
+                setForwardUnitId(units[0]?.id || "");
+              }}
+              onOpenDetail={handleOpenDetailModal}
+              onDelete={(id) => {
+                setComplaintIdToDelete(id);
+                setIsDeleteModalOpen(true);
+              }}
+              onToggleVisibility={handleToggleVisibility}
+            />
           ) : activeTab === "units" ? (
-            /* Units CRUD Workdesk Tab */
-            <div className="space-y-8">
-              {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Unit Organisasi</h1>
-                  <p className="text-slate-500 text-xs mt-0.5 font-medium">Kelola unit sekolah dan personil yang ditugaskan.</p>
-                </div>
-
-                {/* Search and Create Unit */}
-                <div className="flex items-center gap-3">
-                  <div className="relative w-64 group">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-red-500 transition-colors" />
-                    <input
-                      type="text"
-                      placeholder="Search units or PIC..."
-                      value={unitSearchQuery}
-                      onChange={(e) => setUnitSearchQuery(e.target.value)}
-                      className="w-full h-10 pl-9 pr-4 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-red-400 transition-all font-medium animate-all"
-                    />
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      setNewUnitName("");
-                      setNewUnitDesc("");
-                      setIsCreateUnitModalOpen(true);
-                    }}
-                    className="h-10 px-4 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
-                  >
-                    <Building className="h-4 w-4 text-slate-500" />
-                    <span>Membuat Unit</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Core Layout Grid: 2/3 Left (Cards Grid), 1/3 Right (Selected Detail) */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                {/* Left Panel: Unit Cards Grid */}
-                <div className="lg:col-span-2">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {filteredUnits.map((unit) => {
-                      const isSelected = selectedUnitId === unit.id;
-                      const icon = getUnitIcon(unit.name);
-                      const iconBg = getUnitIconBg(unit.name);
-                      const desc = getUnitDescription(unit);
-
-                      const membersCount = unitMembers.filter((m) => m.unitId === unit.id).length;
-                      const mappedUnitName = mapBackendUnitToFrontend(unit.name);
-                      const activeIssuesCount = complaints.filter((c) => c.unit === mappedUnitName && c.status !== "DONE").length;
-
-                      const pic = getUnitPIC(unit.id, unit.name, unitMembers);
-                      const picInitials = (pic as { initials?: string }).initials || getInitials(pic.name);
-
-                      return (
-                        <div
-                          key={unit.id}
-                          onClick={() => setSelectedUnitId(unit.id)}
-                          className={cn(
-                            "bg-white p-6 rounded-3xl border shadow-sm transition-all duration-300 flex flex-col justify-between h-60 relative cursor-pointer group",
-                            isSelected
-                              ? "border-[#b61722] ring-1 ring-[#b61722] scale-[1.01]"
-                              : "border-slate-200/80 hover:border-slate-350 hover:shadow-md"
-                          )}
-                        >
-                          {/* Top row: Name & icon badge */}
-                          <div className="flex justify-between items-start">
-                            <div className="space-y-1.5 pr-8">
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-extrabold text-slate-800 text-lg leading-tight group-hover:text-[#b61722] transition-colors">
-                                  {unit.name}
-                                </h3>
-                                {isSelected && (
-                                  <span className="bg-[#b61722] text-white text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full whitespace-nowrap">
-                                    TERPILIH
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-slate-400 leading-relaxed font-medium line-clamp-2">
-                                {desc}
-                              </p>
-                            </div>
-                            <div className={cn("p-2.5 rounded-2xl shadow-xs shrink-0 flex items-center justify-center", iconBg)}>
-                              {icon}
-                            </div>
-                          </div>
-
-                          {/* Middle row: Stats boxes */}
-                          <div className="grid grid-cols-2 gap-4 my-2">
-                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Members</span>
-                              <span className="text-xl font-extrabold text-slate-800 mt-0.5">{membersCount}</span>
-                            </div>
-                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col items-center justify-center">
-                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active Issues</span>
-                              <span className={cn("text-xl font-extrabold mt-0.5", activeIssuesCount > 5 ? "text-[#b61722]" : "text-slate-800")}>
-                                {activeIssuesCount}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Bottom row: Primary PIC info */}
-                          <div className="flex items-center gap-3 pt-3 border-t border-slate-50">
-                            <div className="h-8 w-8 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
-                              {picInitials}
-                            </div>
-                            <div className="text-[11px] font-medium leading-none">
-                              <span className="block text-slate-400 text-[9px] font-bold uppercase tracking-wider pb-0.5">Primary PIC</span>
-                              <span className="font-bold text-slate-800">{pic.name}</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Right Panel: Selected Detail Sidebar */}
-                <div className="lg:col-span-1">
-                  {(() => {
-                    const activeUnit = units.find((u) => u.id === selectedUnitId) || units[0];
-                    if (!activeUnit) {
-                      return (
-                        <div className="bg-white rounded-3xl border border-slate-200/80 p-8 shadow-sm text-center text-slate-400 font-medium">
-                          No Unit Selected
-                        </div>
-                      );
-                    }
-
-                    const pic = getUnitPIC(activeUnit.id, activeUnit.name, unitMembers);
-                    const picInitials = (pic as { initials?: string }).initials || getInitials(pic.name);
-                    const activeMembers = unitMembers.filter((m) => m.unitId === activeUnit.id);
-                    const displayMembers = activeMembers;
-                    const totalMembers = activeMembers.length;
-
-                    return (
-                      <div className="bg-white rounded-3xl border border-[#b61722] shadow-md p-6 flex flex-col justify-between min-h-145">
-                        <div className="space-y-6">
-                          {/* Header section with Pencil icon */}
-                          <div className="flex justify-between items-start gap-4">
-                            <div className="space-y-1.5">
-                              <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">{activeUnit.name}</h2>
-                              <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                                {getUnitDescription(activeUnit)}
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => {
-                                  toast.error("Hapus Unit", {
-                                    description: `Apakah Anda yakin ingin menghapus unit ${activeUnit.name} secara permanen?`,
-                                    action: {
-                                      label: "Hapus",
-                                      onClick: () => handleDeleteUnit(activeUnit.id)
-                                    },
-                                    cancel: {
-                                      label: "Batal",
-                                      onClick: () => {}
-                                    }
-                                  });
-                                }}
-                                className="h-9 w-9 border border-red-100 hover:bg-red-50 rounded-xl flex items-center justify-center text-red-650 transition-colors cursor-pointer shrink-0"
-                                title="Delete Unit"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setEditUnitName(activeUnit.name);
-                                  setEditUnitDesc(activeUnit.description || "");
-                                  setIsEditUnitModalOpen(true);
-                                }}
-                                className="h-9 w-9 border border-slate-200 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-500 transition-colors cursor-pointer shrink-0"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* CURRENT PIC details */}
-                          <div className="space-y-3">
-                            <span className="block text-[10px] font-black text-slate-400 uppercase tracking-wider">PIC Saat Ini</span>
-
-                            <div className="bg-slate-50/80 rounded-2xl border border-slate-150 p-4 flex items-center justify-between gap-4">
-                              <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-full bg-red-50 text-red-600 border border-red-100 text-sm font-extrabold flex items-center justify-center shrink-0">
-                                  {picInitials}
-                                </div>
-                                <div className="space-y-0.5">
-                                  <span className="block text-xs font-bold text-slate-800">{pic.name}</span>
-
-                                </div>
-                              </div>
-
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => {
-                                    setSelectedUnitForMember(activeUnit.id);
-                                    setMemberIsPic(true);
-                                    setNewMemberEmail("");
-                                    setIsAddMemberModalOpen(true);
-                                  }}
-                                  className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 text-[10px] font-bold rounded-xl shadow-xs transition-all cursor-pointer"
-                                >
-                                  Ganti PIC
-                                </button>
-                                {pic.name !== "Belum Ditunjuk" && (
-                                  <button
-                                    onClick={() => handleRemoveMember((pic as any).id, activeUnit.id)}
-                                    className="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-100 text-red-600 text-[10px] font-bold rounded-xl shadow-xs transition-all cursor-pointer flex items-center justify-center"
-                                    title="Hapus PIC"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Unit Members List */}
-                          <div className="space-y-3.5">
-                            <div className="flex justify-between items-center">
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Anggota Unit ({totalMembers})</span>
-
-                              <button
-                                onClick={() => {
-                                  setSelectedUnitForMember(activeUnit.id);
-                                  setMemberIsPic(false);
-                                  setNewMemberEmail("");
-                                  setIsAddMemberModalOpen(true);
-                                }}
-                                className="inline-flex items-center gap-1 text-[10px] font-bold text-[#b61722] hover:text-red-650 transition-colors cursor-pointer"
-                              >
-                                <UserPlus className="h-3.5 w-3.5" />
-                                <span>Tambah Anggota</span>
-                              </button>
-                            </div>
-
-                            <div className="space-y-3">
-                              {displayMembers.length > 0 ? (
-                                displayMembers.map((member) => (
-                                  <div key={member.id} className="flex items-center justify-between gap-3 group">
-                                    <div className="flex items-center gap-3">
-                                      <div className="h-9 w-9 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold flex items-center justify-center shrink-0">
-                                        {(member as { initials?: string }).initials || getInitials(member.name)}
-                                      </div>
-                                      <div className="space-y-0.5 leading-none">
-                                        <span className="block text-xs font-bold text-slate-800">{member.name}</span>
-                                        <span className="block text-[10px] text-slate-400 font-medium">{member.role || "Staff Member"}</span>
-                                      </div>
-                                    </div>
-                                    <button
-                                      onClick={() => handleRemoveMember(member.id, activeUnit.id)}
-                                      className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
-                                      title="Hapus Anggota"
-                                    >
-                                      <Trash2 className="h-3.5 w-3.5" />
-                                    </button>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="text-slate-400 text-xs text-center py-4">Belum ada anggota di unit ini.</div>
-                              )}
-                            </div>                            {totalMembers > 3 && (
-                              <button
-                                onClick={() => setActiveTab("members")}
-                                className="block w-full text-center text-slate-400 hover:text-slate-600 text-[10px] font-bold uppercase tracking-wider pt-2"
-                              >
-                                LIHAT SEMUA {totalMembers} ANGGOTA
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Manage Settings Button */}
-                        <div className="pt-6 border-t border-slate-100">
-                          <button
-                            onClick={() => {
-                              toast.info(`Membuka Pengaturan Unit: ${activeUnit.name}`);
-                            }}
-                            className="w-full h-11 bg-[#b61722] hover:bg-red-650 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-[0.98]"
-                          >
-                            <Sliders className="h-4 w-4" />
-                            <span>Kelola Pengaturan Unit</span>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
+            <UnitsTab
+              units={units}
+              filteredUnits={filteredUnits}
+              unitSearchQuery={unitSearchQuery}
+              setUnitSearchQuery={setUnitSearchQuery}
+              selectedUnitId={selectedUnitId}
+              setSelectedUnitId={setSelectedUnitId}
+              unitMembers={unitMembers}
+              complaints={complaints}
+              onOpenCreateUnit={() => {
+                setNewUnitName("");
+                setNewUnitDesc("");
+                setIsCreateUnitModalOpen(true);
+              }}
+              onOpenEditUnit={(unit) => {
+                setSelectedUnitId(unit.id);
+                setEditUnitName(unit.name);
+                setEditUnitDesc(unit.description || "");
+                setIsEditUnitModalOpen(true);
+              }}
+              onDeleteUnit={handleDeleteUnit}
+              onOpenAddMember={(unitId, isPic) => {
+                setSelectedUnitForMember(unitId);
+                setMemberIsPic(isPic);
+                setNewMemberEmail("");
+                setIsAddMemberModalOpen(true);
+              }}
+              onRemoveMember={handleRemoveMember}
+              onNavigateToMembers={() => setActiveTab("members")}
+            />
           ) : activeTab === "members" ? (
-            /* Members / User assignment CRUD Tab */
-            <div className="space-y-8">
-              {/* Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Pengelolaan Pengguna</h1>
-                  <p className="text-slate-500 text-xs mt-0.5 font-medium">Atur peran, unit, dan akses untuk semua pengguna platform.</p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setIsImportModalOpen(true)}
-                    className="h-10 px-4 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
-                  >
-                    <Download className="h-4 w-4 text-slate-500" />
-                    <span>Import</span>
-                  </button>
-                  <button
-                    onClick={handleExportUsers}
-                    className="h-10 px-4 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
-                  >
-                    <Upload className="h-4 w-4 text-slate-500" />
-                    <span>Export</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setEditingUserId(null);
-                      setUserFormData({ name: "", email: "", password: "", phone_number: "", role: "USER", userType: "SISWA" });
-                      setIsUserFormModalOpen(true);
-                    }}
-                    className="h-10 px-4 bg-[#b61722] hover:bg-red-650 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
-                  >
-                    <UserPlus className="h-4 w-4 text-white" />
-                    <span>Tambah Pengguna</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Search and Filters Row */}
-              <div className="bg-white border border-slate-200/80 p-4 rounded-2xl shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-                {/* Search */}
-                <div className="relative w-full md:max-w-xs group">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-red-500 transition-colors" />
-                  <input
-                    type="text"
-                    placeholder="Search by name, email, or phone..."
-                    value={userSearchQuery}
-                    onChange={(e) => setUserSearchQuery(e.target.value)}
-                    className="w-full h-10 pl-9 pr-4 text-xs rounded-xl border border-slate-250 bg-white focus:outline-none focus:border-red-400 transition-all font-medium"
-                  />
-                </div>
-
-                {/* Dropdowns */}
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                  <select
-                    value={userRoleFilter}
-                    onChange={(e) => setUserRoleFilter(e.target.value)}
-                    className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-650 outline-none focus:border-red-500 cursor-pointer select-none transition-all"
-                  >
-                    <option value="All">Semua Role</option>
-                    <option value="Siswa">Siswa</option>
-                    <option value="Guru">Guru</option>
-                    <option value="Orangtua">Orangtua</option>
-                    <option value="PIC Unit">PIC Unit</option>
-                    <option value="Anggota Unit">Anggota Unit</option>
-                  </select>
-
-                  <select
-                    value={userStatusFilter}
-                    onChange={(e) => setUserStatusFilter(e.target.value)}
-                    className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-650 outline-none focus:border-red-500 cursor-pointer select-none transition-all"
-                  >
-                    <option value="All">Semua Status</option>
-                    <option value="Active">Aktif</option>
-                    <option value="Inactive">Tidak Aktif</option>
-                  </select>
-
-                  <button
-                    onClick={() => toast.info("Filter Lanjutan Aktif")}
-                    className="h-10 px-4 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-650 text-xs font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer"
-                  >
-                    <Sliders className="h-4 w-4" />
-                    <span>Filter Lainnya</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* User Management Table */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm space-y-4">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-200">
-                    <thead>
-                      <tr className="text-slate-450 font-bold text-xs uppercase border-b border-slate-100 pb-4">
-                        <th className="pb-4 pl-2 font-semibold">Nama Pengguna</th>
-                        <th className="pb-4 font-semibold">Info Kontak</th>
-                        <th className="pb-4 font-semibold">Role &amp; Unit</th>
-                        <th className="pb-4 font-semibold">Status</th>
-                        <th className="pb-4 text-right pr-2 font-semibold">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {paginatedUsers.map((u) => {
-                        const initials = getInitials(u.name);
-                        const isPicUnit = u.role.includes("PIC");
-                        const isTeacher = u.role.includes("Guru");
-
-                        return (
-                          <tr key={u.id} className="text-slate-700 text-sm hover:bg-slate-50/50 transition-all align-middle">
-                            {/* User Name & ID */}
-                            <td className="py-4 pl-2">
-                              <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center shrink-0">
-                                  {initials}
-                                </div>
-                                <div className="space-y-0.5">
-                                  <span className="block font-bold text-slate-800 leading-snug">{u.name}</span>
-                                  <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">ID: {u.memberId}</span>
-                                </div>
-                              </div>
-                            </td>
-
-                            {/* Contact Info */}
-                            <td className="py-4">
-                              <div className="space-y-0.5 font-medium">
-                                <span className="block text-xs text-slate-500">{u.email}</span>
-                                <span className="block text-[10px] text-slate-400">{u.phone}</span>
-                              </div>
-                            </td>
-
-                            {/* Role & Unit */}
-                            <td className="py-4">
-                              <div className="space-y-0.5">
-                                <span className="block text-xs font-bold text-slate-800">{u.role}</span>
-                                <span className={cn(
-                                  "block text-[10px] font-bold uppercase tracking-wider",
-                                  isPicUnit || isTeacher ? "text-[#b61722]" : "text-slate-400"
-                                )}>
-                                  {u.unitName}
-                                </span>
-                              </div>
-                            </td>
-
-                            {/* Status */}
-                            <td className="py-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${u.status === "Active"
-                                ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                                : "bg-slate-100 text-slate-500 border border-slate-200"
-                                }`}>
-                                {u.status}
-                              </span>
-                            </td>
-
-                            {/* Actions */}
-                            <td className="py-4 text-right pr-2">
-                              <div className="inline-flex items-center gap-1.5 justify-end">
-                                <button
-                                  onClick={() => setSelectedUserForView(u)}
-                                  className="h-8 w-8 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                                  title="View Detail"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setEditingUserId(u.id);
-                                    setUserFormData({
-                                      name: u.name,
-                                      email: u.email,
-                                      password: "",
-                                      phone_number: u.phone === "-" ? "" : u.phone,
-                                      role: u.originalRole || "USER",
-                                      userType: u.originalUserType || "SISWA"
-                                    });
-                                    setIsUserFormModalOpen(true);
-                                  }}
-                                  className="h-8 w-8 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                                  title="Edit User"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </button>
-                                {u.status === "Inactive" ? (
-                                  <button
-                                    onClick={() => handleRestoreUser(u.id, u.name)}
-                                    className="h-8 w-8 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                                    title="Aktifkan User"
-                                  >
-                                    <RefreshCw className="h-4 w-4" />
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => handleDeleteUser(u.id, u.name)}
-                                    className="h-8 w-8 text-slate-400 hover:text-red-655 hover:bg-red-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-                                    title="Nonaktifkan User"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination Footer */}
-                <TablePagination
-                  currentPage={userPage}
-                  totalPages={totalUserPages}
-                  totalItems={filteredUsers.length}
-                  itemsPerPage={userPageSize}
-                  onPageChange={setUserPage}
-                  itemName="pengguna"
-                />
-              </div>
-            </div>
+            <MembersTab
+              userSearchQuery={userSearchQuery}
+              setUserSearchQuery={setUserSearchQuery}
+              userRoleFilter={userRoleFilter}
+              setUserRoleFilter={setUserRoleFilter}
+              userStatusFilter={userStatusFilter}
+              setUserStatusFilter={setUserStatusFilter}
+              paginatedUsers={paginatedUsers}
+              filteredUsers={filteredUsers}
+              userPage={userPage}
+              totalUserPages={totalUserPages}
+              userPageSize={userPageSize}
+              setUserPage={setUserPage}
+              onOpenImportModal={() => setIsImportModalOpen(true)}
+              onExportUsers={handleExportUsers}
+              onOpenCreateUser={() => {
+                setEditingUserId(null);
+                setUserFormData({
+                  name: "",
+                  email: "",
+                  password: "",
+                  phone_number: "",
+                  role: "USER",
+                  userType: "SISWA",
+                });
+                setIsUserFormModalOpen(true);
+              }}
+              onOpenEditUser={(u) => {
+                setEditingUserId(u.id);
+                setUserFormData({
+                  name: u.name,
+                  email: u.email,
+                  password: "",
+                  phone_number: u.phone === "-" ? "" : u.phone,
+                  role: u.originalRole || "USER",
+                  userType: u.originalUserType || "SISWA",
+                });
+                setIsUserFormModalOpen(true);
+              }}
+              onViewUser={(u) => setSelectedUserForView(u)}
+              onRestoreUser={handleRestoreUser}
+              onDeleteUser={handleDeleteUser}
+            />
           ) : activeTab === "whatsapp" ? (
             <WhatsAppManager isActive={activeTab === "whatsapp"} />
           ) : activeTab === "audit_logs" ? (
             <AuditLogsManager />
           ) : null}
-
         </div>
-
       </div>
 
-      {/* ─── 3. DELEGASI MODAL POPUP ─── */}
-      {selectedComplaintForForward && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex justify-between items-start">
-              <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">Delegasikan Keluhan</h3>
-              <button
-                onClick={() => setSelectedComplaintForForward(null)}
-                className="h-8 w-8 text-slate-400 hover:text-slate-655 hover:bg-slate-150 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+      {/* ─── MODALS ─── */}
+      <ForwardComplaintModal
+        complaint={selectedComplaintForForward}
+        units={units}
+        forwardUnitId={forwardUnitId}
+        forwardNote={forwardNote}
+        onSelectUnit={setForwardUnitId}
+        onChangeNote={setForwardNote}
+        onClose={() => setSelectedComplaintForForward(null)}
+        onSubmit={handleForwardComplaint}
+      />
 
-            <p className="text-xs text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-150 font-medium">
-              Judul: <strong>{selectedComplaintForForward.title}</strong>
-            </p>
+      <CreateUnitModal
+        isOpen={isCreateUnitModalOpen}
+        unitName={newUnitName}
+        unitDesc={newUnitDesc}
+        isSubmitting={isSubmitting}
+        onChangeName={setNewUnitName}
+        onChangeDesc={setNewUnitDesc}
+        onClose={() => setIsCreateUnitModalOpen(false)}
+        onSubmit={handleCreateUnit}
+      />
 
-            <form onSubmit={handleForwardComplaint} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Pilih Unit Penerima</label>
-                <select
-                  value={forwardUnitId}
-                  onChange={(e) => setForwardUnitId(e.target.value)}
-                  className="w-full h-10 px-4 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-white"
-                >
-                  {units.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+      <EditUnitModal
+        isOpen={isEditUnitModalOpen}
+        unitName={editUnitName}
+        unitDesc={editUnitDesc}
+        isSubmitting={isSubmitting}
+        onChangeName={setEditUnitName}
+        onChangeDesc={setEditUnitDesc}
+        onClose={() => setIsEditUnitModalOpen(false)}
+        onSubmit={handleUpdateUnit}
+      />
 
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Catatan Tambahan (Instruksi)</label>
-                <textarea
-                  rows={3}
-                  placeholder="Tulis instruksi pengerjaan..."
-                  value={forwardNote}
-                  onChange={(e) => setForwardNote(e.target.value)}
-                  className="w-full p-4 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-white resize-none"
-                />
-              </div>
+      <AddMemberModal
+        isOpen={isAddMemberModalOpen}
+        memberIsPic={memberIsPic}
+        selectedUnitForMember={selectedUnitForMember}
+        newMemberEmail={newMemberEmail}
+        units={units}
+        allDbUsers={allDbUsers}
+        isSubmitting={isSubmitting}
+        onChangeUnit={setSelectedUnitForMember}
+        onChangeEmail={setNewMemberEmail}
+        onChangeIsPic={setMemberIsPic}
+        onClose={() => setIsAddMemberModalOpen(false)}
+        onSubmit={handleAddMember}
+      />
 
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedComplaintForForward(null)}
-                  className="flex-1 h-10 border border-slate-200 hover:bg-slate-50 text-slate-600 font-extrabold rounded-xl transition-all text-xs cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 h-10 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98]"
-                >
-                  Kirim Delegasi
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <AutoCloseConfigModal
+        isOpen={isAutoCloseModalOpen}
+        autoCloseDays={autoCloseDays}
+        isUpdating={isUpdatingAutoClose}
+        onChangeDays={setAutoCloseDays}
+        onClose={() => setIsAutoCloseModalOpen(false)}
+        onSubmit={handleSaveAutoCloseConfig}
+      />
 
-      {/* ─── 4. CREATE UNIT MODAL POPUP ─── */}
-      {isCreateUnitModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex justify-between items-start">
-              <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">Tambah Unit Kerja</h3>
-              <button
-                onClick={() => setIsCreateUnitModalOpen(false)}
-                className="h-8 w-8 text-slate-400 hover:text-slate-655 hover:bg-slate-150 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+      <ImportUsersModal
+        isOpen={isImportModalOpen}
+        importStep={importStep}
+        importFile={importFile}
+        importData={importData}
+        units={units}
+        isSubmitting={isSubmitting}
+        onClose={() => setIsImportModalOpen(false)}
+        onSetImportFile={setImportFile}
+        onSetImportStep={setImportStep}
+        onSetImportData={setImportData}
+        onSuccess={fetchData}
+        setIsSubmitting={setIsSubmitting}
+      />
 
-            <form onSubmit={async (e) => {
-              await handleCreateUnit(e);
-              setIsCreateUnitModalOpen(false);
-            }} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Nama Unit</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Sarpras, Kesiswaan"
-                  value={newUnitName}
-                  onChange={(e) => setNewUnitName(e.target.value)}
-                  className="w-full h-10 px-4 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-white"
-                />
-              </div>
+      <UserFormModal
+        isOpen={isUserFormModalOpen}
+        editingUserId={editingUserId}
+        userFormData={userFormData}
+        isSubmitting={isSubmitting}
+        onClose={() => setIsUserFormModalOpen(false)}
+        onChangeFormData={setUserFormData}
+        onSubmit={handleSaveUser}
+      />
 
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Deskripsi Unit</label>
-                <textarea
-                  rows={3}
-                  placeholder="Tulis tugas pokok fungsi unit kerja..."
-                  value={newUnitDesc}
-                  onChange={(e) => setNewUnitDesc(e.target.value)}
-                  className="w-full p-4 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-white resize-none"
-                />
-              </div>
+      <ViewUserModal
+        user={selectedUserForView}
+        onClose={() => setSelectedUserForView(null)}
+      />
 
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateUnitModalOpen(false)}
-                  className="flex-1 h-10 border border-slate-200 hover:bg-slate-50 text-slate-600 font-extrabold rounded-xl transition-all text-xs cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
-                >
-                  {isSubmitting && <Loader2 className="h-3 w-3 animate-spin" />}
-                  <span>Buat Unit</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <DetailComplaintModal
+        isOpen={isDetailModalOpen}
+        isLoading={isDetailLoading}
+        data={detailModalData}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setDetailModalData(null);
+        }}
+      />
 
-      {/* Edit Unit Modal */}
-      {isEditUnitModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md border border-slate-200 shadow-xl space-y-5 animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-600">
-                  <Pencil className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-slate-800 text-sm">Edit Unit Kerja</h3>
-                  <p className="text-[11px] text-slate-400">Perbarui informasi unit</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsEditUnitModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-              >
-                <X className="h-4.5 w-4.5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdateUnit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Nama Unit</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Kesiswaan"
-                  value={editUnitName}
-                  onChange={(e) => setEditUnitName(e.target.value)}
-                  className="w-full h-10 px-4 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-white"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Deskripsi (Opsional)</label>
-                <textarea
-                  rows={3}
-                  placeholder="Deskripsi tugas dan tanggung jawab unit..."
-                  value={editUnitDesc}
-                  onChange={(e) => setEditUnitDesc(e.target.value)}
-                  className="w-full p-4 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-white resize-none"
-                />
-              </div>
-
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEditUnitModalOpen(false)}
-                  className="flex-1 h-10 border border-slate-200 hover:bg-slate-50 text-slate-600 font-extrabold rounded-xl transition-all text-xs cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
-                >
-                  {isSubmitting && <Loader2 className="h-3 w-3 animate-spin" />}
-                  <span>Simpan Perubahan</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ─── 5. ADD MEMBER / PIC MODAL POPUP ─── */}
-      {isAddMemberModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex justify-between items-start">
-              <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">
-                {memberIsPic ? "Tunjuk Penanggung Jawab (PIC)" : "Tambah Anggota Unit"}
-              </h3>
-              <button
-                onClick={() => setIsAddMemberModalOpen(false)}
-                className="h-8 w-8 text-slate-400 hover:text-slate-655 hover:bg-slate-150 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={async (e) => {
-              await handleAddMember(e);
-              setIsAddMemberModalOpen(false);
-            }} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Unit Kerja</label>
-                <select
-                  value={selectedUnitForMember}
-                  onChange={(e) => setSelectedUnitForMember(e.target.value)}
-                  className="w-full h-10 px-4 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-white"
-                >
-                  {units.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Pilih Pengguna</label>
-                <select
-                  required
-                  value={newMemberEmail}
-                  onChange={(e) => setNewMemberEmail(e.target.value)}
-                  className="w-full h-10 px-4 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-white"
-                >
-                  <option value="">-- Pilih Pengguna --</option>
-                  {allDbUsers.map((u) => (
-                    <option key={u.id} value={u.email}>
-                      {u.name} ({u.email})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1.5">
-                <input
-                  type="checkbox"
-                  id="modalIsPicCheck"
-                  checked={memberIsPic}
-                  onChange={(e) => setMemberIsPic(e.target.checked)}
-                  className="h-4 w-4 text-[#b61722] rounded border-slate-200 focus:ring-red-500"
-                />
-                <label htmlFor="modalIsPicCheck" className="text-xs font-bold text-slate-600 cursor-pointer select-none">
-                  Jadikan PIC Utama
-                </label>
-              </div>
-
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAddMemberModalOpen(false)}
-                  className="flex-1 h-10 border border-slate-200 hover:bg-slate-50 text-slate-600 font-extrabold rounded-xl transition-all text-xs cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
-                >
-                  {isSubmitting && <Loader2 className="h-3 w-3 animate-spin" />}
-                  <span>{memberIsPic ? "Simpan PIC" : "Tambah"}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Auto-Close Configuration Modal */}
-      {isAutoCloseModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md border border-slate-200 shadow-xl space-y-5 animate-in fade-in zoom-in duration-150">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="h-9 w-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
-                  <Clock className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-slate-800 text-sm">Konfigurasi Auto-Close</h3>
-                  <p className="text-[11px] text-slate-400">Atur batas hari penutupan otomatis keluhan</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsAutoCloseModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-              >
-                <X className="h-4.5 w-4.5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveAutoCloseConfig} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">
-                  Batas Waktu Auto-Close (Hari)
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={90}
-                  value={autoCloseDays}
-                  onChange={(e) => setAutoCloseDays(Number(e.target.value))}
-                  className="w-full h-11 px-3.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all"
-                  placeholder="Misal: 7"
-                  required
-                />
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Keluhan yang tidak ada aktivitas selama jumlah hari yang ditentukan akan ditutup otomatis (status DONE) oleh sistem.
-                </p>
-              </div>
-
-              <div className="flex gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAutoCloseModalOpen(false)}
-                  className="flex-1 h-10 border border-slate-200 hover:bg-slate-50 text-slate-600 font-extrabold rounded-xl transition-all text-xs cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUpdatingAutoClose}
-                  className="flex-1 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
-                >
-                  {isUpdatingAutoClose && <Loader2 className="h-3 w-3 animate-spin" />}
-                  <span>Simpan Konfigurasi</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Import Modal */}
-      {isImportModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className={cn("bg-white rounded-3xl p-6 w-full shadow-xl space-y-5 animate-in fade-in zoom-in duration-150 transition-all", importStep === 1 ? "max-w-md" : "max-w-4xl")}>
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="h-9 w-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-600">
-                  <Download className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-slate-800 text-sm">Import Pengguna</h3>
-                  <p className="text-[11px] text-slate-400">{importStep === 1 ? "Pilih dan verifikasi data pengguna" : "Verifikasi & Edit Data"}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => { setIsImportModalOpen(false); setImportStep(1); setImportFile(null); }}
-                className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-              >
-                <X className="h-4.5 w-4.5" />
-              </button>
-            </div>
-            
-            {importStep === 1 ? (
-              <div className="space-y-4">
-                {importFile ? (
-                  <div className="border-2 border-dashed border-[#b61722]/50 bg-red-50/30 rounded-xl p-6 flex items-center justify-between transition-all">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-xl bg-red-100 flex items-center justify-center text-[#b61722]">
-                        <FileText className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-slate-800">{importFile.name}</h4>
-                        <p className="text-xs text-slate-500 mt-0.5">{(importFile.size / 1024).toFixed(1)} KB • Siap diimport</p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setImportFile(null)}
-                      className="h-8 w-8 rounded-lg hover:bg-red-100 flex items-center justify-center text-red-600 transition-colors cursor-pointer"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:border-[#b61722]/50 hover:bg-red-50/10 transition-all cursor-pointer relative group">
-                    <input type="file" accept=".csv,.xlsx" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        setImportFile(e.target.files[0]);
-                      }
-                    }} />
-                    <div className="h-12 w-12 rounded-full bg-slate-100 group-hover:bg-red-100 flex items-center justify-center text-slate-400 group-hover:text-[#b61722] transition-colors mb-3">
-                      <Upload className="h-6 w-6" />
-                    </div>
-                    <span className="text-sm font-bold text-slate-700 group-hover:text-[#b61722] transition-colors">Pilih file CSV atau Excel</span>
-                    <span className="text-xs text-slate-400 mt-1">atau drag & drop di sini. Maksimal ukuran file 5MB</span>
-                  </div>
-                )}
-                
-                {/* Format Preview & Download */}
-                <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-700">Preview Format Kolom</span>
-                    <button
-                      onClick={() => {
-                        const csvContent = "data:text/csv;charset=utf-8,Nama,Email,Nomor HP,Role,Unit\nBudi Santoso,budi@moklet.org,08123456789,Siswa,\nSiti Aminah,siti@moklet.org,08987654321,Guru,Kurikulum\nAgus Supriyanto,agus@example.com,08111222333,Orangtua,";
-                        const encodedUri = encodeURI(csvContent);
-                        const link = document.createElement("a");
-                        link.setAttribute("href", encodedUri);
-                        link.setAttribute("download", "format_import_pengguna.csv");
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }}
-                      className="text-[10px] font-bold text-[#b61722] hover:text-red-650 flex items-center gap-1.5 cursor-pointer bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg border border-red-100 transition-colors"
-                    >
-                      <Download className="h-3 w-3" />
-                      Download Format (.csv)
-                    </button>
-                  </div>
-                  <div className="overflow-x-auto rounded-lg border border-slate-200">
-                    <table className="w-full text-left border-collapse text-[10px] min-w-125">
-                      <thead>
-                        <tr className="bg-slate-50 text-slate-500 border-b border-slate-200">
-                          <th className="p-2 font-semibold">Nama</th>
-                          <th className="p-2 font-semibold border-l border-slate-200">Email</th>
-                          <th className="p-2 font-semibold border-l border-slate-200">Nomor HP</th>
-                          <th className="p-2 font-semibold border-l border-slate-200">Role</th>
-                          <th className="p-2 font-semibold border-l border-slate-200">Unit (Opsional)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white text-slate-600 divide-y divide-slate-100">
-                        <tr>
-                          <td className="p-2">Budi Santoso</td>
-                          <td className="p-2 border-l border-slate-100">budi@moklet.org</td>
-                          <td className="p-2 border-l border-slate-100">08123456789</td>
-                          <td className="p-2 border-l border-slate-100">Siswa</td>
-                          <td className="p-2 border-l border-slate-100 text-slate-400 italic">kosong</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2">Siti Aminah</td>
-                          <td className="p-2 border-l border-slate-100">siti@moklet.org</td>
-                          <td className="p-2 border-l border-slate-100">08987654321</td>
-                          <td className="p-2 border-l border-slate-100">Guru</td>
-                          <td className="p-2 border-l border-slate-100">Kurikulum</td>
-                        </tr>
-                        <tr>
-                          <td className="p-2">Agus Supriyanto</td>
-                          <td className="p-2 border-l border-slate-100">agus@example.com</td>
-                          <td className="p-2 border-l border-slate-100">08111222333</td>
-                          <td className="p-2 border-l border-slate-100">Orangtua</td>
-                          <td className="p-2 border-l border-slate-100 text-slate-400 italic">kosong</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div className="flex gap-2.5 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => { setIsImportModalOpen(false); setImportFile(null); }}
-                    className="flex-1 h-10 border border-slate-200 hover:bg-slate-50 text-slate-600 font-extrabold rounded-xl transition-all text-xs cursor-pointer"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (!importFile) return;
-                      
-                      try {
-                        setIsSubmitting(true);
-                        const res = await apiClient.users.bulkImportPreview(importFile);
-                        setImportData(res.data || []);
-                        setImportStep(2);
-                      } catch (err: any) {
-                        toast.error(err?.response?.data?.message || "Gagal memproses file");
-                      } finally {
-                        setIsSubmitting(false);
-                      }
-                    }}
-                    disabled={isSubmitting || !importFile}
-                    className={cn(
-                      "flex-1 h-10 font-extrabold rounded-xl transition-all text-xs flex items-center justify-center gap-1.5",
-                      !importFile 
-                        ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
-                        : "bg-[#b61722] hover:bg-red-650 text-white shadow-xs cursor-pointer active:scale-[0.98]"
-                    )}
-                  >
-                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Preview Data"}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-                  <div><span className="font-bold text-slate-800">Total Data:</span> {importData.length}</div>
-                  <div className="text-red-600"><span className="font-bold">Error:</span> {importData.filter((d: any) => !d.isValid).length}</div>
-                  <div className="text-amber-600"><span className="font-bold">Ganda:</span> {importData.filter((d: any) => d.isDuplicate).length}</div>
-                </div>
-
-                <div className="overflow-y-auto max-h-100 border border-slate-200 rounded-xl">
-                  <table className="w-full text-left border-collapse text-[11px] min-w-[800px]">
-                    <thead>
-                      <tr className="bg-slate-50 text-slate-500 border-b border-slate-200 sticky top-0 z-10">
-                        <th className="p-2 font-semibold">Nama</th>
-                        <th className="p-2 font-semibold border-l border-slate-200">Email</th>
-                        <th className="p-2 font-semibold border-l border-slate-200">Nomor HP</th>
-                        <th className="p-2 font-semibold border-l border-slate-200">Role</th>
-                        <th className="p-2 font-semibold border-l border-slate-200">Unit</th>
-                        <th className="p-2 font-semibold border-l border-slate-200 w-48">Status / Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white text-slate-600">
-                      {importData.map((row, i) => (
-                        <tr key={i} className={cn(!row.isValid ? "bg-red-50" : row.isDuplicate ? "bg-amber-50" : "")}>
-                          <td className="p-2"><input type="text" value={row.name} onChange={(e) => { const nd = [...importData]; nd[i].name = e.target.value; nd[i].isValid = !!e.target.value && !!nd[i].email && !!nd[i].role; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs bg-white" required /></td>
-                          <td className="p-2"><input type="email" value={row.email} onChange={(e) => { const nd = [...importData]; nd[i].email = e.target.value; nd[i].isValid = !!e.target.value && !!nd[i].name && !!nd[i].role; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs bg-white" required /></td>
-                          <td className="p-2"><input type="text" value={row.phone_number} onChange={(e) => { const nd = [...importData]; nd[i].phone_number = e.target.value; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs bg-white" /></td>
-                          <td className="p-2">
-                            <select value={row.role?.toUpperCase() || ''} onChange={(e) => { const nd = [...importData]; nd[i].role = e.target.value; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs bg-white">
-                              <option value="SISWA">Siswa</option>
-                              <option value="GURU">Guru</option>
-                              <option value="ORANGTUA">Orangtua</option>
-                              <option value="KARYAWAN">Karyawan</option>
-                              <option value="ADMIN">Admin</option>
-                            </select>
-                          </td>
-                          <td className="p-2">
-                             <select value={row.unit} onChange={(e) => { const nd = [...importData]; nd[i].unit = e.target.value; setImportData(nd); }} className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs bg-white">
-                               <option value="">Pilih Unit</option>
-                               {units.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                             </select>
-                          </td>
-                          <td className="p-2">
-                            <div className="flex flex-col gap-1">
-                              {!row.isValid && <span className="text-[10px] text-red-600 font-bold break-words">{row.errors?.join(', ') || 'Data tidak lengkap'}</span>}
-                              {row.isDuplicate && (
-                                <label className="flex items-center gap-1.5 text-[10px] font-bold text-amber-700 cursor-pointer">
-                                  <input type="checkbox" checked={row.updateDuplicate} onChange={(e) => { const nd = [...importData]; nd[i].updateDuplicate = e.target.checked; setImportData(nd); }} className="accent-amber-600 rounded" />
-                                  Timpa / Update Data
-                                </label>
-                              )}
-                              {row.isValid && !row.isDuplicate && <span className="text-[10px] text-emerald-600 font-bold">Siap Import</span>}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-100">
-                  <button onClick={() => setImportStep(1)} className="flex-1 h-10 border border-slate-200 hover:bg-slate-50 text-slate-600 font-extrabold rounded-xl transition-all text-xs cursor-pointer">Kembali ke Pilih File</button>
-                  <button 
-                    onClick={async () => { 
-                      const hasErrors = importData.some(d => !d.isValid);
-                      if (hasErrors) {
-                        return toast.error("Masih ada data yang error", { description: "Harap perbaiki baris berwarna merah terlebih dahulu" });
-                      }
-                      
-                      try {
-                        setIsSubmitting(true);
-                        const res = await apiClient.users.bulkImport(importData);
-                        toast.success(res.message || "Data berhasil diimport");
-                        setIsImportModalOpen(false);
-                        setImportFile(null);
-                        setImportStep(1);
-                        fetchData();
-                      } catch (err: any) {
-                        toast.error(err?.response?.data?.message || "Gagal mengimport data");
-                      } finally {
-                        setIsSubmitting(false);
-                      }
-                    }} 
-                    disabled={isSubmitting}
-                    className="flex-1 h-10 bg-[#b61722] hover:bg-red-650 text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
-                  >
-                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit Import"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ─── USER FORM MODAL (Add/Edit) ─── */}
-      {isUserFormModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-xl animate-in fade-in zoom-in duration-150">
-            <div className="flex justify-between items-center mb-5">
-              <h3 className="font-extrabold text-slate-800 text-lg">{editingUserId ? "Edit Pengguna" : "Tambah Pengguna Baru"}</h3>
-              <button
-                onClick={() => setIsUserFormModalOpen(false)}
-                className="text-slate-400 hover:text-slate-655 transition-colors cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <form onSubmit={handleSaveUser} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nama Lengkap</label>
-                <input
-                  type="text"
-                  required
-                  value={userFormData.name}
-                  onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
-                  placeholder="Masukkan nama lengkap"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Email</label>
-                <input
-                  type="email"
-                  required
-                  value={userFormData.email}
-                  onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
-                  placeholder="email@contoh.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Password {editingUserId && <span className="text-slate-400 font-normal">(Kosongkan jika tidak ingin mengubah)</span>}</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    required={!editingUserId}
-                    value={userFormData.password}
-                    onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
-                    className="w-full h-11 px-4 pr-10 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
-                    placeholder="Minimal 8 karakter"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nomor HP</label>
-                <input
-                  type="text"
-                  value={userFormData.phone_number}
-                  onChange={(e) => setUserFormData(prev => ({ ...prev, phone_number: e.target.value }))}
-                  className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
-                  placeholder="08xxxxxxxxxx"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Role Sistem</label>
-                  <select
-                    value={userFormData.role}
-                    onChange={(e) => setUserFormData(prev => ({ ...prev, role: e.target.value }))}
-                    className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
-                  >
-                    <option value="USER">User</option>
-                    <option value="SUPER_PIC">Super PIC</option>
-                    <option value="SUPERADMIN">Superadmin</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Tipe Pengguna</label>
-                  <select
-                    value={userFormData.userType}
-                    onChange={(e) => setUserFormData(prev => ({ ...prev, userType: e.target.value }))}
-                    className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-red-400 transition-colors bg-slate-50 focus:bg-white"
-                  >
-                    <option value="SISWA">Siswa</option>
-                    <option value="GURU">Guru</option>
-                    <option value="KARYAWAN">Karyawan</option>
-                    <option value="ORANGTUA">Orangtua</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsUserFormModalOpen(false)}
-                  className="px-5 h-11 border border-slate-200 hover:bg-slate-50 text-slate-655 font-bold rounded-xl transition-all cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-5 h-11 bg-[#b61722] hover:bg-red-650 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <span>{editingUserId ? "Simpan Perubahan" : "Simpan Pengguna"}</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ─── VIEW USER MODAL ─── */}
-      {selectedUserForView && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex justify-between items-start">
-              <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">Detail Pengguna</h3>
-              <button
-                onClick={() => setSelectedUserForView(null)}
-                className="h-8 w-8 text-slate-400 hover:text-slate-655 hover:bg-slate-150 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="flex flex-col items-center gap-3 pt-2">
-              <div className="h-20 w-20 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
-                <User className="h-10 w-10" />
-              </div>
-              <div className="text-center">
-                <h4 className="text-lg font-bold text-slate-900">{selectedUserForView.name}</h4>
-                <p className="text-xs font-medium text-slate-500">{selectedUserForView.email}</p>
-                <p className="text-[10px] font-bold text-slate-400 mt-0.5">{selectedUserForView.phone || "-"}</p>
-              </div>
-            </div>
-
-            <div className="bg-slate-50 rounded-2xl p-4 space-y-3 mt-4 border border-slate-100">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Role</span>
-                <span className="text-xs font-bold text-slate-700">{selectedUserForView.role}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Unit</span>
-                <span className="text-xs font-bold text-[#b61722]">{selectedUserForView.unitName}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Status</span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${selectedUserForView.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}>
-                  {selectedUserForView.status}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Detail Informasi Modal */}
-      {isDetailModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">Detail Informasi Komprehensif</h2>
-              <button 
-                onClick={() => { setIsDetailModalOpen(false); setDetailModalData(null); }}
-                className="h-8 w-8 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:text-red-500 transition-colors cursor-pointer"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            
-            {/* Body */}
-            <div className="p-8 overflow-y-auto">
-              {isDetailLoading ? (
-                <div className="flex flex-col items-center justify-center h-48 space-y-4">
-                  <Loader2 className="h-8 w-8 animate-spin text-[#b61722]" />
-                  <p className="text-sm font-medium text-slate-500">Memuat data komprehensif...</p>
-                </div>
-              ) : detailModalData ? (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Dibuat Pada</span>
-                      <span className="text-sm font-semibold text-slate-700">
-                        {new Date(detailModalData.complaint.createdAt).toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Dibuat Oleh</span>
-                      <span className="text-sm font-semibold text-slate-700">
-                        {detailModalData.complaint.author?.name || "Anonim"}
-                      </span>
-                    </div>
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ditujukan Ke</span>
-                      <span className="text-sm font-semibold text-slate-700">
-                        {detailModalData.complaint.unit?.name || "Umum (ISO)"}
-                      </span>
-                    </div>
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Waktu Respon (Pertama)</span>
-                      <span className="text-sm font-semibold text-slate-700">
-                        {detailModalData.hasResponded ? `${Math.floor(detailModalData.responseTimeMs / 3600000)} Jam ${Math.floor((detailModalData.responseTimeMs % 3600000) / 60000)} Menit` : "Belum Direspon"}
-                      </span>
-                    </div>
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Rating Penyelesaian</span>
-                      <span className="text-sm font-semibold text-slate-700">
-                        {detailModalData.complaint.rating ? `${detailModalData.complaint.rating.score} ★` : "Belum Ada Rating"}
-                      </span>
-                    </div>
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Prioritas (SLA)</span>
-                      <span className={cn("text-sm font-semibold", detailModalData.otherInfo.prioritySLA.includes('Tinggi') ? 'text-red-600' : 'text-slate-700')}>
-                        {detailModalData.otherInfo.prioritySLA}
-                      </span>
-                    </div>
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Media Bukti</span>
-                      <span className="text-sm font-semibold text-slate-700">
-                        {detailModalData.otherInfo.hasAttachments ? "Ada Lampiran" : "Tidak Ada"}
-                      </span>
-                    </div>
-                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Update Terakhir</span>
-                      <span className="text-sm font-semibold text-slate-700">
-                        {new Date(detailModalData.otherInfo.lastUpdatedAt).toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-800 mb-3">Histori Forward ({detailModalData.forwardCount} kali)</h3>
-                    {detailModalData.forwardCount > 0 ? (
-                      <div className="space-y-3">
-                        {detailModalData.forwardHistory.map((log: any, idx: number) => (
-                          <div key={idx} className="flex gap-3 text-sm bg-slate-50 p-3 rounded-xl border border-slate-100">
-                            <Forward className="h-4 w-4 text-slate-400 mt-0.5" />
-                            <div>
-                              <p className="font-semibold text-slate-700">Diteruskan pada {new Date(log.createdAt).toLocaleString('id-ID')}</p>
-                              <p className="text-slate-500 text-xs mt-1">Catatan: {log.meta?.note || "-"}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100">Belum pernah diteruskan.</p>
-                    )}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-            
-            {/* Footer */}
-            <div className="px-8 py-4 border-t border-slate-100 flex justify-end bg-slate-50/50">
-              <button
-                onClick={() => { setIsDetailModalOpen(false); setDetailModalData(null); }}
-                className="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition-all shadow-sm cursor-pointer"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setIsDeleteModalOpen(false)} />
-          <div className="relative bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 sm:p-8 transform transition-all scale-100 opacity-100">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-5 border-[6px] border-white shadow-sm ring-1 ring-red-100">
-                <AlertTriangle className="h-7 w-7" />
-              </div>
-              <h3 className="text-xl font-extrabold text-slate-800 tracking-tight mb-2">Konfirmasi Hapus</h3>
-              <p className="text-sm text-slate-500 leading-relaxed font-medium mb-8">
-                Apakah Anda yakin ingin menghapus keluhan ini beserta semua data terkaitnya? Aksi ini bersifat <span className="font-bold text-slate-700">permanen</span>.
-              </p>
-              <div className="flex w-full gap-3 sm:gap-4">
-                <button
-                  onClick={() => setIsDeleteModalOpen(false)}
-                  className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors cursor-pointer text-sm"
-                  disabled={isSubmitting}
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={confirmDeleteComplaint}
-                  disabled={isSubmitting}
-                  className="flex-1 px-4 py-2.5 bg-[#b61722] hover:bg-red-650 text-white font-bold rounded-xl shadow-[0_4px_12px_rgba(182,23,34,0.3)] transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2 text-sm"
-                >
-                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                  Hapus
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteComplaintModal
+        isOpen={isDeleteModalOpen}
+        isSubmitting={isSubmitting}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDeleteComplaint}
+      />
     </div>
   );
 }

@@ -31,7 +31,7 @@ export default function Timeline({ events = [] }: TimelineProps) {
             <div key={event.id} className="relative group">
               {/* Timeline Indicator Dot */}
               <div 
-                className={`absolute -left-[31px] top-1 h-3.5 w-3.5 rounded-full border-2 transition-colors ${
+                className={`absolute -left-7.75 top-1 h-3.5 w-3.5 rounded-full border-2 transition-colors ${
                   idx === 0
                     ? "bg-red-600 border-red-600 ring-4 ring-red-50"
                     : "bg-white border-slate-350"

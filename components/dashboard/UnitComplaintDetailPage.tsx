@@ -3,66 +3,28 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/app/store/auth.store";
-import {
-  Loader2,
-  ArrowLeft,
-  ChevronDown,
-  Globe,
-  User as UserIcon,
-  Calendar,
-  MoreVertical,
-  MessageSquare,
-  Building2,
-  RefreshCw,
-  Clock,
-  LayoutDashboard,
-  HelpCircle,
-  Settings as SettingsIcon,
-  LogOut,
-  Send,
-  PlusCircle,
-  Folder,
-  Bell,
-  X,
-  Share2,
-  CheckCircle,
-  AlertCircle,
-  BookOpen,
-  Users,
-  Briefcase,
-  FileText,
-  HeartHandshake,
-  Check,
-  CheckCircle2,
-  GraduationCap,
-  Wrench,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
-import { Complaint, ComplaintStatus, TimelineEvent, ComplaintVisibility, ComplaintUnit } from "@/types/complaint";
+import { Complaint } from "@/types/complaint";
 import { Comment } from "@/types/comment";
-import { cn } from "@/lib/utils";
 import UnitSidebar from "@/components/dashboard/UnitSidebar";
 import AdminSidebar from "@/components/dashboard/AdminSidebar";
 
-const UNIT_META_MAP: Record<string, { icon: any; name: string; description: string }> = {
-  SARPRA: { icon: Building2, name: "Sarana & Prasarana", description: "Gedung, peralatan & infrastruktur" },
-  Sarpras: { icon: Building2, name: "Sarana & Prasarana", description: "Gedung, peralatan & infrastruktur" },
-  KESISWAAN: { icon: Users, name: "Kesiswaan", description: "Kedisiplinan, OSIS & kegiatan siswa" },
-  Kesiswaan: { icon: Users, name: "Kesiswaan", description: "Kedisiplinan, OSIS & kegiatan siswa" },
-  KURIKULUM: { icon: BookOpen, name: "Kurikulum", description: "Akademik, jadwal kelas & ujian" },
-  Kurikulum: { icon: BookOpen, name: "Kurikulum", description: "Akademik, jadwal kelas & ujian" },
-  HUBINKOM: { icon: Briefcase, name: "Hubin / Humas", description: "Hubungan industri & PKL" },
-  Hubin: { icon: Briefcase, name: "Hubin / Humas", description: "Hubungan industri & PKL" },
-  TATA_USAHA: { icon: FileText, name: "Tata Usaha (TU)", description: "Administrasi & keuangan" },
-  "Tata Usaha": { icon: FileText, name: "Tata Usaha (TU)", description: "Administrasi & keuangan" },
-  ISO: { icon: Building2, name: "Umum", description: "Kebijakan mutu & operasional umum" },
-  Umum: { icon: Building2, name: "Umum", description: "Kebijakan mutu & operasional umum" },
-};
+// Unit Detail Subcomponents
+import ComplaintHeader from "./unit-detail/components/ComplaintHeader";
+import ComplaintContentCard from "./unit-detail/components/ComplaintContentCard";
+import DiscussionThread from "./unit-detail/components/DiscussionThread";
+import ComplaintSidebar from "./unit-detail/components/ComplaintSidebar";
+
+// Unit Detail Modals
+import ProcessReportModal from "./unit-detail/modals/ProcessReportModal";
+import CloseComplaintModal from "./unit-detail/modals/CloseComplaintModal";
+import ForwardUnitModal from "./unit-detail/modals/ForwardUnitModal";
 
 export default function UnitComplaintDetailPage({ complaintId }: { complaintId: string }) {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -71,32 +33,30 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   const [comments, setComments] = useState<Comment[]>([]);
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
 
-  // Inline discussion reply
+  // Discussion reply
   const [replyText, setReplyText] = useState("");
   const [isSendingReply, setIsSendingReply] = useState(false);
 
-  // Modal: Proses Laporan (rencana solusi)
+  // Modal: Process Report
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [rencanaText, setRencanaText] = useState("");
   const [isSubmittingOpen, setIsSubmittingOpen] = useState(false);
 
-  // Modal: Tutup Keluhan (solusi yang sudah dilakukan)
+  // Modal: Close Complaint
   const [isCloseModal, setIsCloseModal] = useState(false);
   const [solusiText, setSolusiText] = useState("");
   const [isSubmittingClose, setIsSubmittingClose] = useState(false);
 
-  // Forward Modal State
+  // Modal: Forward
   const [isForwardModalOpen, setIsForwardModalOpen] = useState(false);
   const [forwardUnitId, setForwardUnitId] = useState("");
   const [forwardNote, setForwardNote] = useState("");
   const [availableUnits, setAvailableUnits] = useState<any[]>([]);
 
-
   const loadComplaintData = async () => {
     setIsLoading(true);
     try {
       let activeDetail: Complaint | null = null;
-
       try {
         activeDetail = await apiClient.complaints.getById(complaintId);
       } catch (err: any) {
@@ -115,7 +75,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       let loadedComments: Comment[] = [];
       try {
         loadedComments = await apiClient.comments.getByComplaintId(complaintId);
-      } catch (err) {
+      } catch {
         loadedComments = [];
       }
       setComments(loadedComments);
@@ -124,98 +84,89 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
         const u = await apiClient.units.getAll();
         setAvailableUnits(u);
       }
-
-    } catch (error) {
-      console.error(error);
+    } catch {
       toast.error("Gagal memuat detail keluhan");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Set mounted
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
     return () => clearTimeout(timer);
   }, []);
 
-  // Fetch detail
   useEffect(() => {
-    if (mounted && isAuthenticated && complaintId) {
-      const timer = setTimeout(() => {
-        loadComplaintData();
-      }, 0);
-      return () => clearTimeout(timer);
+    if (mounted) {
+      if (!isAuthenticated) {
+        router.push("/login");
+        return;
+      }
+      if (user && user.role !== "SUPERADMIN" && user.role !== "SUPER_PIC" && user.role !== "PIC") {
+        router.push("/login");
+        return;
+      }
+      loadComplaintData();
     }
-  }, [mounted, isAuthenticated, complaintId]);
+  }, [mounted, isAuthenticated, user, complaintId]);
 
-  // Auto-scroll to reply form if hash #reply-form-section is present
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.location.hash === "#reply-form-section" && !isLoading) {
-      const timer = setTimeout(() => {
-        const replyEl = document.getElementById("reply-form-section");
-        if (replyEl) {
-          replyEl.scrollIntoView({ behavior: "smooth", block: "center" });
-          const textarea = replyEl.querySelector("textarea");
-          if (textarea) textarea.focus();
-        }
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading]);
-
+  // Handlers
   const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyText.trim() || !complaint) return;
+    if (!replyText.trim() || isSendingReply) return;
+
     setIsSendingReply(true);
     try {
-      await apiClient.comments.create(complaint.id, { content: replyText });
-      await loadComplaintData();
+      const newComment = await apiClient.comments.create(complaintId, {
+        content: replyText.trim(),
+        isOfficialResponse: true,
+      });
+
+      setComments((prev) => [...prev, newComment]);
       setReplyText("");
-      toast.success("Tanggapan terkirim!");
+      toast.success("Balasan terkirim ke pelapor");
     } catch (err: any) {
-      const msg = err?.response?.data?.message || "Gagal mengirimkan tanggapan.";
-      toast.error(msg);
+      toast.error(err.response?.data?.message || "Gagal mengirim balasan");
     } finally {
       setIsSendingReply(false);
     }
   };
 
-  /** Proses Laporan: post rencana comment → update status to OPEN */
   const handleProsesLaporan = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!rencanaText.trim() || !complaint) return;
+    if (!rencanaText.trim() || isSubmittingOpen) return;
+
     setIsSubmittingOpen(true);
     try {
-      await apiClient.complaints.updateStatus(complaint.id, "OPEN", rencanaText.trim());
-      await loadComplaintData();
+      await apiClient.complaints.updateStatus(complaintId, "OPEN", {
+        handlingPlan: rencanaText.trim(),
+      });
+      toast.success("Status keluhan diperbarui menjadi DIPROSES");
       setIsOpenModal(false);
       setRencanaText("");
-      toast.success("Laporan sedang diproses!");
+      loadComplaintData();
     } catch (err: any) {
-      console.error("Failed to process complaint:", err);
-      const msg = err?.response?.data?.message || "Gagal memproses laporan. Pastikan Anda memiliki izin PIC Unit.";
-      toast.error(msg);
+      toast.error(err.response?.data?.message || "Gagal memproses laporan");
     } finally {
       setIsSubmittingOpen(false);
     }
   };
 
-  /** Tutup Keluhan: post solusi comment → update status to DONE */
   const handleTutupKeluhan = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!solusiText.trim() || !complaint) return;
+    if (!solusiText.trim() || isSubmittingClose) return;
+
     setIsSubmittingClose(true);
     try {
-      await apiClient.complaints.updateStatus(complaint.id, "DONE", undefined, solusiText.trim());
-      await loadComplaintData();
+      await apiClient.complaints.updateStatus(complaintId, "DONE", {
+        resolution: solusiText.trim(),
+      });
+      toast.success("Keluhan berhasil ditutup dan diselesaikan");
       setIsCloseModal(false);
       setSolusiText("");
-      toast.success("Keluhan berhasil ditutup!");
+      loadComplaintData();
     } catch (err: any) {
-      console.error("Failed to close complaint:", err);
-      const msg = err?.response?.data?.message || "Gagal menutup keluhan. Pastikan Anda memiliki izin PIC Unit.";
-      toast.error(msg);
+      toast.error(err.response?.data?.message || "Gagal menutup keluhan");
     } finally {
       setIsSubmittingClose(false);
     }
@@ -223,882 +174,134 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
   const handleForwardComplaint = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forwardUnitId || !complaint) return;
+    if (!forwardUnitId) {
+      toast.error("Pilih unit kerja tujuan");
+      return;
+    }
 
     try {
-      await apiClient.complaints.forward(complaint.id, {
+      await apiClient.complaints.forward(complaintId, {
         toUnitId: forwardUnitId,
-        forwardNote: forwardNote
+        forwardNote: forwardNote.trim(),
       });
+      toast.success("Laporan berhasil didelegasikan");
       setIsForwardModalOpen(false);
-      toast.success("Keluhan berhasil didelegasikan ulang!");
-      router.push("/dashboard");
+      setForwardNote("");
+      loadComplaintData();
     } catch (err: any) {
-      console.error("Failed to forward complaint:", err);
-      const msg = err?.response?.data?.message || "Gagal meneruskan keluhan. Pastikan Anda memiliki izin PIC Unit.";
-      toast.error(msg);
+      toast.error(err.response?.data?.message || "Gagal meneruskan laporan");
     }
   };
 
-  const handleLogoutClick = () => {
-    logout();
-    toast.success("Berhasil keluar dari portal");
-    router.push("/");
-  };
-
-  const formatTime = (isoString: string) => {
-    try {
-      const d = new Date(isoString);
-      return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-    } catch {
-      return "10:15";
-    }
-  };
-
-  const formatDateShort = (isoString: string) => {
-    try {
-      const d = new Date(isoString);
-      const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
-      return `${d.getDate()} ${months[d.getMonth()]}`;
-    } catch {
-      return "12 Okt";
-    }
-  };
-
-  const formatFullDate = (isoString: string) => {
-    try {
-      const d = new Date(isoString);
-      const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
-      return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-    } catch {
-      return "12 Okt 2026";
-    }
-  };
-
-  if (!mounted || !isAuthenticated || (user?.role !== "UNIT_PIC" && user?.role !== "UNIT_MEMBER" && user?.role !== "SUPERADMIN" && user?.role !== "SUPER_PIC")) {
+  if (!mounted || isLoading || !complaint) {
     return (
-      <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9] font-sans antialiased text-slate-800">
-        {user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC" ? (
-          <AdminSidebar activeTab="complaints" />
-        ) : (
-          <UnitSidebar activeTab="keluhan" />
-        )}
-        <div className="grow h-full flex flex-col min-w-0 overflow-hidden items-center justify-center bg-[#f9f9f9]">
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            Memuat Data...
+          </span>
         </div>
       </div>
     );
   }
-
-  if (isLoading || !complaint) {
-    return (
-      <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9] font-sans antialiased text-slate-800">
-        {/* ─── LEFT SIDEBAR (Dark UI) ─── */}
-        {user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC" ? (
-          <AdminSidebar activeTab="complaints" />
-        ) : (
-          <UnitSidebar activeTab="keluhan" />
-        )}
-        {/* ─── MAIN WORKSPACE ─── */}
-        <div className="grow h-full flex flex-col min-w-0 overflow-hidden items-center justify-center bg-[#f9f9f9]">
-          <Loader2 className="h-8 w-8 animate-spin text-red-600" />
-        </div>
-      </div>
-    );
-  }
-
-  const timelineList = (isTimelineExpanded ? complaint.timeline : complaint.timeline?.slice(0, 3)) || [];
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9] font-sans antialiased text-slate-800">
-
-      {/* ─── LEFT SIDEBAR (Dark UI) ─── */}
-      {user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC" ? (
+    <div className="h-screen w-screen flex overflow-hidden bg-slate-50 font-sans text-slate-800">
+      {/* Dynamic Sidebar based on role */}
+      {user?.role === "SUPERADMIN" ? (
         <AdminSidebar activeTab="complaints" />
       ) : (
-        <UnitSidebar activeTab="keluhan" />
+        <UnitSidebar
+          activeTab="dashboard"
+          userRole={user?.role}
+          unitName={complaint?.unit || user?.unit?.name || "Unit"}
+          badgeCount={0}
+        />
       )}
 
-      {/* ─── MAIN WORKSPACE ─── */}
+      {/* Main Workspace */}
       <div className="grow h-full flex flex-col min-w-0 overflow-hidden bg-[#f9f9f9]">
-
-        {/* Scrollable Container */}
         <div className="grow overflow-y-auto p-8 space-y-6">
+          <ComplaintHeader userRole={user?.role} />
 
-          {/* Breadcrumbs Row */}
-          <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-            {user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC" ? (
-              <>
-                <button onClick={() => { localStorage.setItem("adminActiveTab", "dashboard"); router.push("/dashboard"); }} className="hover:text-red-500 transition-colors">Pusat Kontrol</button>
-                <span>&gt;</span>
-                <button onClick={() => { localStorage.setItem("adminActiveTab", "complaints"); router.push("/dashboard"); }} className="hover:text-red-500 transition-colors">Semua Aspirasi</button>
-              </>
-            ) : (
-              <>
-                <button onClick={() => { localStorage.setItem("unitActiveTab", "dashboard"); router.push("/dashboard"); }} className="hover:text-red-500 transition-colors">Dashboard Unit</button>
-                <span>&gt;</span>
-                <button onClick={() => { localStorage.setItem("unitActiveTab", "keluhan"); router.push("/dashboard"); }} className="hover:text-red-500 transition-colors">Keluhan Masuk</button>
-              </>
-            )}
-            <span>&gt;</span>
-            <span className="text-slate-500">Detail Keluhan</span>
-          </div>
-
-          {/* Action Row */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">Detail Keluhan</h1>
-              <p className="text-slate-500 text-xs mt-0.5 font-medium">Kelola keluhan yang masuk ke unit Anda.</p>
-            </div>
-          </div>
-
-          {/* Split Content Grid (2/3 Left, 1/3 Right) */}
+          {/* 2/3 Left & 1/3 Right Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-
-            {/* ─── LEFT COLUMN (2/3) ─── */}
+            {/* Left Column (2/3) */}
             <div className="lg:col-span-2 space-y-6">
-
-              {/* Card 1: Summary */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-
-                {/* Badges */}
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-200">
-                    {complaint.status}
-                  </span>
-
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-400 flex items-center gap-1">
-                      <Globe className="h-4 w-4" />
-                      Publik
-                    </span>
-                  </div>
-                </div>
-
-                {/* Title */}
-                <h2 className="text-lg sm:text-xl font-extrabold text-slate-800 leading-snug">
-                  {complaint.title}
-                </h2>
-
-                {/* Meta details */}
-                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100 text-xs">
-                  <div className="space-y-0.5">
-                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Unit Terkait</span>
-                    <span className="block font-bold text-slate-700">{complaint.unit}</span>
-                  </div>
-                  <div className="space-y-0.5">
-                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tanggal Dibuat</span>
-                    <span className="block font-bold text-slate-700">{formatFullDate(complaint.createdAt)}</span>
-                  </div>
-                  <div className="space-y-0.5">
-                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pelapor</span>
-                    <span className="font-bold text-slate-750 flex items-center gap-1">
-                      <UserIcon className="h-3.5 w-3.5 text-slate-400" />
-                      {complaint.isAnonymous ? "Anonim" : (complaint.reporter?.name || "Pelapor")}
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Card 2: Description */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-3">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Deskripsi Keluhan</span>
-                <p className="text-xs text-slate-500 leading-relaxed font-semibold">
-                  {complaint.description}
-                </p>
-              </div>
-
-              {/* Card 3: Attachments */}
-              {complaint.evidenceUrl && (
-                <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lampiran Bukti</span>
-
-                  <div className="max-w-md h-56 rounded-2xl border border-slate-200 bg-slate-50 overflow-hidden shadow-3xs group cursor-pointer">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={complaint.evidenceUrl}
-                      alt="Lampiran Bukti"
-                      className="h-full w-full object-cover group-hover:scale-102 transition-transform duration-300"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
-                      onClick={() => window.open(complaint.evidenceUrl, "_blank")}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Card 4: Discussion — private between pelapor & unit */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-5">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-slate-400" />
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Diskusi Pribadi dengan Pelapor</span>
-                  <span className="ml-auto px-2 py-0.5 bg-slate-100 text-slate-500 text-[9px] font-bold rounded-full uppercase tracking-wider">Privat</span>
-                </div>
-
-                {/* Message thread */}
-                <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                  {comments.length === 0 ? (
-                    <div className="text-center py-6 text-slate-400">
-                      <MessageSquare className="h-6 w-6 mx-auto mb-2 text-slate-300" />
-                      <p className="text-xs font-semibold">Belum ada pesan dalam diskusi ini.</p>
-                    </div>
-                  ) : (
-                    comments.map((comment) => {
-                      const isOfficial = comment.isPic;
-                      return (
-                        <div
-                          key={comment.id}
-                          className={cn(
-                            "p-3.5 rounded-2xl text-xs space-y-1.5 max-w-[90%] border shadow-3xs",
-                            isOfficial
-                              ? "bg-red-50/50 border-red-200/60 rounded-tr-none ml-auto"
-                              : "bg-white border-slate-100 rounded-tl-none mr-auto"
-                          )}
-                        >
-                          <div className="flex items-center justify-between gap-4">
-                            <span className="font-bold text-slate-800">
-                              {comment.user?.name || "Anonim"}
-                            </span>
-                            {isOfficial && (
-                              <span className="px-2 py-0.5 bg-[#b61722] text-white font-extrabold text-[8px] uppercase tracking-wider rounded-md">
-                                Unit
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-slate-500 leading-relaxed font-semibold">
-                            {comment.content}
-                          </p>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* Inline reply form */}
-                {complaint.status !== "DONE" ? (
-                  <form onSubmit={handleSendReply} className="flex gap-2 pt-2 border-t border-slate-100">
-                    <textarea
-                      rows={2}
-                      required
-                      placeholder="Balas pesan pelapor..."
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      disabled={isSendingReply}
-                      className="flex-1 p-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-red-400 resize-none font-medium"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isSendingReply || !replyText.trim()}
-                      className="h-auto px-4 bg-[#b61722] hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer active:scale-[0.98]"
-                    >
-                      {isSendingReply ? (
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Send className="h-3.5 w-3.5" />
-                      )}
-                    </button>
-                  </form>
-                ) : (
-                  <div className="pt-2 border-t border-slate-100 text-center text-[10px] text-slate-400 font-semibold">
-                    Keluhan ditutup. Diskusi dinonaktifkan.
-                  </div>
-                )}
-              </div>
-
+              <ComplaintContentCard complaint={complaint} />
+              <DiscussionThread
+                complaint={complaint}
+                comments={comments}
+                replyText={replyText}
+                isSendingReply={isSendingReply}
+                onChangeReplyText={setReplyText}
+                onSubmitReply={handleSendReply}
+              />
             </div>
 
-            {/* ─── RIGHT COLUMN (1/3) ─── */}
+            {/* Right Column (1/3) */}
             <div className="space-y-6">
-
-              {/* Card 1: Status & Control */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-5">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status &amp; Kontrol</span>
-
-                {/* Status Block */}
-                {(() => {
-                  let displayStatus = "BARU";
-                  let bgClass = "bg-sky-50 border-sky-200/80 text-sky-700";
-                  let dotClass = "bg-sky-500";
-                  if (complaint.status === "OPEN") {
-                    displayStatus = "SEDANG DIPROSES";
-                    bgClass = "bg-amber-50 border-amber-200/80 text-amber-800";
-                    dotClass = "bg-amber-500 animate-pulse";
-                  } else if (complaint.status === "DONE") {
-                    displayStatus = "SELESAI";
-                    bgClass = "bg-emerald-50 border-emerald-200/80 text-emerald-800";
-                    dotClass = "bg-emerald-500";
-                  }
-
-                  return (
-                    <div className={cn("rounded-2xl p-4 border text-center relative overflow-hidden transition-all", bgClass)}>
-                      <span className="block text-[9px] font-bold uppercase tracking-widest opacity-70">Status Saat Ini</span>
-                      <div className="flex items-center justify-center gap-2 mt-1">
-                        <span className={cn("h-2 w-2 rounded-full shrink-0", dotClass)} />
-                        <span className="text-sm font-extrabold tracking-wider uppercase">
-                          {displayStatus}
-                        </span>
-                      </div>
-                      
-                      {complaint.status === "OPEN" && complaint.handlingPlan && (
-                        <div className="mt-3 pt-3 border-t border-amber-200/50 text-left">
-                          <span className="block text-[9px] font-bold uppercase tracking-widest opacity-80 mb-1">Rencana Penanganan:</span>
-                          <p className="text-xs font-semibold whitespace-pre-wrap">{complaint.handlingPlan}</p>
-                        </div>
-                      )}
-                      
-                      {complaint.status === "DONE" && complaint.resolution && (
-                        <div className="mt-3 pt-3 border-t border-emerald-200/50 text-left">
-                          <span className="block text-[9px] font-bold uppercase tracking-widest opacity-80 mb-1">Solusi yang Telah Dilakukan:</span>
-                          <p className="text-xs font-semibold whitespace-pre-wrap">{complaint.resolution}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* Rating Info */}
-                {complaint.rating && (
-                  <div className="rounded-2xl p-4 border border-yellow-200 bg-yellow-50 text-center relative overflow-hidden transition-all mt-3">
-                    <span className="block text-[9px] font-bold uppercase tracking-widest text-yellow-700 opacity-80">Penilaian Pelapor</span>
-                    <div className="flex items-center justify-center gap-2 mt-1">
-                      <span className="text-sm font-extrabold tracking-wider text-yellow-800">
-                        {complaint.rating.score} BINTANG
-                      </span>
-                    </div>
-                    {complaint.rating.note && (
-                      <p className="mt-2 text-xs text-yellow-700/80 font-medium italic">
-                        "{complaint.rating.note}"
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* PIC Info */}
-                <div className="space-y-2 pt-2 border-t border-slate-100">
-                  <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Unit Penanggung Jawab</span>
-
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-red-50 text-red-600 border border-red-100 flex items-center justify-center font-extrabold text-xs shrink-0 select-none shadow-3xs">
-                      {complaint.unit.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className="space-y-0.5">
-                      <span className="block font-bold text-slate-800 text-xs leading-none">Unit {complaint.unit}</span>
-                      <span className="block text-[10px] text-slate-400 font-bold">Tim Pengelola &amp; Penanganan Resmi</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Controls */}
-                <div className="space-y-2.5 pt-3 border-t border-slate-100">
-                  {/* Proses Laporan */}
-                  <button
-                    disabled={complaint.status === "OPEN" || complaint.status === "DONE"}
-                    onClick={() => setIsOpenModal(true)}
-                    className="w-full h-11 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer active:scale-[0.98]"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    <span>Proses Laporan</span>
-                  </button>
-
-                  {/* Forward */}
-                  <button
-                    onClick={() => setIsForwardModalOpen(true)}
-                    className="w-full h-11 bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-bold rounded-xl border border-slate-200/80 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
-                  >
-                    <Share2 className="h-4 w-4 text-slate-500" />
-                    <span>Teruskan (Forward)</span>
-                  </button>
-
-                  {/* Tutup / Reopen */}
-                  {(user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC") && complaint.status === "DONE" ? (
-                    <button
-                      onClick={() => apiClient.complaints.updateStatus(complaint.id, "OPEN").then(() => loadComplaintData())}
-                      className="w-full h-11 bg-white hover:bg-amber-50/50 border border-amber-200 text-amber-600 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
-                    >
-                      <RefreshCw className="h-4 w-4 text-amber-600" />
-                      <span>Buka Lagi (Reopen)</span>
-                    </button>
-                  ) : (
-                    <button
-                      disabled={complaint.status === "DONE"}
-                      onClick={() => setIsCloseModal(true)}
-                      className="w-full h-11 bg-white hover:bg-red-50/50 disabled:opacity-40 disabled:cursor-not-allowed border border-red-200 text-red-600 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
-                    >
-                      <CheckCircle className="h-4 w-4 text-red-600" />
-                      <span>Tutup Keluhan</span>
-                    </button>
-                  )}
-                </div>
-
-              </div>
-
-              {/* Card 2: Process Audit Trail */}
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Riwayat Proses</span>
-
-                {/* Timeline */}
-                <div className="relative border-l border-slate-100 pl-4.5 space-y-5 ml-1 pt-1.5 pb-1">
-                  {timelineList.map((evt, idx) => (
-                    <div key={evt.id || idx} className="relative space-y-1">
-
-                      {/* Timeline dot */}
-                      <div className={cn(
-                        "absolute -left-5.5 top-1.5 h-2.5 w-2.5 rounded-full border border-white shrink-0",
-                        idx === 0 ? "bg-red-600" : "bg-slate-300"
-                      )} />
-
-                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        <span>{formatDateShort(evt.createdAt)} - {formatTime(evt.createdAt)}</span>
-                      </div>
-
-                      <h4 className="font-extrabold text-slate-800 text-xs leading-tight">
-                        {evt.title}
-                      </h4>
-                      <p className="text-[10.5px] text-slate-450 font-medium leading-relaxed">
-                        {evt.description}
-                      </p>
-
-                    </div>
-                  ))}
-                </div>
-
-                {complaint.timeline && complaint.timeline.length > 3 && (
-                  <div className="text-center pt-2 border-t border-slate-50">
-                    <button
-                      onClick={() => setIsTimelineExpanded(!isTimelineExpanded)}
-                      className="inline-flex items-center gap-1 text-[10.5px] font-extrabold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                    >
-                      <span>{isTimelineExpanded ? "Sembunyikan Log" : "Lihat Log Lengkap"}</span>
-                      <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-200", isTimelineExpanded && "rotate-180")} />
-                    </button>
-                  </div>
-                )}
-
-              </div>
-
+              <ComplaintSidebar
+                complaint={complaint}
+                user={user}
+                isTimelineExpanded={isTimelineExpanded}
+                onToggleTimeline={() => setIsTimelineExpanded(!isTimelineExpanded)}
+                onOpenProcessModal={() => setIsOpenModal(true)}
+                onOpenForwardModal={() => setIsForwardModalOpen(true)}
+                onOpenCloseModal={() => setIsCloseModal(true)}
+                onReopenComplaint={() =>
+                  apiClient.complaints
+                    .updateStatus(complaint.id, "OPEN")
+                    .then(() => loadComplaintData())
+                }
+              />
             </div>
-
           </div>
-
         </div>
-
       </div>
 
-      {/* ─── MODAL: PROSES LAPORAN (Rencana Penanganan) ─── */}
-      {isOpenModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+      {/* Modals */}
+      <ProcessReportModal
+        isOpen={isOpenModal}
+        complaint={complaint}
+        rencanaText={rencanaText}
+        isSubmitting={isSubmittingOpen}
+        onClose={() => {
+          setIsOpenModal(false);
+          setRencanaText("");
+        }}
+        onChangeText={setRencanaText}
+        onSubmit={handleProsesLaporan}
+      />
 
-            {/* Modal Header */}
-            <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-2xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center shrink-0 shadow-3xs">
-                  <RefreshCw className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-900 text-base leading-tight">Proses Laporan</h3>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">Tentukan rencana tindakan penanganan laporan ini</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => { setIsOpenModal(false); setRencanaText(""); }}
-                className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl flex items-center justify-center cursor-pointer transition-colors shrink-0"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+      <CloseComplaintModal
+        isOpen={isCloseModal}
+        complaint={complaint}
+        solusiText={solusiText}
+        isSubmitting={isSubmittingClose}
+        onClose={() => {
+          setIsCloseModal(false);
+          setSolusiText("");
+        }}
+        onChangeText={setSolusiText}
+        onSubmit={handleTutupKeluhan}
+      />
 
-            {/* Complaint Context */}
-            {complaint && (
-              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex items-start gap-3">
-                <div className="h-8 w-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-3xs">
-                  <AlertCircle className="h-4 w-4 text-slate-500" />
-                </div>
-                <div className="min-w-0">
-                  <span className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Keluhan yang Diproses</span>
-                  <span className="block font-bold text-slate-800 text-xs truncate">{complaint.title}</span>
-                  <span className="block text-[10px] text-slate-400 font-mono mt-0.5">#{complaint.id?.slice(0, 8)}</span>
-                </div>
-              </div>
-            )}
-
-            <form onSubmit={handleProsesLaporan} className="space-y-4">
-
-              {/* Quick Templates */}
-              <div className="space-y-1.5">
-                <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
-                  Template Cepat (Opsional)
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    "Sedang dijadwalkan untuk ditinjau",
-                    "Tim teknis akan segera turun lapangan",
-                    "Koordinasi dengan pihak terkait",
-                    "Pengadaan material diproses",
-                  ].map((tpl) => (
-                    <button
-                      key={tpl}
-                      type="button"
-                      onClick={() => setRencanaText(tpl)}
-                      className="px-2.5 py-1 bg-slate-100 hover:bg-red-50 hover:text-red-600 border border-slate-200 text-slate-600 font-semibold text-[11px] rounded-lg transition-all cursor-pointer active:scale-95"
-                    >
-                      + {tpl}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Textarea */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
-                    Rencana Penanganan <span className="text-red-500">*</span>
-                  </label>
-                  <span className="text-[10px] text-slate-400 font-semibold">{rencanaText.length} karakter</span>
-                </div>
-                <textarea
-                  required
-                  rows={5}
-                  placeholder="Jelaskan langkah-langkah yang akan dilakukan untuk menangani keluhan ini..."
-                  value={rencanaText}
-                  onChange={(e) => setRencanaText(e.target.value)}
-                  className="w-full p-3.5 text-xs rounded-2xl border border-slate-250 bg-white focus:outline-none focus:border-red-500 font-medium resize-none"
-                />
-                <p className="text-[10px] text-slate-400 font-medium">
-                  Rencana ini akan dikirim sebagai pesan diskusi pribadi kepada pelapor.
-                </p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setIsOpenModal(false); setRencanaText(""); }}
-                  className="flex-1 h-11 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-all text-xs cursor-pointer active:scale-[0.98]"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingOpen || !rencanaText.trim()}
-                  className="flex-1 h-11 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all text-xs cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
-                >
-                  {isSubmittingOpen ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                  <span>Konfirmasi &amp; Proses</span>
-                </button>
-              </div>
-
-            </form>
-
-          </div>
-        </div>
-      )}
-
-      {/* ─── MODAL: TUTUP KELUHAN (Solusi yang Sudah Dilakukan) ─── */}
-      {isCloseModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
-
-            {/* Modal Header */}
-            <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0 shadow-3xs">
-                  <CheckCircle className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-900 text-base leading-tight">Tutup Keluhan</h3>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">Isi solusi yang telah dilakukan untuk menyelesaikan keluhan ini</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => { setIsCloseModal(false); setSolusiText(""); }}
-                className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl flex items-center justify-center cursor-pointer transition-colors shrink-0"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Complaint Context */}
-            {complaint && (
-              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex items-start gap-3">
-                <div className="h-8 w-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-3xs">
-                  <CheckCircle className="h-4 w-4 text-emerald-600" />
-                </div>
-                <div className="min-w-0">
-                  <span className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Keluhan yang Ditutup</span>
-                  <span className="block font-bold text-slate-800 text-xs truncate">{complaint.title}</span>
-                  <span className="block text-[10px] text-slate-400 font-mono mt-0.5">#{complaint.id?.slice(0, 8)}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Info Box */}
-            <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-3.5 flex items-start gap-2.5 text-xs text-amber-800 font-semibold">
-              <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-              <p className="leading-relaxed text-[11px]">
-                Setelah ditutup, solusi ini akan ditampilkan sebagai <strong>Solusi Resmi</strong> kepada pelapor dan pelapor dapat memberikan penilaian (rating).
-              </p>
-            </div>
-
-            <form onSubmit={handleTutupKeluhan} className="space-y-4">
-
-              {/* Quick Templates */}
-              <div className="space-y-1.5">
-                <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
-                  Template Cepat (Opsional)
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    "Kerusakan telah diperbaiki",
-                    "Penggantian peralatan selesai",
-                    "Koordinasi lintas unit tuntas",
-                    "Masalah teridentifikasi & diatasi",
-                  ].map((tpl) => (
-                    <button
-                      key={tpl}
-                      type="button"
-                      onClick={() => setSolusiText(tpl)}
-                      className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 text-slate-600 font-semibold text-[11px] rounded-lg transition-all cursor-pointer active:scale-95"
-                    >
-                      + {tpl}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Textarea */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
-                    Solusi yang Telah Dilakukan <span className="text-red-500">*</span>
-                  </label>
-                  <span className="text-[10px] text-slate-400 font-semibold">{solusiText.length} karakter</span>
-                </div>
-                <textarea
-                  required
-                  rows={5}
-                  placeholder="Jelaskan secara detail solusi atau tindakan yang telah dilakukan untuk menyelesaikan keluhan ini..."
-                  value={solusiText}
-                  onChange={(e) => setSolusiText(e.target.value)}
-                  className="w-full p-3.5 text-xs rounded-2xl border border-slate-250 bg-white focus:outline-none focus:border-emerald-500 font-medium resize-none"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setIsCloseModal(false); setSolusiText(""); }}
-                  className="flex-1 h-11 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-all text-xs cursor-pointer active:scale-[0.98]"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingClose || !solusiText.trim()}
-                  className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all text-xs cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
-                >
-                  {isSubmittingClose ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4" />
-                  )}
-                  <span>Tutup &amp; Simpan Solusi</span>
-                </button>
-              </div>
-
-            </form>
-
-          </div>
-        </div>
-      )}
-
-      {/* ─── FORWARD / DELEGASI MODAL ─── */}
-      {isForwardModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
-
-            {/* Modal Header */}
-            <div className="flex items-start justify-between gap-4 pb-1">
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-2xl bg-red-50 text-red-600 border border-red-100 flex items-center justify-center shrink-0 shadow-3xs">
-                  <Share2 className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-900 text-base leading-tight">Teruskan / Delegasikan Laporan</h3>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">Pindahkan alokasi penanganan ke unit kerja yang sesuai</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsForwardModalOpen(false)}
-                className="h-8 w-8 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl flex items-center justify-center cursor-pointer transition-colors shrink-0"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Complaint Context Summary */}
-            {complaint && (
-              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 flex items-center justify-between gap-3 text-xs">
-                <div className="space-y-0.5 min-w-0">
-                  <span className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">Judul Keluhan</span>
-                  <span className="block font-bold text-slate-800 truncate">{complaint.title}</span>
-                </div>
-                <div className="shrink-0 text-right">
-                  <span className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">ID Keluhan</span>
-                  <span className="inline-block px-2 py-0.5 bg-slate-200/70 text-slate-700 font-mono font-bold rounded-md text-[10px]">
-                    #{complaint.id.slice(0, 8)}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <form onSubmit={handleForwardComplaint} className="space-y-5">
-
-              {/* Unit Selection Grid */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
-                    Pilih Unit Kerja Tujuan <span className="text-red-500">*</span>
-                  </label>
-                  {forwardUnitId && (
-                    <span className="text-[10px] text-red-600 font-bold">
-                      Terpilih: {availableUnits.find((u) => u.id === forwardUnitId)?.name || forwardUnitId}
-                    </span>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {availableUnits.map((unit) => {
-                    const norm = unit.name.toLowerCase();
-                    let IconComp = Building2;
-                    let desc = "Unit Layanan SuaraMoklet";
-                    
-                    if (norm.includes("kurikulum") || norm.includes("akademik")) {
-                      IconComp = BookOpen;
-                      desc = "Akademik, jadwal & ujian";
-                    } else if (norm.includes("pendidikan") || norm.includes("guru")) {
-                      IconComp = GraduationCap;
-                    } else if (norm.includes("fasilitas") || norm.includes("sarpras")) {
-                      IconComp = Wrench;
-                      desc = "Gedung & infrastruktur";
-                    } else if (norm.includes("kesiswaan") || norm.includes("siswa")) {
-                      IconComp = Users;
-                      desc = "Kedisiplinan & OSIS";
-                    } else if (norm.includes("hubin")) {
-                      IconComp = Briefcase;
-                      desc = "Hubungan industri & PKL";
-                    } else if (norm.includes("tata usaha")) {
-                      IconComp = FileText;
-                      desc = "Administrasi & keuangan";
-                    } else if (norm.includes("bk") || norm.includes("konseling")) {
-                      IconComp = HeartHandshake;
-                      desc = "Konseling & bimbingan siswa";
-                    }
-
-                    return (
-                      <div
-                        key={unit.id}
-                        onClick={() => setForwardUnitId(unit.name)}
-                        className={cn(
-                          "flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all active:scale-[0.98]",
-                          forwardUnitId === unit.name
-                            ? "border-red-600 bg-red-50/50 shadow-sm"
-                            : "border-slate-100 bg-white hover:border-red-200 hover:bg-slate-50"
-                        )}
-                      >
-                        <div className={cn(
-                          "p-2 rounded-lg shrink-0",
-                          forwardUnitId === unit.name ? "bg-red-600 text-white" : "bg-slate-100 text-slate-500"
-                        )}>
-                          <IconComp className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 min-w-0 pt-0.5">
-                          <h4 className="text-xs font-bold text-slate-800 leading-none mb-1 truncate">{unit.name}</h4>
-                          <p className="text-[10px] text-slate-500 font-medium leading-tight line-clamp-2">{desc}</p>
-                        </div>
-                        {forwardUnitId === unit.name && (
-                          <CheckCircle2 className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Quick Reasons */}
-              <div className="space-y-2">
-                <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
-                  Alasan Pendelegasian (Pilih Cepat)
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    "Salah Alokasi Unit",
-                    "Membutuhkan Penanganan Khusus",
-                    "Eskalasi Lanjutan",
-                    "Koordinasi Lintas Unit",
-                  ].map((chip) => (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => setForwardNote((prev) => prev ? `${prev} | ${chip}` : chip)}
-                      className="px-3 py-1 bg-slate-100 hover:bg-red-50 hover:text-red-600 border border-slate-200/80 hover:border-red-200 text-slate-600 font-semibold text-[11px] rounded-lg transition-all cursor-pointer active:scale-95"
-                    >
-                      + {chip}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Note */}
-              <div className="space-y-1.5">
-                <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
-                  Catatan Tambahan untuk Unit Kerja Target
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Instruksi khusus atau catatan mengapa laporan ini dialihkan..."
-                  value={forwardNote}
-                  onChange={(e) => setForwardNote(e.target.value)}
-                  className="w-full p-3.5 text-xs rounded-2xl border border-slate-250 bg-white focus:outline-none focus:border-red-500 font-medium"
-                />
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsForwardModalOpen(false)}
-                  className="flex-1 h-11 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-all text-xs cursor-pointer active:scale-[0.98]"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={!forwardUnitId}
-                  className="flex-1 h-11 bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all text-xs cursor-pointer flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
-                >
-                  <Share2 className="h-4 w-4" />
-                  <span>Konfirmasi Delegasikan</span>
-                </button>
-              </div>
-
-            </form>
-
-          </div>
-        </div>
-      )}
-
+      <ForwardUnitModal
+        isOpen={isForwardModalOpen}
+        complaint={complaint}
+        forwardUnitId={forwardUnitId}
+        forwardNote={forwardNote}
+        availableUnits={availableUnits}
+        onClose={() => setIsForwardModalOpen(false)}
+        onSelectUnit={setForwardUnitId}
+        onChangeNote={setForwardNote}
+        onAppendNote={(chip) =>
+          setForwardNote((prev) => (prev ? `${prev} | ${chip}` : chip))
+        }
+        onSubmit={handleForwardComplaint}
+      />
     </div>
   );
 }
-
