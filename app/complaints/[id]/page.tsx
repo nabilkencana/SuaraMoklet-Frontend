@@ -166,7 +166,7 @@ export default function ComplaintDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-slate-800 pt-16">
+    <div className="min-h-screen bg-[#FAFAFA] text-slate-800 pt-16 font-sans">
       <Header />
 
       <main className="grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-4 lg:space-y-6">

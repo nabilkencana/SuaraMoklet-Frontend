@@ -8,7 +8,7 @@ import Footer from "@/components/shared/Footer";
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-slate-800 flex flex-col pt-16">
+    <div className="min-h-screen bg-[#FAFAFA] text-slate-800 flex flex-col pt-16 font-sans">
       <Header />
 
       <main className="flex-grow max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8 mt-4">

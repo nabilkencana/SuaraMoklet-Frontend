@@ -1,24 +1,25 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import { ShieldCheck, MessageSquare } from "lucide-react";
 
 export default function AuthVisual() {
   return (
     <div className="relative w-full h-full min-h-[360px] lg:min-h-screen overflow-hidden group">
-      {/* Background Image with subtle scale-on-hover effect */}
-      <div className="absolute inset-0 transition-transform duration-1000 group-hover:scale-105">
-        <Image
-          src="/images/auth-bg.png"
-          alt="SuaraMoklet School Background"
-          fill
-          priority
-          sizes="(max-width: 1024px) 100vw, 55vw"
-          className="object-cover"
-        />
-        {/* Sleek Dark/Red Gradient Overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-neutral-950/20 lg:bg-gradient-to-r lg:from-neutral-950/60 lg:to-transparent" />
+      {/* Background Video with poster fallback */}
+      <div className="absolute inset-0 overflow-hidden">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          poster="/images/auth-bg.jpg"
+          className="w-full h-full object-cover scale-[1.02]"
+        >
+          <source src="/videos/DJI_0001.MP4" type="video/mp4" />
+        </video>
+        {/* Sleek Dark Gradient Overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/90 via-neutral-950/30 to-transparent lg:bg-gradient-to-r lg:from-neutral-950/50 lg:via-transparent lg:to-transparent" />
       </div>
 
       {/* Content Container (Bottom on mobile/desktop) */}

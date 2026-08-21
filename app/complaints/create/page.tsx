@@ -11,7 +11,7 @@ export default function CreateComplaintPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-slate-800 flex flex-col pt-16">
+    <div className="min-h-screen bg-[#FAFAFA] text-slate-800 flex flex-col pt-16 font-sans">
       <Header />
 
       {/* Back Button Bar */}

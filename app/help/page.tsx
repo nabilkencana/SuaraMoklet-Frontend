@@ -49,7 +49,7 @@ export default function HelpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-slate-800 flex flex-col pt-16">
+    <div className="min-h-screen bg-[#FAFAFA] text-slate-800 flex flex-col pt-16 font-sans">
       <Header />
 
       <main className="flex-grow max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8 py-10 space-y-8">
