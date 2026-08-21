@@ -148,7 +148,7 @@ export default function ComplaintForm({ onSuccessSubmit }: ComplaintFormProps) {
     const res = await createComplaint({
       title: data.title,
       description: finalDescription,
-      unit: data.unit as ComplaintUnit,
+      unit: data.unit,
       isAnonymous: data.isAnonymous,
       evidenceUrl: evidenceUrl || undefined,
     });
@@ -208,8 +208,8 @@ export default function ComplaintForm({ onSuccessSubmit }: ComplaintFormProps) {
               >
                 <option value="">Pilih Unit Kerja...</option>
                 {units.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
+                  <option key={u.id} value={u.id}>
+                    {u.name}
                   </option>
                 ))}
               </select>

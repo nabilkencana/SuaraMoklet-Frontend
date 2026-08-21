@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Complaint, CreateComplaintRequest, ComplaintUnit } from "@/types/complaint";
+import { Complaint, CreateComplaintRequest, ComplaintUnit, UnitModel } from "@/types/complaint";
 
 export function useComplaint(complaintId?: string, options?: { skipFetchUnits?: boolean }) {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [currentComplaint, setCurrentComplaint] = useState<Complaint | null>(null);
-  const [units, setUnits] = useState<ComplaintUnit[]>([]);
+  const [units, setUnits] = useState<UnitModel[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -53,17 +53,7 @@ export function useComplaint(complaintId?: string, options?: { skipFetchUnits?: 
       const { apiClient } = await import("@/lib/api");
       const data = await apiClient.units.getAll();
       if (Array.isArray(data)) {
-        // Map backend UnitModel name to frontend ComplaintUnit format
-        const mappedUnits = data.map((u: any) => {
-          if (u.name === "ISO") return "Umum" as ComplaintUnit;
-          if (u.name === "SARPRA") return "Sarpras" as ComplaintUnit;
-          if (u.name === "KURIKULUM") return "Kurikulum" as ComplaintUnit;
-          if (u.name === "KESISWAAN") return "Kesiswaan" as ComplaintUnit;
-          if (u.name === "HUBINKOM") return "Hubin" as ComplaintUnit;
-          if (u.name === "TATA_USAHA") return "Tata Usaha" as ComplaintUnit;
-          return u.name as ComplaintUnit;
-        });
-        setUnits(mappedUnits);
+        setUnits(data);
       }
     } catch (err: any) {
       console.error("Failed to fetch units list:", err);

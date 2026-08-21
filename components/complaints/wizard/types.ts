@@ -8,43 +8,18 @@ export const complaintSchema = z.object({
     .trim()
     .refine((val) => val.length > 0, "Deskripsi keluhan wajib diisi"),
   expectedOutput: z.string().optional(),
-  unit: z.enum([
-    "Umum",
-    "Umum (ISO)",
-    "Sarpras",
-    "Kurikulum",
-    "Kesiswaan",
-    "Hubin",
-    "Tata Usaha",
-  ] as const),
+  unit: z.string().min(1, "Harap pilih unit kerja yang berwenang"),
   isAnonymous: z.boolean(),
 });
 
 export type ComplaintFormData = z.infer<typeof complaintSchema>;
 
-export const UNIT_DETAILS = [
-  {
-    name: "Umum" as const,
-    desc: "Kebijakan mutu pelayanan, kritik operasional umum, tata kelola, dan koordinasi sekolah.",
-  },
-  {
-    name: "Sarpras" as const,
-    desc: "Kerusakan sarana prasarana sekolah, fasilitas kelas, AC/listrik, kebersihan, dan gedung.",
-  },
-  {
-    name: "Kurikulum" as const,
-    desc: "Proses pembelajaran kelas, jadwal pelajaran, kegiatan akademis, ujian/tes, dan rapor.",
-  },
-  {
-    name: "Kesiswaan" as const,
-    desc: "Tata tertib, kedisiplinan siswa, beasiswa, ekstrakurikuler, OSIS/MPK, dan pembinaan karakter.",
-  },
-  {
-    name: "Hubin" as const,
-    desc: "Kerjasama luar, program magang/PKL, kunjungan industri, dan hubungan alumni/karir.",
-  },
-  {
-    name: "Tata Usaha" as const,
-    desc: "Surat-menyurat, legalisir ijazah/rapor, kartu pelajar, keuangan, dan dokumen administrasi.",
-  },
-];
+export const getFallbackUnitDescription = (unitName: string) => {
+  const norm = unitName.toLowerCase();
+  if (norm.includes("kurikulum")) return "Proses pembelajaran kelas, jadwal pelajaran, kegiatan akademis, ujian/tes, dan rapor.";
+  if (norm.includes("kesiswaan")) return "Tata tertib, kedisiplinan siswa, beasiswa, ekstrakurikuler, OSIS/MPK, dan pembinaan karakter.";
+  if (norm.includes("humas") || norm.includes("hubin")) return "Kerjasama luar, program magang/PKL, kunjungan industri, dan hubungan alumni/karir.";
+  if (norm.includes("sarpras")) return "Kerusakan sarana prasarana sekolah, fasilitas kelas, AC/listrik, kebersihan, dan gedung.";
+  if (norm.includes("tata usaha") || norm.includes("tu")) return "Surat-menyurat, legalisir ijazah/rapor, kartu pelajar, keuangan, dan dokumen administrasi.";
+  return "Kebijakan operasional umum, tata kelola, dan koordinasi manajemen sekolah.";
+};

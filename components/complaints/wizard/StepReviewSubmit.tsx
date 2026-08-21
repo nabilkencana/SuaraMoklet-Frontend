@@ -5,14 +5,14 @@ import { ComplaintFormData } from "./types";
 interface StepReviewSubmitProps {
   register: UseFormRegister<ComplaintFormData>;
   watchedTitle: string;
-  watchedUnit: string;
+  watchedUnitName: string;
   watchedIsAnonymous: boolean;
 }
 
 export default function StepReviewSubmit({
   register,
   watchedTitle,
-  watchedUnit,
+  watchedUnitName,
   watchedIsAnonymous,
 }: StepReviewSubmitProps) {
   return (
@@ -60,7 +60,7 @@ export default function StepReviewSubmit({
                 Unit Sekolah
               </span>
               <span className="text-sm font-semibold text-slate-700 mt-0.5 block">
-                {watchedUnit}
+                {watchedUnitName || "-"}
               </span>
             </div>
             <div>

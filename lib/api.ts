@@ -33,10 +33,22 @@ export interface RegisterResponse {
 // ─── Mapper Helpers ───────────────────────────────────────────────────────────
 
 export function mapFrontendUnitToBackend(unit: string): string {
+  if (unit === "Umum" || unit === "Umum (ISO)") return "ISO";
+  if (unit === "Sarpras") return "SARPRA";
+  if (unit === "Kurikulum") return "KURIKULUM";
+  if (unit === "Kesiswaan") return "KESISWAAN";
+  if (unit === "Hubin") return "HUBINKOM";
+  if (unit === "Tata Usaha") return "TATA_USAHA";
   return unit;
 }
 
 export function mapBackendUnitToFrontend(name: string): ComplaintUnit {
+  if (name === "ISO") return "Umum" as ComplaintUnit;
+  if (name === "SARPRA") return "Sarpras" as ComplaintUnit;
+  if (name === "KURIKULUM") return "Kurikulum" as ComplaintUnit;
+  if (name === "KESISWAAN") return "Kesiswaan" as ComplaintUnit;
+  if (name === "HUBINKOM") return "Hubin" as ComplaintUnit;
+  if (name === "TATA_USAHA") return "Tata Usaha" as ComplaintUnit;
   return name as ComplaintUnit;
 }
 
@@ -298,24 +310,11 @@ export const complaintsApi = {
   },
 
   create: async (data: CreateComplaintRequest): Promise<Complaint> => {
-    let unitId: string | undefined;
-    if (data.unit) {
-      try {
-        const units = await unitsApi.getAll();
-        const mappedName = mapFrontendUnitToBackend(data.unit);
-        const matched = units.find((u) => u.name === mappedName);
-        if (matched) {
-          unitId = matched.id;
-        }
-      } catch (err) {
-        console.error("Failed to map unit to unitId:", err);
-      }
-    }
     const payload = {
       title: data.title,
       content: data.description,
       isAnonymous: data.isAnonymous,
-      unitId,
+      unitId: data.unit, // unit is now unitId from the form
       evidenceUrl: data.evidenceUrl,
     };
     const response = await api.post<any>("/complaints", payload);
@@ -369,8 +368,14 @@ export const complaintsApi = {
   getAdminDetail: async (id: string): Promise<any> => {
     const response = await api.get<any>(`/complaints/${id}/detail-admin`);
     return response.data;
+  },
+
+  getLandingStats: async (): Promise<{ total: number; resolved: number }> => {
+    const response = await api.get<{ total: number; resolved: number }>("/complaints/overview");
+    return response.data;
   }
 };
+
 
 export const commentsApi = {
   getByComplaintId: async (complaintId: string): Promise<Comment[]> => {

@@ -21,7 +21,7 @@ import StepReviewSubmit from "./wizard/StepReviewSubmit";
 export default function ComplaintWizard() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
-  const { createComplaint } = useComplaint(undefined, { skipFetchUnits: true });
+  const { createComplaint, units } = useComplaint();
 
   // File Upload State
   const [file, setFile] = useState<File | null>(null);
@@ -215,6 +215,7 @@ export default function ComplaintWizard() {
             register={register}
             errors={errors}
             watchedUnit={watchedUnit}
+            units={units}
           />
         </Step>
 
@@ -237,7 +238,7 @@ export default function ComplaintWizard() {
           <StepReviewSubmit
             register={register}
             watchedTitle={watchedTitle}
-            watchedUnit={watchedUnit}
+            watchedUnitName={units.find((u) => u.id === watchedUnit)?.name || ""}
             watchedIsAnonymous={watchedIsAnonymous}
           />
         </Step>

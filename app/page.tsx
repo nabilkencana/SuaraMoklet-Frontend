@@ -24,7 +24,7 @@ export default function LandingPage() {
   const [trendingComplaints, setTrendingComplaints] = useState<ComplaintCardData[]>([]);
   const [latestComplaints, setLatestComplaints] = useState<ComplaintCardData[]>([]);
   const [isLoadingComplaints, setIsLoadingComplaints] = useState(true);
-  const [summaryStats, setSummaryStats] = useState({ total: 0, resolved: 0, avgRating: 0 });
+  const [summaryStats, setSummaryStats] = useState({ total: 0, resolved: 0 });
 
   const handleStartPetition = (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,12 +106,13 @@ export default function LandingPage() {
         // 2. Latest sorted by date
         setLatestComplaints(mapped.slice(0, 4));
 
-        // 3. Compute summary stats from public data
-        const resolved = mapped.filter((c) => (c.status as string) === "CLOSED").length;
-        const totalSupports = mapped.reduce((sum, c) => sum + (c.supports || 0), 0);
-        const avgRating =
-          mapped.length > 0 ? Math.round((totalSupports / mapped.length) * 10) / 10 : 0;
-        setSummaryStats({ total: mapped.length, resolved, avgRating });
+        // 3. Fetch summary stats from backend
+        try {
+          const stats = await apiClient.complaints.getLandingStats();
+          setSummaryStats({ total: stats.total, resolved: stats.resolved });
+        } catch (statsErr) {
+          console.error("Failed to load landing stats:", statsErr);
+        }
       } catch (err) {
         console.error("Failed to load public complaints:", err);
       } finally {
