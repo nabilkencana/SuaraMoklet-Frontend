@@ -5,6 +5,7 @@ export interface DashboardStats {
   totalCount: number;
   unreadNotifications: number;
   resolutionRate: number; // percentage of complaints resolved e.g. 75
+  averageRating?: number;
   newCount?: number;
   byUnit?: Array<{
     unitId: string;

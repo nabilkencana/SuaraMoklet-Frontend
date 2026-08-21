@@ -478,8 +478,9 @@ export const statsApi = {
       const totalCount = data.global?.totalComplaints || 0;
       const resolvedCount = data.byStatus?.DONE || 0;
       const activeCount = totalCount - resolvedCount;
-      const pendingCount = (data.byStatus?.WAITING_RESPONSE || 0) + (data.byStatus?.WAITING_USER || 0);
+      const pendingCount = (data.byStatus?.NEW || 0) + (data.byStatus?.OPEN || 0);
       const resolutionRate = totalCount > 0 ? Math.round((resolvedCount / totalCount) * 100) : 0;
+      const averageRating = data.global?.averageRating || 0;
 
       let unreadNotifications = 0;
       try {
@@ -499,6 +500,7 @@ export const statsApi = {
         totalCount,
         unreadNotifications,
         resolutionRate,
+        averageRating,
         newCount,
         byUnit,
       };

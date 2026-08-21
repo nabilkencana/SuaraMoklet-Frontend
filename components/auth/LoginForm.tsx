@@ -48,9 +48,13 @@ export default function LoginForm() {
   useEffect(() => {
     if (isAuthenticated) {
       const isUnitOrAdmin = user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC";
+      const isUser = user?.role === "USER";
       let finalRedirect = redirectUrl;
       if (isUnitOrAdmin && (redirectUrl === "/dashboard" || redirectUrl === "/complaints" || redirectUrl === "/unit" || redirectUrl === "/unit/complaints" || redirectUrl === "/")) {
-        finalRedirect = "/";
+        finalRedirect = "/dashboard";
+      } else if (isUser && redirectUrl === "/") {
+        // Default role USER (selaras dengan proxy.ts ROLE_DEFAULT_REDIRECT)
+        finalRedirect = "/complaints";
       }
       router.replace(finalRedirect);
     }
@@ -60,7 +64,7 @@ export default function LoginForm() {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-red-600" />
-        <span className="text-xs text-neutral-400 font-medium">Mengalihkan ke Beranda...</span>
+        <span className="text-xs text-neutral-400 font-medium">Mengalihkan ke Dashboard...</span>
       </div>
     );
   }
@@ -77,9 +81,13 @@ export default function LoginForm() {
         description: "Login berhasil.",
       });
       const isUnitOrAdmin = response.user.role === "UNIT_PIC" || response.user.role === "UNIT_MEMBER" || response.user.role === "SUPERADMIN" || response.user.role === "SUPER_PIC";
+      const isUser = response.user.role === "USER";
       let finalRedirect = redirectUrl;
       if (isUnitOrAdmin && (redirectUrl === "/dashboard" || redirectUrl === "/complaints" || redirectUrl === "/unit" || redirectUrl === "/unit/complaints" || redirectUrl === "/")) {
-        finalRedirect = "/";
+        finalRedirect = "/dashboard";
+      } else if (isUser && redirectUrl === "/") {
+        // Default role USER (selaras dengan proxy.ts ROLE_DEFAULT_REDIRECT)
+        finalRedirect = "/complaints";
       }
       router.push(finalRedirect);
       router.refresh();

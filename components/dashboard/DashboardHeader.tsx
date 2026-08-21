@@ -21,6 +21,7 @@ export default function DashboardHeader({ onToggleSidebar }: DashboardHeaderProp
       {/* Mobile menu trigger */}
       <button
         onClick={onToggleSidebar}
+        aria-label="Buka menu navigasi sidebar"
         className="h-9 w-9 flex items-center justify-center rounded-xl bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm cursor-pointer shrink-0"
       >
         <Menu className="h-5 w-5 text-slate-600" />
