@@ -14,6 +14,8 @@ interface CreditMember {
   image: string;
   bgClass?: string;
   imagePosition?: string;
+  imageScale?: number;
+  transformOrigin?: string;
   socials?: {
     website?: string;
     github?: string;
@@ -24,22 +26,31 @@ interface CreditMember {
 
 function CreditCard({ item }: { item: CreditMember }) {
   const hasSocials = Object.values(item.socials || {}).some(Boolean);
+  const baseScale = item.imageScale || 1;
 
   return (
     <div className="flex flex-col items-center group cursor-default w-full">
-      {/* Square Image Card Wrapper */}
+      {/* Portrait Image Card Wrapper — Enlarged to 4:5 with smooth lift & shadow on hover */}
       <div
-        className={`w-full aspect-square relative overflow-hidden rounded-2xl shadow-md border border-slate-200/80 ${
-          item.bgClass || "bg-slate-900"
+        className={`w-full aspect-[4/5] relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-md border border-slate-200/80 transition-all duration-400 ease-out group-hover:-translate-y-1.5 group-hover:shadow-2xl group-hover:border-slate-300 ${
+          item.bgClass || "bg-slate-100"
         }`}
       >
-        <img
-          src={item.image}
-          alt={item.name}
-          className={`w-full h-full object-cover ${
-            item.imagePosition || "object-top"
-          } group-hover:scale-105 transition-transform duration-500`}
-        />
+        {/* Base Scaling Wrapper for framing correction */}
+        <div
+          className="w-full h-full overflow-hidden"
+          style={{
+            transform: baseScale !== 1 ? `scale(${baseScale})` : undefined,
+            transformOrigin: item.transformOrigin || "center 50%",
+          }}
+        >
+          <img
+            src={item.image}
+            alt={item.name}
+            style={item.imagePosition ? { objectPosition: item.imagePosition } : { objectPosition: "center top" }}
+            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-108"
+          />
+        </div>
 
         {/* Social Overlay on Hover */}
         {hasSocials && (
@@ -112,13 +123,13 @@ function CreditCard({ item }: { item: CreditMember }) {
 
       {/* Text Block below Image (Ref Image Style) */}
       <div className="text-center mt-5 space-y-1 w-full px-1">
-        <h2 className="text-base sm:text-lg md:text-lg lg:text-xl xl:text-2xl font-black text-slate-900 tracking-tight uppercase leading-tight font-sans whitespace-nowrap">
+        <h2 className="text-base sm:text-lg md:text-lg lg:text-xl xl:text-2xl font-black text-slate-900 tracking-tight uppercase leading-tight font-sans">
           {item.name}
         </h2>
         <p className="text-xs sm:text-sm font-bold text-slate-800 leading-snug">
           {item.role}
         </p>
-        <p className="text-xs text-slate-400 font-normal leading-relaxed max-w-xs mx-auto italic mt-1">
+        <p className="text-xs text-slate-500 font-normal leading-relaxed max-w-xs mx-auto italic mt-1">
           {item.description}
         </p>
       </div>
@@ -134,8 +145,10 @@ export default function CreditsPage() {
       role: '"Project Supervisor"',
       description: "Pembimbing & Pengarah Pengembangan Sistem SuaraMoklet",
       image: "/images/pembimbing-1.png",
-      bgClass: "bg-slate-900",
-      imagePosition: "object-top",
+      bgClass: "bg-slate-100",
+      imagePosition: "center 10%",
+      imageScale: 1.2,
+      transformOrigin: "center 10%",
     },
     {
       id: "pembimbing-2",
@@ -143,8 +156,8 @@ export default function CreditsPage() {
       role: '"Technical Mentor"',
       description: "Pembimbing Teknis & Konsultan Arsitektur Perangkat Lunak",
       image: "/images/pembimbing-2.png",
-      bgClass: "bg-slate-900",
-      imagePosition: "object-top",
+      bgClass: "bg-slate-100",
+      imagePosition: "center 15%",
     },
     {
       id: "pembimbing-3",
@@ -152,8 +165,8 @@ export default function CreditsPage() {
       role: '"Product & Quality Advisor"',
       description: "Penasihat Mutu Produk & Kualitas Alur Pengaduan Sekolah",
       image: "/images/pembimbing-3.png",
-      bgClass: "bg-slate-900",
-      imagePosition: "object-top",
+      bgClass: "bg-slate-100",
+      imagePosition: "center 12%",
     },
   ];
 
@@ -165,8 +178,8 @@ export default function CreditsPage() {
       description:
         "Pengembang Utama Antarmuka, Animasi & UI Design System SuaraMoklet",
       image: "/images/nabilkencana.jpg",
-      bgClass: "bg-slate-900",
-      imagePosition: "object-center",
+      bgClass: "bg-slate-100",
+      imagePosition: "center 55%",
       socials: {
         website: "https://canadev.my.id",
         github: "https://github.com/nabilkencana",
@@ -179,10 +192,10 @@ export default function CreditsPage() {
       name: "Alfareza",
       role: '"Backend Developer"',
       description:
-        "Backend Developer sekaligus Pembuat Folder suaramoklet-backend",
+        "Pengembang Utama Arsitektur Backend, Integrasi RESTful API & Basis Data SuaraMoklet",
       image: "/images/alfareza.jpg",
-      bgClass: "bg-slate-900",
-      imagePosition: "object-center",
+      bgClass: "bg-slate-100",
+      imagePosition: "center 75%",
       socials: {
         website: "https://www.alfareza.site",
         github: "https://github.com/Alfareza-dev",
