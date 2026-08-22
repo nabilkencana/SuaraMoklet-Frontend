@@ -32,7 +32,7 @@ function CreditCard({ item }: { item: CreditMember }) {
     <div className="flex flex-col items-center group cursor-default w-full">
       {/* Portrait Image Card Wrapper — Enlarged to 4:5 with smooth lift & shadow on hover */}
       <div
-        className={`w-full aspect-[4/5] relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-md border border-slate-200/80 transition-all duration-400 ease-out group-hover:-translate-y-1.5 group-hover:shadow-2xl group-hover:border-slate-300 ${
+        className={`w-full aspect-4/5 relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-md border border-slate-200/80 transition-all duration-400 ease-out group-hover:-translate-y-1.5 group-hover:shadow-2xl group-hover:border-slate-300 ${
           item.bgClass || "bg-slate-100"
         }`}
       >
@@ -189,7 +189,7 @@ export default function CreditsPage() {
     },
     {
       id: "alfareza",
-      name: "Alfareza",
+      name: "Alfareza Hans",
       role: '"Backend Developer"',
       description:
         "Pengembang Utama Arsitektur Backend, Integrasi RESTful API & Basis Data SuaraMoklet",

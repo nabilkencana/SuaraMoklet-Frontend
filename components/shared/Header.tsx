@@ -115,8 +115,8 @@ export default function Header() {
             className={cn(
               "flex items-center justify-between transition-all duration-400 ease-out",
               scrolled
-                ? "h-[54px] px-5 lg:px-6 gap-3.5 lg:gap-5"
-                : "h-[62px] px-6 lg:px-8 gap-5 lg:gap-7"
+                ? "h-13.5 px-5 lg:px-6 gap-3.5 lg:gap-5"
+                : "h-15.5 px-6 lg:px-8 gap-5 lg:gap-7"
             )}
           >
             {/* Brand Logo & Name */}
@@ -219,10 +219,10 @@ export default function Header() {
                         : "border-slate-200/70 bg-white/60 hover:bg-white hover:border-slate-300 shadow-xs"
                     )}
                   >
-                    <div className="h-7 w-7 rounded-full bg-gradient-to-br from-red-500 to-red-700 text-white flex items-center justify-center font-black text-xs uppercase shadow-sm shrink-0">
+                    <div className="h-7 w-7 rounded-full bg-linear-to-br from-red-500 to-red-700 text-white flex items-center justify-center font-black text-xs uppercase shadow-sm shrink-0">
                       {user.name.charAt(0)}
                     </div>
-                    <span className="text-[13px] font-bold text-slate-800 truncate max-w-[5.5rem]">
+                    <span className="text-[13px] font-bold text-slate-800 truncate max-w-22">
                       {user.name}
                     </span>
                   </Link>
@@ -298,7 +298,7 @@ export default function Header() {
           )}
         >
           {/* Island Header Row */}
-          <div className="h-[52px] px-4 flex items-center justify-between shrink-0">
+          <div className="h-13 px-4 flex items-center justify-between shrink-0">
             <Link
               href="/"
               className="flex items-center gap-2.5 select-none group shrink-0 min-w-0"
@@ -440,7 +440,7 @@ export default function Header() {
                   <div className="space-y-1 pt-1">
                     {/* User Profile Summary */}
                     <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 text-white flex items-center justify-center font-black text-xs uppercase shadow-xs shrink-0">
+                      <div className="h-8 w-8 rounded-full bg-linear-to-br from-red-500 to-red-700 text-white flex items-center justify-center font-black text-xs uppercase shadow-xs shrink-0">
                         {user.name.charAt(0)}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -505,7 +505,7 @@ export default function Header() {
       </div>
 
       {/* Spacer so content doesn't hide under mobile floating Dynamic Island */}
-      <div className="h-[68px] md:hidden" />
+      <div className="h-17 md:hidden" />
     </>
   );
 }

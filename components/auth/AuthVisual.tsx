@@ -5,7 +5,7 @@ import { ShieldCheck, MessageSquare } from "lucide-react";
 
 export default function AuthVisual() {
   return (
-    <div className="relative w-full h-full min-h-[360px] lg:min-h-screen overflow-hidden group">
+    <div className="relative w-full h-full min-h-90 lg:min-h-screen overflow-hidden group">
       {/* Background Video with poster fallback */}
       <div className="absolute inset-0 overflow-hidden">
         <video
@@ -19,13 +19,13 @@ export default function AuthVisual() {
           <source src="/videos/DJI_0001.MP4" type="video/mp4" />
         </video>
         {/* Sleek Dark Gradient Overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/90 via-neutral-950/30 to-transparent lg:bg-gradient-to-r lg:from-neutral-950/50 lg:via-transparent lg:to-transparent" />
+        <div className="absolute inset-0 bg-linear-to-t from-neutral-950/90 via-neutral-950/30 to-transparent lg:bg-linear-to-r lg:from-neutral-950/50 lg:via-transparent lg:to-transparent" />
       </div>
 
       {/* Content Container (Bottom on mobile/desktop) */}
       <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-12 lg:p-16 z-10">
         {/* Floating Glass Card */}
-        <div className="max-w-md w-full backdrop-blur-md bg-neutral-950/40 border border-white/15 rounded-2xl p-6 md:p-8 shadow-2xl text-white transform transition-all duration-500 hover:translate-y-[-4px] hover:border-white/30">
+        <div className="max-w-md w-full backdrop-blur-md bg-neutral-950/40 border border-white/15 rounded-2xl p-6 md:p-8 shadow-2xl text-white transform transition-all duration-500 hover:-translate-y-1 hover:border-white/30">
           <div className="flex items-center gap-2 mb-3.5">
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-red-600 text-white shadow-sm shadow-red-600/20">
               <ShieldCheck className="h-4 w-4" />

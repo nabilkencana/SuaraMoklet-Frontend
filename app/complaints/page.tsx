@@ -29,7 +29,7 @@ export default function MyComplaintsPage() {
     <div className="min-h-screen bg-[#FAFAFA] text-slate-800 flex flex-col pt-16 font-sans">
       <Header />
 
-      <main className="flex-grow p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+      <main className="grow p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div className="space-y-1">
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-800">
