@@ -10,7 +10,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-[#FAFAFA] text-slate-800 flex flex-col pt-16 font-sans">
       <Header />
 
-      <main className="flex-grow p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto py-10">
+      <main className="grow p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto py-10">
         <ProfileContainer />
       </main>
 
