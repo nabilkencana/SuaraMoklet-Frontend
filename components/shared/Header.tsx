@@ -68,8 +68,13 @@ export default function Header() {
     return pathname === href || pathname?.startsWith(href + "/");
   };
 
-  // Dynamic max width on desktop for notch compactness
-  const targetMaxWidth = scrolled ? 820 : 1060;
+  // Dynamic max width on desktop for notch compactness with ample room for logged in users
+  const isPrivileged = mounted && isAuthenticated && user && user.role !== "USER";
+  const targetMaxWidth = !mounted || !isAuthenticated
+    ? (scrolled ? 860 : 1060)
+    : isPrivileged
+    ? (scrolled ? 1160 : 1240)
+    : (scrolled ? 1040 : 1160);
 
   return (
     <>
@@ -108,37 +113,37 @@ export default function Header() {
             boxShadow: { duration: 0.35 },
           }}
           className={cn(
-            "w-full pointer-events-auto backdrop-blur-xl border border-t-0 select-none overflow-hidden"
+            "w-full pointer-events-auto backdrop-blur-xl border border-t-0 select-none relative"
           )}
         >
           <div
             className={cn(
               "flex items-center justify-between transition-all duration-400 ease-out",
               scrolled
-                ? "h-13.5 px-5 lg:px-6 gap-3.5 lg:gap-5"
-                : "h-15.5 px-6 lg:px-8 gap-5 lg:gap-7"
+                ? "h-13.5 px-4 lg:px-6 gap-2 lg:gap-4"
+                : "h-15.5 px-5 lg:px-7 gap-3 lg:gap-6"
             )}
           >
             {/* Brand Logo & Name */}
             <Link
               href="/"
               className={cn(
-                "flex items-center gap-2.5 border-r border-slate-200/60 shrink-0 group select-none transition-all duration-300",
-                scrolled ? "pr-3.5 lg:pr-4" : "pr-5 lg:pr-6"
+                "flex items-center gap-2 border-r border-slate-200/60 shrink-0 group select-none transition-all duration-300",
+                scrolled ? "pr-3 lg:pr-4" : "pr-4 lg:pr-5"
               )}
             >
               <img
                 src="/logo.png"
                 alt="Logo SuaraMoklet"
                 className={cn(
-                  "object-contain transition-transform duration-200 group-hover:scale-105",
+                  "object-contain transition-transform duration-200 group-hover:scale-105 shrink-0",
                   scrolled ? "h-6.5 w-6.5" : "h-7.5 w-7.5"
                 )}
               />
               <span
                 className={cn(
-                  "font-extrabold tracking-tight text-slate-900 group-hover:text-red-600 transition-all",
-                  scrolled ? "text-[15px]" : "text-[16px]"
+                  "font-extrabold tracking-tight text-slate-900 group-hover:text-red-600 transition-all shrink-0",
+                  scrolled ? "text-[14.5px]" : "text-[15.5px]"
                 )}
               >
                 Suara<span className="text-red-600">Moklet</span>
@@ -146,7 +151,7 @@ export default function Header() {
             </Link>
 
             {/* Nav Links */}
-            <nav className="flex items-center gap-0.5" aria-label="Navigasi Utama">
+            <nav className="flex items-center gap-0.5 shrink-0" aria-label="Navigasi Utama">
               {links.map(({ label, href }) => {
                 const active = isActive(href);
                 return (
@@ -154,8 +159,8 @@ export default function Header() {
                     key={href}
                     href={href}
                     className={cn(
-                      "flex items-center rounded-full font-semibold transition-all duration-200",
-                      scrolled ? "h-8 px-3 text-[13px]" : "h-9 px-4 text-[14px]",
+                      "flex items-center rounded-full font-semibold transition-all duration-200 shrink-0",
+                      scrolled ? "h-8 px-2.5 lg:px-3 text-xs lg:text-[13px]" : "h-9 px-3 lg:px-3.5 text-xs lg:text-[13.5px]",
                       active
                         ? "bg-red-600/10 text-red-600 font-bold shadow-xs shadow-red-500/5"
                         : "text-slate-600 hover:text-red-600 hover:bg-red-50/70"
@@ -168,12 +173,12 @@ export default function Header() {
             </nav>
 
             {/* Right Controls: Search, Kelola, Notif, Profile / Login */}
-            <div className="flex items-center gap-2 pl-1 shrink-0">
+            <div className="flex items-center gap-1.5 lg:gap-2 shrink-0">
               {/* Search Box */}
               <form
                 onSubmit={handleSearch}
                 className={cn(
-                  "flex items-center bg-slate-100/70 hover:bg-slate-100 focus-within:bg-white rounded-full border border-slate-200/70 focus-within:border-red-400/80 focus-within:ring-2 focus-within:ring-red-500/15 transition-all duration-200",
+                  "flex items-center bg-slate-100/70 hover:bg-slate-100 focus-within:bg-white rounded-full border border-slate-200/70 focus-within:border-red-400/80 focus-within:ring-2 focus-within:ring-red-500/15 transition-all duration-200 shrink-0",
                   scrolled ? "px-2.5 py-1" : "px-3 py-1.5"
                 )}
               >
@@ -184,8 +189,8 @@ export default function Header() {
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Cari..."
                   className={cn(
-                    "bg-transparent border-none outline-none ring-0 text-[13px] font-medium text-slate-800 placeholder:text-slate-400 ml-1.5 transition-all duration-300",
-                    scrolled ? "w-20 focus:w-32" : "w-24 focus:w-36"
+                    "bg-transparent border-none outline-none ring-0 text-xs lg:text-[13px] font-medium text-slate-800 placeholder:text-slate-400 ml-1.5 transition-all duration-300",
+                    scrolled ? "w-16 focus:w-28 lg:w-20 lg:focus:w-32" : "w-18 focus:w-32 lg:w-24 lg:focus:w-36"
                   )}
                 />
               </form>
@@ -195,40 +200,40 @@ export default function Header() {
                 <Link
                   href="/dashboard"
                   className={cn(
-                    "h-8 px-3 flex items-center gap-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer shrink-0",
+                    "h-8 px-2.5 lg:px-3 flex items-center gap-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer shrink-0",
                     pathname === "/dashboard"
                       ? "bg-red-600 text-white border-red-600 shadow-sm"
                       : "bg-red-50 text-red-600 border-red-100 hover:bg-red-100"
                   )}
                 >
-                  <Settings className="h-3.5 w-3.5" style={{ animation: "spin 8s linear infinite" }} />
+                  <Settings className="h-3.5 w-3.5 shrink-0" style={{ animation: "spin 8s linear infinite" }} />
                   <span>Kelola</span>
                 </Link>
               )}
 
               {/* Notification & User Profile / Login Button */}
               {mounted && isAuthenticated && user ? (
-                <div className="flex items-center gap-2 ml-0.5">
+                <div className="flex items-center gap-1.5 lg:gap-2 shrink-0">
                   <NotificationBell />
                   <Link
                     href="/profile"
                     className={cn(
-                      "flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border transition-all",
+                      "flex items-center gap-1.5 lg:gap-2 pl-1 pr-2.5 lg:pr-3 py-1 rounded-full border transition-all shrink-0",
                       pathname === "/profile"
                         ? "border-red-200 bg-red-50"
                         : "border-slate-200/70 bg-white/60 hover:bg-white hover:border-slate-300 shadow-xs"
                     )}
                   >
-                    <div className="h-7 w-7 rounded-full bg-linear-to-br from-red-500 to-red-700 text-white flex items-center justify-center font-black text-xs uppercase shadow-sm shrink-0">
-                      {user.name.charAt(0)}
+                    <div className="h-6.5 w-6.5 lg:h-7 lg:w-7 rounded-full bg-linear-to-br from-red-500 to-red-700 text-white flex items-center justify-center font-black text-xs uppercase shadow-sm shrink-0">
+                      {user.name?.charAt(0) || "U"}
                     </div>
-                    <span className="text-[13px] font-bold text-slate-800 truncate max-w-22">
+                    <span className="text-xs lg:text-[13px] font-bold text-slate-800 truncate max-w-18 lg:max-w-28">
                       {user.name}
                     </span>
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="h-8 w-8 flex items-center justify-center rounded-full border border-slate-200/70 bg-white/60 text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all cursor-pointer"
+                    className="h-8 w-8 flex items-center justify-center rounded-full border border-slate-200/70 bg-white/60 text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all cursor-pointer shrink-0"
                     title="Keluar"
                   >
                     <LogOut className="h-3.5 w-3.5" />
@@ -238,8 +243,8 @@ export default function Header() {
                 <button
                   onClick={() => router.push("/login")}
                   className={cn(
-                    "rounded-full bg-red-600 hover:bg-red-700 text-white font-bold transition-all shadow-xs hover:shadow-red-500/25 flex items-center gap-1.5 cursor-pointer active:scale-95",
-                    scrolled ? "h-8 px-4 text-[13px]" : "h-9 px-5 text-[14px]"
+                    "rounded-full bg-red-600 hover:bg-red-700 text-white font-bold transition-all shadow-xs hover:shadow-red-500/25 flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0",
+                    scrolled ? "h-8 px-3.5 text-xs lg:text-[13px]" : "h-9 px-4 lg:px-5 text-xs lg:text-[14px]"
                   )}
                 >
                   Masuk
