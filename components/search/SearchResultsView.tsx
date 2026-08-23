@@ -132,31 +132,10 @@ export default function SearchResultsView({
                 </span>
               </div>
 
-              {/* Status filter list */}
-              <div className="space-y-2">
-                <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  STATUS LAPORAN
-                </span>
-                <div className="space-y-1">
-                  {STATUSES.map((st) => (
-                    <button
-                      key={st.value}
-                      onClick={() => onStatusChange(st.value)}
-                      className={cn(
-                        "w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer",
-                        selectedStatus === st.value
-                          ? "bg-red-50 text-red-600 font-bold"
-                          : "text-slate-600 hover:bg-slate-100/50 hover:text-slate-800"
-                      )}
-                    >
-                      {st.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+
 
               {/* Topic checklist filter */}
-              <div className="space-y-2 pt-3 border-t border-slate-200">
+              <div className="space-y-2">
                 <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                   KATEGORI TOPIK
                 </span>

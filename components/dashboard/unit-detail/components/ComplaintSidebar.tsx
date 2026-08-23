@@ -7,11 +7,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Complaint } from "@/types/complaint";
+import { Comment } from "@/types/comment";
 
 interface ComplaintSidebarProps {
   complaint: Complaint;
   user: any;
   isTimelineExpanded: boolean;
+  comments?: Comment[];
+  autoCloseDays?: number;
   onToggleTimeline: () => void;
   onOpenProcessModal: () => void;
   onOpenForwardModal: () => void;
@@ -23,6 +26,8 @@ export default function ComplaintSidebar({
   complaint,
   user,
   isTimelineExpanded,
+  comments = [],
+  autoCloseDays = 7,
   onToggleTimeline,
   onOpenProcessModal,
   onOpenForwardModal,
@@ -61,7 +66,35 @@ export default function ComplaintSidebar({
     dotClass = "bg-emerald-500";
   }
 
+  // Auto Close Logic
+  let autoCloseWarning = null;
+  if (complaint.status === "OPEN" && comments.length > 0) {
+    const lastComment = comments[comments.length - 1];
+    // Hanya tampilkan peringatan jika pesan terakhir adalah dari Admin/Unit
+    if (lastComment.isPic || (lastComment as any).comment_by === "ADMIN") {
+      const now = new Date();
+      const lastCommentDate = new Date(lastComment.createdAt);
+      const hoursSinceLastMessage = (now.getTime() - lastCommentDate.getTime()) / (1000 * 60 * 60);
+
+      if (hoursSinceLastMessage >= 24) {
+        const deadlineDate = new Date(lastCommentDate);
+        deadlineDate.setDate(deadlineDate.getDate() + autoCloseDays);
+        
+        const formattedDeadline = deadlineDate.toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        autoCloseWarning = `Laporan akan ditutup pada ${formattedDeadline} jika ${complaint.reporter?.name || "Pelapor"} tidak merespons.`;
+      }
+    }
+  }
+
   const timelineList = (isTimelineExpanded ? complaint.timeline : complaint.timeline?.slice(0, 3)) || [];
+  const forwardCount = (complaint.timeline || []).filter(t => t.title?.includes('Diteruskan')).length;
 
   return (
     <div className="space-y-6">
@@ -106,6 +139,18 @@ export default function ComplaintSidebar({
               </span>
               <p className="text-xs font-semibold whitespace-pre-wrap">
                 {complaint.resolution}
+              </p>
+            </div>
+          )}
+          
+          {/* Auto Close Warning */}
+          {autoCloseWarning && (
+            <div className="mt-3 pt-3 border-t border-amber-200/50 text-left">
+              <span className="block text-[9.5px] font-bold text-red-600 uppercase tracking-widest mb-1">
+                Peringatan Auto-Close
+              </span>
+              <p className="text-[10px] font-semibold text-slate-600 leading-tight">
+                {autoCloseWarning}
               </p>
             </div>
           )}
@@ -165,11 +210,18 @@ export default function ComplaintSidebar({
 
           {/* Forward */}
           <button
+            disabled={forwardCount >= 3}
             onClick={onOpenForwardModal}
-            className="w-full h-11 bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-bold rounded-xl border border-slate-200/80 flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]"
+            title={forwardCount >= 3 ? "Forward laporan telah mencapai batas maks 3x jika terjadi kesalahan silahkan laporkan ke unit iso." : ""}
+            className={cn(
+              "w-full h-11 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98]",
+              forwardCount >= 3
+                ? "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed opacity-70"
+                : "bg-slate-100 hover:bg-slate-200/80 text-slate-700 border-slate-200/80"
+            )}
           >
-            <Share2 className="h-4 w-4 text-slate-500" />
-            <span>Teruskan (Forward)</span>
+            <Share2 className={cn("h-4 w-4", forwardCount >= 3 ? "text-slate-400" : "text-slate-500")} />
+            <span>Teruskan (Forward) {forwardCount >= 3 ? "(Maks)" : ""}</span>
           </button>
 
           {/* Tutup / Reopen */}

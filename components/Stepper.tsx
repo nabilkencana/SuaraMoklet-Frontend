@@ -154,6 +154,7 @@ export default function Stepper({
                 </button>
               )}
               <button
+                id="stepper-next-button"
                 onClick={isLastStep ? handleComplete : handleNext}
                 className="duration-200 flex items-center justify-center rounded-xl bg-red-650 px-6 py-2.5 font-bold text-xs sm:text-sm text-white shadow-md shadow-red-100 hover:bg-red-700 active:scale-[0.98] transition cursor-pointer"
                 {...nextButtonProps}

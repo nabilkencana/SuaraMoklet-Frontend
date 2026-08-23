@@ -26,11 +26,7 @@ const FAQ_DATA: FaqItem[] = [
     answer:
       "Setiap laporan baru (NEW) akan langsung masuk ke dashboard Unit Kerja terkait (seperti Sarpras atau Kesiswaan) dan diproses (OPEN). Anda dapat memantau progres penanganan secara transparan melalui linimasa dan saling bertukar tanggapan hingga status selesai (DONE).",
   },
-  {
-    question: "Apa fungsi fitur 'Dukung Laporan'?",
-    answer:
-      "Fitur dukungan (upvote) memungkinkan sesama siswa memberikan suara dukungan pada laporan Anda. Laporan dengan dukungan yang tinggi akan menjadi prioritas utama untuk segera ditindaklanjuti oleh manajemen sekolah.",
-  },
+
   {
     question: "Format dokumen bukti apa saja yang didukung?",
     answer:

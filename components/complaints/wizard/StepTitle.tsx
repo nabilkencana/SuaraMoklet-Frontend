@@ -29,6 +29,13 @@ export default function StepTitle({ register, errors }: StepTitleProps) {
           placeholder="Contoh: AC Laboratorium RPL 2 Sering Mati"
           className={errors.title ? "border-red-500/60 focus:border-red-500" : ""}
           {...register("title")}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              const nextBtn = document.getElementById("stepper-next-button");
+              if (nextBtn) nextBtn.click();
+            }
+          }}
         />
         {errors.title && (
           <p className="text-xs font-medium text-red-600 mt-1">{errors.title.message}</p>

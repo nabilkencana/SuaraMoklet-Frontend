@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/app/store/auth.store";
 import { Loader2 } from "lucide-react";
+import imageCompression from "browser-image-compression";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
 import { Complaint } from "@/types/complaint";
@@ -27,15 +28,22 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   const { user, isAuthenticated } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeSidebarTab, setActiveSidebarTab] = useState<"dashboard" | "keluhan">("keluhan");
 
   // States
   const [complaint, setComplaint] = useState<Complaint | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
+  const [autoCloseDays, setAutoCloseDays] = useState<number>(7);
 
   // Discussion reply
   const [replyText, setReplyText] = useState("");
   const [isSendingReply, setIsSendingReply] = useState(false);
+  
+  // Discussion File Upload
+  const [replyFile, setReplyFile] = useState<File | null>(null);
+  const [replyFileUrl, setReplyFileUrl] = useState<string | null>(null);
+  const [isUploadingReplyFile, setIsUploadingReplyFile] = useState(false);
 
   // Modal: Process Report
   const [isOpenModal, setIsOpenModal] = useState(false);
@@ -68,21 +76,37 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
         router.push("/dashboard");
         return;
       }
+      
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`lastViewed_${complaintId}`, new Date().toISOString());
+      }
 
       setComplaint(activeDetail);
 
-      // Load comments
+      // Load comments (api.ts flattenComments already returns flat sorted list with parent refs)
       let loadedComments: Comment[] = [];
       try {
         loadedComments = await apiClient.comments.getByComplaintId(complaintId);
+        if (Array.isArray(loadedComments)) {
+          setComments(loadedComments);
+        }
       } catch {
         loadedComments = [];
       }
-      setComments(loadedComments);
 
       if (user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC") {
         const u = await apiClient.units.getAll();
         setAvailableUnits(u);
+      }
+
+      // Fetch auto-close config
+      try {
+        const config = await apiClient.complaints.getAutoCloseConfig();
+        if (config?.daysToClose) {
+          setAutoCloseDays(config.daysToClose);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch auto close config:", err);
       }
     } catch {
       toast.error("Gagal memuat detail keluhan");
@@ -92,7 +116,11 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 0);
+    const timer = setTimeout(() => {
+      setMounted(true);
+      // Force active tab to be "keluhan" for complaint details
+      localStorage.setItem("unitActiveTab", "keluhan");
+    }, 0);
     return () => clearTimeout(timer);
   }, []);
 
@@ -113,25 +141,105 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
         return;
       }
       loadComplaintData();
+
+      // Polling for realtime comment updates every 5 seconds
+      const pollInterval = setInterval(async () => {
+        try {
+          const freshComments = await apiClient.comments.getByComplaintId(complaintId);
+          if (Array.isArray(freshComments)) {
+            setComments(freshComments);
+          }
+        } catch { /* ignore polling errors */ }
+      }, 5000);
+
+      return () => clearInterval(pollInterval);
     }
   }, [mounted, isAuthenticated, user, complaintId]);
 
   // Handlers
-  const handleSendReply = async (e: React.FormEvent) => {
+  
+  const handleReplyFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const rawFile = e.target.files[0];
+      try {
+        setIsUploadingReplyFile(true);
+        let fileToUpload = rawFile;
+
+        if (rawFile.type.startsWith("image/")) {
+          const options = {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+          };
+          try {
+            fileToUpload = await imageCompression(rawFile, options);
+          } catch (compressionError) {
+            console.warn("Image compression failed, using original file:", compressionError);
+          }
+        }
+
+        setReplyFile(fileToUpload);
+        const response = await apiClient.upload.uploadFile(fileToUpload);
+        
+        if (response && response.url) {
+          setReplyFileUrl(response.url);
+          toast.success("File berhasil diunggah");
+        } else {
+          throw new Error("Format respon tidak valid");
+        }
+      } catch (err: any) {
+        toast.error("Gagal mengunggah file", {
+          description: err.response?.data?.message || err.message || "Silakan coba lagi",
+        });
+        setReplyFile(null);
+        setReplyFileUrl(null);
+      } finally {
+        setIsUploadingReplyFile(false);
+      }
+    }
+  };
+
+  const handleRemoveReplyFile = async () => {
+    if (replyFileUrl) {
+      try {
+        await apiClient.upload.deleteFile(replyFileUrl);
+        toast.success("File berhasil dihapus");
+      } catch (err) {
+        console.error("Failed to delete file from S3:", err);
+      }
+    }
+    setReplyFile(null);
+    setReplyFileUrl(null);
+  };
+
+  const handleSendReply = async (e: React.FormEvent, parentId?: string) => {
     e.preventDefault();
-    if (!replyText.trim() || isSendingReply) return;
+    if ((!replyText.trim() && !replyFileUrl) || isSendingReply || isUploadingReplyFile) return;
 
     setIsSendingReply(true);
     try {
       const newComment = await apiClient.comments.create(complaintId, {
-        content: replyText.trim(),
+        content: replyText.trim() || "Mengirim lampiran",
+        evidenceUrl: replyFileUrl || undefined,
+        parentId,
       });
 
-      setComments((prev) => [...prev, newComment]);
+      // Refetch all comments to get the populated parent relations
+      const updatedComments = await apiClient.comments.getByComplaintId(complaintId);
+      if (Array.isArray(updatedComments)) {
+        setComments(updatedComments);
+      } else {
+        setComments((prev) => [...prev, newComment]);
+      }
+
       setReplyText("");
+      setReplyFile(null);
+      setReplyFileUrl(null);
       toast.success("Balasan terkirim ke pelapor");
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Gagal mengirim balasan");
+      toast.error("Gagal mengirim balasan", {
+        description: err.response?.data?.message || "Terjadi kesalahan",
+      });
     } finally {
       setIsSendingReply(false);
     }
@@ -188,7 +296,12 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       toast.success("Laporan berhasil didelegasikan");
       setIsForwardModalOpen(false);
       setForwardNote("");
-      loadComplaintData();
+      
+      if (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER") {
+        router.push("/dashboard");
+      } else {
+        loadComplaintData();
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Gagal meneruskan laporan");
     }
@@ -196,12 +309,19 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
 
   if (!mounted || isLoading || !complaint) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-red-600" />
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Memuat Data...
-          </span>
+      <div className="h-screen w-screen flex overflow-hidden bg-slate-50 font-sans text-slate-800">
+        {user?.role === "SUPERADMIN" ? (
+          <AdminSidebar activeTab="complaints" />
+        ) : (
+          <UnitSidebar activeTab={activeSidebarTab} />
+        )}
+        <div className="grow h-full flex items-center justify-center bg-[#f9f9f9]">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Memuat Data...
+            </span>
+          </div>
         </div>
       </div>
     );
@@ -213,7 +333,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       {user?.role === "SUPERADMIN" ? (
         <AdminSidebar activeTab="complaints" />
       ) : (
-        <UnitSidebar activeTab="dashboard" />
+        <UnitSidebar activeTab={activeSidebarTab} />
       )}
 
       {/* Main Workspace */}
@@ -233,6 +353,12 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                 isSendingReply={isSendingReply}
                 onChangeReplyText={setReplyText}
                 onSubmitReply={handleSendReply}
+                
+                replyFile={replyFile}
+                replyFileUrl={replyFileUrl}
+                isUploadingReplyFile={isUploadingReplyFile}
+                onReplyFileChange={handleReplyFileChange}
+                onRemoveReplyFile={handleRemoveReplyFile}
               />
             </div>
 
@@ -242,6 +368,8 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                 complaint={complaint}
                 user={user}
                 isTimelineExpanded={isTimelineExpanded}
+                comments={comments}
+                autoCloseDays={autoCloseDays}
                 onToggleTimeline={() => setIsTimelineExpanded(!isTimelineExpanded)}
                 onOpenProcessModal={() => setIsOpenModal(true)}
                 onOpenForwardModal={() => setIsForwardModalOpen(true)}
@@ -293,9 +421,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
         onClose={() => setIsForwardModalOpen(false)}
         onSelectUnit={setForwardUnitId}
         onChangeNote={setForwardNote}
-        onAppendNote={(chip) =>
-          setForwardNote((prev) => (prev ? `${prev} | ${chip}` : chip))
-        }
+        onAppendNote={(chip) => setForwardNote(chip)}
         onSubmit={handleForwardComplaint}
       />
     </div>

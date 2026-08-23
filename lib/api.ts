@@ -71,35 +71,40 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
     };
   }
 
-  // Build sequential timeline from fields
-  const timeline = [
-    {
-      id: `${c.id}-created`,
-      title: "Keluhan Dibuat",
-      description: c.isAnonymous
-        ? "Keluhan diajukan secara anonim ke platform SuaraMoklet."
-        : `Keluhan resmi diajukan ke platform SuaraMoklet oleh ${c.author?.name || "Pelapor"}.`,
-      createdAt: c.createdAt,
-    },
-  ];
+  // Use backend timeline if available, otherwise build fallback sequential timeline
+  const timeline = c.timeline && Array.isArray(c.timeline) && c.timeline.length > 0 
+    ? c.timeline 
+    : (() => {
+        const fallback = [
+          {
+            id: `${c.id}-created`,
+            title: "Keluhan Dibuat",
+            description: c.isAnonymous
+              ? "Keluhan diajukan secara anonim ke platform SuaraMoklet."
+              : `Keluhan resmi diajukan ke platform SuaraMoklet oleh ${c.author?.name || "Pelapor"}.`,
+            createdAt: c.createdAt,
+          },
+        ];
 
-  if (c.forwardedToUnit) {
-    timeline.push({
-      id: `${c.id}-forwarded`,
-      title: `Diteruskan ke Unit ${mapBackendUnitToFrontend(c.forwardedToUnit.name)}`,
-      description: c.forwardNote || `Laporan diteruskan ke Unit ${mapBackendUnitToFrontend(c.forwardedToUnit.name)}.`,
-      createdAt: c.forwardedAt || c.createdAt,
-    });
-  }
-  
-  if (c.status === "DONE") {
-    timeline.push({
-      id: `${c.id}-closed`,
-      title: "Keluhan Diselesaikan",
-      description: "Isu laporan telah ditangani dan dinyatakan selesai.",
-      createdAt: c.closedAt || c.updatedAt,
-    });
-  }
+        if (c.forwardedToUnit) {
+          fallback.push({
+            id: `${c.id}-forwarded`,
+            title: `Diteruskan ke Unit ${mapBackendUnitToFrontend(c.forwardedToUnit.name)}`,
+            description: c.forwardNote || `Laporan diteruskan ke Unit ${mapBackendUnitToFrontend(c.forwardedToUnit.name)}.`,
+            createdAt: c.forwardedAt || c.createdAt,
+          });
+        }
+        
+        if (c.status === "DONE") {
+          fallback.push({
+            id: `${c.id}-closed`,
+            title: "Keluhan Diselesaikan",
+            description: "Isu laporan telah ditangani dan dinyatakan selesai.",
+            createdAt: c.closedAt || c.updatedAt,
+          });
+        }
+        return fallback;
+      })();
 
   let rating;
   if (c.rating) {
@@ -111,7 +116,7 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
     timeline.push({
       id: `${c.id}-rated`,
       title: "Penilaian Pengguna",
-      description: `Pelapor memberikan penilaian ${c.rating.score} Bintang.${c.rating.note ? ` Catatan: "${c.rating.note}"` : ''}`,
+      description: `Pengguna memberikan rating pada keluhan ini.`,
       createdAt: c.rating.createdAt,
     });
   }
@@ -126,6 +131,7 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
     isAnonymous: c.isAnonymous,
     evidenceUrl,
     createdAt: c.createdAt,
+    updatedAt: c.updatedAt,
     supports: c.supports || 0,
     reporter,
     visibility: c.visibility,
@@ -137,17 +143,36 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
 }
 
 export function flattenComments(tree: any[]): Comment[] {
-  const result: Comment[] = [];
-  function traverse(node: any) {
+  // First pass: build a flat list with all nodes
+  const allNodes: any[] = [];
+  function collectAll(node: any) {
     if (!node) return;
+    allNodes.push(node);
+    if (Array.isArray(node.replies)) {
+      node.replies.forEach(collectAll);
+    }
+  }
+  if (Array.isArray(tree)) {
+    tree.forEach(collectAll);
+  }
+
+  // Build a map id -> raw node for parent lookup
+  const nodeMap = new Map<string, any>();
+  allNodes.forEach(n => nodeMap.set(n.id, n));
+
+  // Map each node to Comment, attaching parent if applicable
+  const mapNode = (node: any, parentNode?: any): Comment => {
     const isPic = node.comment_by === "ADMIN" || node.isPic || false;
-    result.push({
+    const mappedParent: Comment | undefined = parentNode ? mapNode(parentNode) : undefined;
+    return {
       id: node.id,
       complaintId: node.complaintId,
       content: node.content,
       evidenceUrl: node.media && node.media.length > 0 ? node.media[0].url : undefined,
       createdAt: node.createdAt,
-      isPic: isPic,
+      isPic,
+      parentId: node.parentId || undefined,
+      parent: mappedParent,
       user: {
         id: node.author?.id || node.authorId,
         name: node.author?.name || "User",
@@ -155,14 +180,19 @@ export function flattenComments(tree: any[]): Comment[] {
         role: isPic ? "UNIT_PIC" : "USER",
         avatarUrl: node.author?.profilePicture || undefined,
       },
-    });
-    if (Array.isArray(node.replies)) {
-      node.replies.forEach(traverse);
-    }
-  }
-  if (Array.isArray(tree)) {
-    tree.forEach(traverse);
-  }
+    };
+  };
+
+  // Second pass: flatten in order, resolving parent
+  const result: Comment[] = [];
+  allNodes.forEach(node => {
+    const parentNode = node.parentId ? nodeMap.get(node.parentId) : undefined;
+    result.push(mapNode(node, parentNode));
+  });
+
+  // Sort by createdAt ascending
+  result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
   return result;
 }
 
@@ -305,7 +335,7 @@ export const complaintsApi = {
   },
 
   getById: async (id: string): Promise<Complaint> => {
-    const response = await api.get<any>(`/complaint/${id}`);
+    const response = await api.get<any>(`/complaints/${id}`);
     return mapBackendComplaintToFrontend(response.data);
   },
 
@@ -387,6 +417,7 @@ export const commentsApi = {
     const payload = {
       content: data.content,
       evidenceUrl: data.evidenceUrl,
+      parentId: data.parentId,
     };
     const response = await api.post<any>(`/complaints/${complaintId}/comments`, payload);
     const node = response.data;
@@ -472,6 +503,10 @@ export const uploadApi = {
     });
     return response.data;
   },
+
+  deleteFile: async (url: string): Promise<void> => {
+    await api.delete("/upload", { data: { url } });
+  },
 };
 
 export const statsApi = {
@@ -544,6 +579,10 @@ export const notificationsApi = {
 
   markAsRead: async (id: string): Promise<void> => {
     await api.patch(`/notifications/${id}/read`);
+  },
+
+  clearAll: async (): Promise<void> => {
+    await api.delete("/notifications");
   },
   
   getWhatsAppLogs: async (params?: { page?: number; limit?: number; status?: string; search?: string }): Promise<any> => {

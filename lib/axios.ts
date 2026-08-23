@@ -30,10 +30,13 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       if (typeof window !== "undefined") {
         useAuthStore.getState().logout();
-        toast.error("Sesi telah habis", {
-          description: "Silakan login kembali untuk melanjutkan.",
-        });
-        window.location.href = "/login";
+        
+        if (window.location.pathname !== "/login") {
+          toast.error("Sesi telah habis", {
+            description: "Silakan login kembali untuk melanjutkan.",
+          });
+          window.location.href = "/login";
+        }
       }
       return Promise.reject(error);
     }

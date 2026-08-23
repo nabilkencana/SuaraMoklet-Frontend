@@ -1,7 +1,9 @@
-import React from "react";
-import { Tag, ThumbsUp, Calendar, User as UserIcon, Building2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Tag, ThumbsUp, Calendar, User as UserIcon, Building2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Complaint, ComplaintStatus } from "@/types/complaint";
+import { apiClient } from "@/lib/api";
+import { useComments } from "@/hooks/useComments";
 
 const STATUS_CONFIG: Record<ComplaintStatus | "FORWARDED", { label: string; classes: string }> = {
   NEW: { label: "BARU", classes: "bg-red-50 text-red-600 border border-red-200" },
@@ -16,6 +18,53 @@ interface ComplaintHeaderProps {
 
 export default function ComplaintHeader({ complaint }: ComplaintHeaderProps) {
   const statusInfo = STATUS_CONFIG[complaint.status] || STATUS_CONFIG.OPEN;
+  const [autoCloseWarning, setAutoCloseWarning] = useState<string | null>(null);
+
+  const { comments } = useComments(complaint.id);
+
+  useEffect(() => {
+    const checkAutoClose = async () => {
+      if (complaint.status !== "OPEN") {
+        setAutoCloseWarning(null);
+        return;
+      }
+      try {
+        const config = await apiClient.complaints.getAutoCloseConfig();
+
+        if (comments && comments.length > 0 && config?.daysToClose) {
+          const lastComment = comments[comments.length - 1];
+          if (lastComment.isPic || (lastComment as any).comment_by === "ADMIN") {
+            const now = new Date();
+            const lastDate = new Date(lastComment.createdAt);
+            const hoursSinceLastMessage = (now.getTime() - lastDate.getTime()) / (1000 * 60 * 60);
+
+            if (hoursSinceLastMessage >= 24) {
+              const deadlineDate = new Date(lastDate);
+              deadlineDate.setDate(deadlineDate.getDate() + config.daysToClose);
+
+              const formatted = deadlineDate.toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+              setAutoCloseWarning(`Laporan akan ditutup pada ${formatted} jika tidak direspons`);
+            } else {
+              setAutoCloseWarning(null);
+            }
+          } else {
+            setAutoCloseWarning(null);
+          }
+        } else {
+          setAutoCloseWarning(null);
+        }
+      } catch (err) {
+        console.warn("Gagal mengecek jadwal auto-close", err);
+      }
+    };
+    checkAutoClose();
+  }, [complaint.id, complaint.status, comments]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "Hari ini";
@@ -34,24 +83,35 @@ export default function ComplaintHeader({ complaint }: ComplaintHeaderProps) {
     <>
       {/* ── MOBILE COMPACT HEADER CARD ── */}
       <div className="lg:hidden bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
-        <div className="flex flex-wrap gap-2 items-center">
-          <span
-            className={cn(
-              "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide",
-              statusInfo.classes
-            )}
-          >
-            {statusInfo.label}
-          </span>
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600">
-            <Tag className="h-3 w-3" />
-            {complaint.unit}
-          </span>
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap gap-2 items-center">
+            <span
+              className={cn(
+                "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide",
+                statusInfo.classes
+              )}
+            >
+              {statusInfo.label}
+            </span>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600">
+              <Tag className="h-3 w-3" />
+              {complaint.unit}
+            </span>
+          </div>
         </div>
 
         <h1 className="text-base font-extrabold tracking-tight text-slate-900 leading-snug">
           {complaint.title}
         </h1>
+        
+        {autoCloseWarning && (
+          <div className="bg-red-50 text-red-600 border border-red-100 rounded-lg p-2.5 mt-2">
+            <span className="text-xs font-bold flex items-center gap-1.5 animate-pulse">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {autoCloseWarning}
+            </span>
+          </div>
+        )}
 
         <div className="flex items-center gap-1.5 text-xs font-bold text-red-600">
           <ThumbsUp className="h-4 w-4" />
@@ -74,21 +134,22 @@ export default function ComplaintHeader({ complaint }: ComplaintHeaderProps) {
       {/* ── DESKTOP HEADER ── */}
       <div className="hidden lg:block bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                "inline-flex items-center px-3 py-0.5 rounded-full text-xs font-bold tracking-wide",
-                statusInfo.classes
-              )}
-            >
-              {statusInfo.label}
-            </span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-600">
-              <Tag className="h-3.5 w-3.5" />
-              {complaint.unit}
-            </span>
-          </div>
-
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "inline-flex items-center px-3 py-0.5 rounded-full text-xs font-bold tracking-wide",
+                    statusInfo.classes
+                  )}
+                >
+                  {statusInfo.label}
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-600">
+                  <Tag className="h-3.5 w-3.5" />
+                  {complaint.unit}
+                </span>
+              </div>
+            </div>
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
             <Calendar className="h-4 w-4" />
             <span>{formatDate(complaint.createdAt)}</span>
@@ -98,6 +159,15 @@ export default function ComplaintHeader({ complaint }: ComplaintHeaderProps) {
         <h1 className="text-2xl font-black tracking-tight text-slate-900 leading-tight">
           {complaint.title}
         </h1>
+        
+        {autoCloseWarning && (
+          <div className="bg-red-50 text-red-600 border border-red-100 rounded-xl p-3 inline-block mt-2">
+            <span className="text-sm font-bold flex items-center gap-2 animate-pulse">
+              <AlertCircle className="h-4.5 w-4.5 shrink-0" />
+              {autoCloseWarning}
+            </span>
+          </div>
+        )}
 
         <div className="flex items-center gap-4 text-xs font-semibold text-slate-500 pt-1 border-t border-slate-100">
           <div className="flex items-center gap-1.5">

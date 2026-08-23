@@ -137,13 +137,18 @@ export default function DetailComplaintModal({
                       >
                         <Forward className="h-4 w-4 text-slate-400 mt-0.5" />
                         <div>
-                          <p className="font-semibold text-slate-700">
-                            Diteruskan pada{" "}
-                            {new Date(log.createdAt).toLocaleString("id-ID")}
+                          <p className="font-semibold text-slate-700 leading-snug">
+                            Diteruskan dari Unit <span className="text-red-600">{log.meta?.fromUnitName || "-"}</span> ke Unit <span className="text-red-600">{log.meta?.toUnitName || "-"}</span>
                           </p>
-                          <p className="text-slate-500 text-xs mt-1">
-                            Catatan: {log.meta?.note || "-"}
+                          <p className="text-slate-400 text-[10px] font-medium mt-0.5">
+                            Pada {new Date(log.createdAt).toLocaleString("id-ID")}
                           </p>
+                          {log.meta?.note && (
+                            <div className="mt-2 bg-white border border-slate-200 rounded-lg p-2.5">
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Catatan Pendelegasian</p>
+                              <p className="text-slate-600 text-xs">{log.meta.note}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

@@ -14,7 +14,6 @@ import HeroSection from "@/components/landing/HeroSection";
 import StatsSection from "@/components/landing/StatsSection";
 import TrendingSection from "@/components/landing/TrendingSection";
 import HowItWorksSection from "@/components/landing/HowItWorksSection";
-import LatestReportsSection from "@/components/landing/LatestReportsSection";
 import FaqSection from "@/components/landing/FaqSection";
 import CtaBannerSection from "@/components/landing/CtaBannerSection";
 
@@ -22,7 +21,6 @@ export default function LandingPage() {
   const router = useRouter();
   const [petitionTitle, setPetitionTitle] = useState("");
   const [trendingComplaints, setTrendingComplaints] = useState<ComplaintCardData[]>([]);
-  const [latestComplaints, setLatestComplaints] = useState<ComplaintCardData[]>([]);
   const [isLoadingComplaints, setIsLoadingComplaints] = useState(true);
   const [summaryStats, setSummaryStats] = useState({ total: 0, resolved: 0 });
 
@@ -103,9 +101,6 @@ export default function LandingPage() {
           }));
         setTrendingComplaints(trending);
 
-        // 2. Latest sorted by date
-        setLatestComplaints(mapped.slice(0, 4));
-
         // 3. Fetch summary stats from backend
         try {
           const stats = await apiClient.complaints.getLandingStats();
@@ -144,11 +139,6 @@ export default function LandingPage() {
       />
 
       <HowItWorksSection />
-
-      <LatestReportsSection
-        latestComplaints={latestComplaints}
-        isLoading={isLoadingComplaints}
-      />
 
       <FaqSection />
 

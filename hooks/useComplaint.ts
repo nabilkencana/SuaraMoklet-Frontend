@@ -27,8 +27,8 @@ export function useComplaint(complaintId?: string, options?: { skipFetchUnits?: 
     }
   };
 
-  const fetchComplaintById = async (id: string) => {
-    setIsLoading(true);
+  const fetchComplaintById = async (id: string, silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const { apiClient } = await import("@/lib/api");
       const data = await apiClient.complaints.getById(id);
@@ -44,7 +44,7 @@ export function useComplaint(complaintId?: string, options?: { skipFetchUnits?: 
       setCurrentComplaint(null);
       return null;
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 

@@ -113,13 +113,6 @@ export default function ProcessReportModal({
             </p>
           </div>
 
-          {/* Info note */}
-          <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-100 flex items-start gap-2.5 text-blue-700 text-xs">
-            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-blue-500" />
-            <p className="leading-relaxed text-[11px]">
-              Pelapor akan menerima notifikasi bahwa laporannya sedang dalam penanganan aktif.
-            </p>
-          </div>
 
           {/* Actions */}
           <div className="flex gap-2.5 pt-1">

@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 
 const loginSchema = z.object({
   email: z.string().min(1, "Email wajib diisi").email("Format email tidak valid"),
-  password: z.string().min(8, "Password minimal harus 8 karakter"),
+  password: z.string().min(1, "Password wajib diisi"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -35,6 +35,7 @@ export default function LoginForm() {
     register,
     handleSubmit,
     setValue,
+    setError,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -50,11 +51,10 @@ export default function LoginForm() {
       const isUnitOrAdmin = user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC";
       const isUser = user?.role === "USER";
       let finalRedirect = redirectUrl;
-      if (isUnitOrAdmin && (redirectUrl === "/dashboard" || redirectUrl === "/complaints" || redirectUrl === "/unit" || redirectUrl === "/unit/complaints" || redirectUrl === "/")) {
+      if (isUnitOrAdmin && (redirectUrl === "/dashboard" || redirectUrl === "/complaints" || redirectUrl === "/unit" || redirectUrl === "/unit/complaints")) {
         finalRedirect = "/dashboard";
       } else if (isUser && redirectUrl === "/") {
-        // Default role USER (selaras dengan proxy.ts ROLE_DEFAULT_REDIRECT)
-        finalRedirect = "/complaints";
+        finalRedirect = "/";
       }
       router.replace(finalRedirect);
     }
@@ -83,11 +83,10 @@ export default function LoginForm() {
       const isUnitOrAdmin = response.user.role === "UNIT_PIC" || response.user.role === "UNIT_MEMBER" || response.user.role === "SUPERADMIN" || response.user.role === "SUPER_PIC";
       const isUser = response.user.role === "USER";
       let finalRedirect = redirectUrl;
-      if (isUnitOrAdmin && (redirectUrl === "/dashboard" || redirectUrl === "/complaints" || redirectUrl === "/unit" || redirectUrl === "/unit/complaints" || redirectUrl === "/")) {
+      if (isUnitOrAdmin && (redirectUrl === "/dashboard" || redirectUrl === "/complaints" || redirectUrl === "/unit" || redirectUrl === "/unit/complaints")) {
         finalRedirect = "/dashboard";
       } else if (isUser && redirectUrl === "/") {
-        // Default role USER (selaras dengan proxy.ts ROLE_DEFAULT_REDIRECT)
-        finalRedirect = "/complaints";
+        finalRedirect = "/";
       }
       router.push(finalRedirect);
       router.refresh();
@@ -95,6 +94,7 @@ export default function LoginForm() {
       console.error("Login error:", error);
       const err = error as { response?: { data?: { message?: string } } };
       const errorMessage = err.response?.data?.message || "Email atau password salah.";
+      setError("root", { type: "manual", message: errorMessage });
       toast.error("Gagal Masuk", {
         description: errorMessage,
       });
@@ -108,6 +108,12 @@ export default function LoginForm() {
     <div className="space-y-5">
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {errors.root && (
+          <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm font-medium text-center">
+            {errors.root.message}
+          </div>
+        )}
+
         {/* Email Input */}
         <div className="space-y-1.5">
           <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-wider text-neutral-500">

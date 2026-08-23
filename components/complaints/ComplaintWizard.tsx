@@ -59,6 +59,19 @@ export default function ComplaintWizard() {
     }
   }, [setValue]);
 
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isSubmitting) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isSubmitting]);
+
   const watchedTitle = watch("title");
   const watchedUnit = watch("unit");
   const watchedIsAnonymous = watch("isAnonymous");

@@ -126,6 +126,18 @@ export default function ComplaintList() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredComplaints.map((complaint) => {
             const statusInfo = STATUS_CONFIG[complaint.status] || STATUS_CONFIG.OPEN;
+            
+            let hasNewUpdate = false;
+            if (typeof window !== "undefined") {
+              const lastViewedStr = localStorage.getItem(`lastViewed_${complaint.id}`);
+              const updatedTime = new Date(complaint.updatedAt || complaint.createdAt).getTime();
+              if (lastViewedStr) {
+                hasNewUpdate = updatedTime > new Date(lastViewedStr).getTime() + 2000;
+              } else {
+                hasNewUpdate = updatedTime > new Date(complaint.createdAt).getTime() + 5000;
+              }
+            }
+
             return (
               <div
                 key={complaint.id}
@@ -147,9 +159,17 @@ export default function ComplaintList() {
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-extrabold text-slate-800 text-base leading-snug group-hover:text-red-600 transition-colors line-clamp-1">
-                    {complaint.title}
-                  </h3>
+                  <div className="relative inline-flex items-start">
+                    <h3 className="font-extrabold text-slate-800 text-base leading-snug group-hover:text-red-600 transition-colors line-clamp-1 pr-3">
+                      {complaint.title}
+                    </h3>
+                    {hasNewUpdate && (
+                      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white"></span>
+                      </span>
+                    )}
+                  </div>
 
                   {/* Description */}
                   <p className="text-xs text-slate-400 leading-relaxed line-clamp-3">

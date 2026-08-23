@@ -10,16 +10,19 @@ import {
   LogOut,
   ChevronDown,
   ArrowRight,
+  Info,
   Send,
   X,
   Building,
   RefreshCw,
+  Star,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
 import { Complaint, ComplaintStatus } from "@/types/complaint";
-import { cn } from "@/lib/utils";
+import { cn, getSlaStatus } from "@/lib/utils";
 import UnitSidebar from "@/components/dashboard/UnitSidebar";
+import DetailComplaintModal from "@/components/dashboard/admin/modals/DetailComplaintModal";
 
 interface ExtendedFeedComplaint extends Complaint {
   priority: string;
@@ -72,10 +75,34 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
   const [visibleCount, setVisibleCount] = useState(8);
 
   // Modal state
+  // Reply Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedComplaint, setSelectedComplaint] = useState<ExtendedFeedComplaint | null>(null);
   const [replyText, setReplyText] = useState("");
   const [replyStatus, setReplyStatus] = useState<ComplaintStatus>("OPEN");
+
+  // Detail Modal state
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [detailModalData, setDetailModalData] = useState<any>(null);
+
+  const handleOpenDetailModal = async (id: string) => {
+    setIsDetailModalOpen(true);
+    setIsDetailLoading(true);
+    try {
+      // Menggunakan endpoint admin detail agar dapat melihat komprehensif
+      const data = await apiClient.complaints.getAdminDetail(id);
+      setDetailModalData(data);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`lastViewed_${id}`, new Date().toISOString());
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal memuat detail keluhan");
+      setIsDetailModalOpen(false);
+    } finally {
+      setIsDetailLoading(false);
+    }
+  };
 
   const fetchComplaints = useCallback(async () => {
     setIsLoading(true);
@@ -248,6 +275,17 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
                 const isProgress = c.status === "OPEN";
                 const isClosed = c.status === "DONE";
 
+                let hasNewUpdate = false;
+                if (typeof window !== "undefined") {
+                  const lastViewedStr = localStorage.getItem(`lastViewed_${c.id}`);
+                  const updatedTime = new Date(c.updatedAt || c.createdAt).getTime();
+                  if (lastViewedStr) {
+                    hasNewUpdate = updatedTime > new Date(lastViewedStr).getTime() + 2000;
+                  } else {
+                    hasNewUpdate = updatedTime > new Date(c.createdAt).getTime() + 5000;
+                  }
+                }
+
                 let statusBadgeClass = "bg-blue-50 text-blue-600 border border-blue-200";
                 let statusLabel = "Baru";
                 if (c.status === "OPEN") { statusBadgeClass = "bg-orange-50 text-orange-600 border border-orange-200"; statusLabel = "Diproses"; }
@@ -275,21 +313,44 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
                           <span className="font-semibold text-slate-400">{c.formattedTime}</span>
                         </div>
                         <button
-                          onClick={(e) => { e.stopPropagation(); toast.info(`Laporan #${c.customId} terpilih`); }}
-                          className="h-8 w-8 text-slate-400 hover:text-slate-655 hover:bg-slate-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                          onClick={(e) => { e.stopPropagation(); handleOpenDetailModal(c.id); }}
+                          title="Detail Komprehensif"
+                          className="h-8 px-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-lg flex items-center gap-1 shadow-3xs transition-all cursor-pointer active:scale-[0.96]"
                         >
-                          <MoreVertical className="h-4 w-4" />
+                          <Info className="h-3.5 w-3.5 text-slate-500" />
+                          <span className="text-[10px] hidden sm:inline">Detail</span>
                         </button>
                       </div>
 
                       {/* Title */}
-                      <h2 className="text-base sm:text-lg font-extrabold text-slate-800 leading-snug">{c.title}</h2>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="relative inline-flex items-start">
+                          <h2 
+                            onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/complaints/${c.id}`); }}
+                            className="text-base sm:text-lg font-extrabold text-slate-800 leading-snug cursor-pointer hover:text-[#b61722] hover:underline transition-colors pr-3"
+                          >
+                            {c.title}
+                          </h2>
+                          {hasNewUpdate && (
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white"></span>
+                            </span>
+                          )}
+                        </div>
+                        {isNew && (() => {
+                          const sla = getSlaStatus(c.createdAt);
+                          return (
+                            <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", sla.color)}>
+                              {sla.text}
+                            </span>
+                          );
+                        })()}
+                      </div>
 
                       {/* Attribute Badges */}
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-md text-[9px] font-extrabold border uppercase tracking-wider", priorityClass)}>
-                          ! Prioritas {c.priority}
-                        </span>
+
                         <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider", statusBadgeClass)}>
                           {statusLabel}
                         </span>
@@ -298,10 +359,27 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
                             {c.category}
                           </span>
                         )}
+                        {c.rating && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-yellow-50 text-yellow-700 border border-yellow-200 uppercase tracking-wider">
+                            <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                            {c.rating.score} Bintang
+                          </span>
+                        )}
                       </div>
 
                       {/* Description */}
                       <p className="text-xs text-slate-500 leading-relaxed font-medium line-clamp-2">{c.description}</p>
+                      
+                      {/* Rating Note */}
+                      {c.rating && c.rating.note && (
+                        <div className="mt-3 p-3 rounded-xl bg-yellow-50 border border-yellow-100 flex items-start gap-2.5">
+                          <Star className="h-4 w-4 fill-yellow-500 text-yellow-500 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="block text-[10px] font-bold text-yellow-800 uppercase tracking-wider mb-0.5">Ulasan Pelapor ({c.rating.score}/5)</span>
+                            <p className="text-xs text-yellow-700 font-medium italic leading-relaxed line-clamp-2">&ldquo;{c.rating.note}&rdquo;</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Right Column: Reporter + Action */}
@@ -443,6 +521,17 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
           </div>
         </div>
       )}
+
+      {/* ─── DETAIL MODAL ─── */}
+      <DetailComplaintModal
+        isOpen={isDetailModalOpen}
+        isLoading={isDetailLoading}
+        data={detailModalData}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setDetailModalData(null);
+        }}
+      />
     </>
   );
 

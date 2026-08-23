@@ -26,13 +26,6 @@ export default function ComplaintContentCard({ complaint }: ComplaintContentCard
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-200">
             {complaint.status}
           </span>
-
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-slate-400 flex items-center gap-1">
-              <Globe className="h-4 w-4" />
-              {complaint.visibility === "PUBLIC" ? "Publik" : "Privat"}
-            </span>
-          </div>
         </div>
 
         {/* Title */}

@@ -12,7 +12,7 @@ const ROLE_ROUTES: Record<string, UserRole[]> = {
   "/unit":               ["SUPERADMIN", "UNIT_PIC", "UNIT_MEMBER"],
   "/iso":                ["SUPER_PIC"],
   "/admin":              ["SUPERADMIN"],
-  "/complaints/create":  ["USER", "SUPERADMIN"],
+  "/complaints/create":  ["USER", "SUPERADMIN", "SUPER_PIC", "UNIT_PIC", "UNIT_MEMBER"],
   "/complaints":         ["USER", "SUPERADMIN", "SUPER_PIC", "UNIT_PIC", "UNIT_MEMBER"],
   "/profile":            ["USER", "SUPERADMIN", "SUPER_PIC", "UNIT_PIC", "UNIT_MEMBER"],
   "/search":             ["USER", "SUPERADMIN", "SUPER_PIC", "UNIT_PIC", "UNIT_MEMBER"],

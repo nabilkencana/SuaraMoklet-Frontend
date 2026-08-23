@@ -11,8 +11,11 @@ import {
   Trash2,
   Clock,
   Download,
+  FileText,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getSlaStatus } from "@/lib/utils";
 import { Complaint, ComplaintUnit, UnitModel } from "@/types/complaint";
 import { mapBackendUnitToFrontend } from "@/lib/api";
 import TablePagination from "../TablePagination";
@@ -356,11 +359,14 @@ export default function OverviewTab({
                           >
                             {c.title}
                           </span>
-                          {isNew && (
-                            <span className="text-[10px] font-bold text-white bg-[#b61722] px-2 py-0.5 rounded-full">
-                              48H+
+                          {isNew && (() => {
+                          const sla = getSlaStatus(c.createdAt);
+                          return (
+                            <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", sla.color)}>
+                              {sla.text}
                             </span>
-                          )}
+                          );
+                        })()}
                           {isWaiting && c.title.includes("AC") && (
                             <span className="text-[10px] font-bold text-white bg-[#b61722] px-2 py-0.5 rounded-full">
                               72H+

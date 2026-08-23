@@ -53,11 +53,25 @@ export default function ComplaintDetailPage() {
   }, []);
 
   useEffect(() => {
+    let pollInterval: NodeJS.Timeout;
     if (mounted && complaintId) {
       fetchComplaintById(complaintId).then((res) => {
         if (!res) setNotFound(true);
+        else if (typeof window !== "undefined") {
+          localStorage.setItem(`lastViewed_${complaintId}`, new Date().toISOString());
+        }
       });
+
+      // Poll complaint status every 5 seconds silently
+      pollInterval = setInterval(() => {
+        fetchComplaintById(complaintId, true).then((res) => {
+          if (!res) setNotFound(true);
+        });
+      }, 5000);
     }
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
   }, [mounted, complaintId]);
 
   const safeISO = (base: string | undefined, offsetMs = 0): string => {

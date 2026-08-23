@@ -67,7 +67,7 @@ export default function StepMediaUpload({
             <p className="text-xs text-slate-400 mt-0.5">atau seret dan taruh di sini</p>
           </div>
           <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium mt-0.5 text-center">
-            JPG, PNG (Otomatis Kompres), PDF (Maks. 5MB)
+            JPG, PNG, PDF (Maks. 5MB)
           </p>
         </div>
       ) : (

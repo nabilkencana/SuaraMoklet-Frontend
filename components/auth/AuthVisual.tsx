@@ -13,7 +13,6 @@ export default function AuthVisual() {
           loop
           muted
           playsInline
-          poster="/images/auth-bg.jpg"
           className="w-full h-full object-cover scale-[1.02]"
         >
           <source src="/videos/DJI_0001.MP4" type="video/mp4" />

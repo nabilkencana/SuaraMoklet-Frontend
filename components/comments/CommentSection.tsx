@@ -1,16 +1,22 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { createPortal } from "react-dom";
+import imageCompression from "browser-image-compression";
 import { 
   MessageCircle, 
   Loader2, 
   Send, 
   User as UserIcon, 
-  Image as ImageIcon, 
+  Paperclip,
   X,
   FileText,
   ShieldCheck,
   LogIn,
+  Eye,
+  Reply,
+  Search,
+  Image as ImageIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -27,17 +33,32 @@ interface CommentSectionProps {
 }
 
 export default function CommentSection({ complaintId, isClosed = false, isOwner = false }: CommentSectionProps) {
-  // Private discussion: only visible to the complaint owner
-  if (!isOwner) return null;
   const { comments, isLoading, isSubmitting, addComment } = useComments(complaintId);
   const { isAuthenticated } = useAuthStore();
   const [content, setContent] = useState("");
+  const [replyingTo, setReplyingTo] = useState<any | null>(null);
+  
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const hasInitialScrolled = useRef(false);
+  const isAtBottom = useRef(true);
 
   // Attachment uploading state
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [attachedUrl, setAttachedUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const commentFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Modal State for Previewing Uploaded files / Clicked discussion media
+  const [selectedFile, setSelectedFile] = useState<{ url: string; isImage: boolean; name?: string } | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterMediaOnly, setFilterMediaOnly] = useState(false);
+
+  const checkIsImage = (url: string) => {
+    if (!url) return false;
+    const cleanUrl = url.split("?")[0].toLowerCase();
+    return !cleanUrl.endsWith('.pdf');
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -61,21 +82,45 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
     setAttachedFile(file);
     setIsUploading(true);
     try {
-      const res = await apiClient.upload.uploadFile(file);
+      let fileToUpload = file;
+      if (file.type.startsWith("image/")) {
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        };
+        try {
+          fileToUpload = await imageCompression(file, options);
+        } catch (compressionError) {
+          console.warn("Image compression failed, using original file:", compressionError);
+        }
+      }
+
+      const res = await apiClient.upload.uploadFile(fileToUpload);
       setAttachedUrl(res.url);
       toast.success("Lampiran tanggapan berhasil diunggah!");
-    } catch (err) {
-      // Fallback: gunakan object URL lokal jika backend tidak tersedia
-      console.warn("Upload API unavailable, using local URL:", err);
-      const objectUrl = URL.createObjectURL(file);
-      setAttachedUrl(objectUrl);
-      toast.success("Lampiran berhasil dilampirkan! (Mode Demo)");
+    } catch (err: any) {
+      toast.error("Gagal mengunggah foto", {
+        description: err.response?.data?.message || err.message || "Silakan coba lagi",
+      });
+      setAttachedFile(null);
     } finally {
       setIsUploading(false);
     }
   };
 
-  const removeAttachment = () => {
+  const removeAttachment = async () => {
+    if (attachedUrl && attachedUrl.startsWith("http")) {
+      try {
+        await apiClient.upload.deleteFile(attachedUrl);
+      } catch (err) {
+        console.warn("Gagal menghapus file dari S3", err);
+      }
+    }
+    clearAttachmentState();
+  };
+
+  const clearAttachmentState = () => {
     setAttachedFile(null);
     setAttachedUrl(null);
   };
@@ -87,13 +132,42 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
     const res = await addComment({
       content: content.trim() || "(Lampiran Gambar)",
       evidenceUrl: attachedUrl || undefined,
+      parentId: replyingTo?.id,
     });
 
     if (res) {
       setContent("");
-      removeAttachment();
+      setReplyingTo(null);
+      clearAttachmentState();
     }
   };
+
+  const filteredComments = comments.filter((c) => {
+    if (filterMediaOnly && !c.evidenceUrl) return false;
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      if (!c.content.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    isAtBottom.current = scrollHeight - scrollTop - clientHeight < 50;
+  };
+
+  React.useEffect(() => {
+    if (scrollContainerRef.current && comments.length > 0) {
+      if (!hasInitialScrolled.current || isAtBottom.current) {
+        scrollContainerRef.current.scrollTo({
+          top: scrollContainerRef.current.scrollHeight,
+          behavior: hasInitialScrolled.current ? "smooth" : "auto",
+        });
+        hasInitialScrolled.current = true;
+      }
+    }
+  }, [comments, filteredComments]);
 
   if (isLoading) {
     return (
@@ -110,19 +184,52 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
       {/* Header */}
-      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-        <MessageCircle className="h-4.5 w-4.5 text-red-600" />
-        <span>Diskusi & Tanggapan ({comments.length})</span>
-      </h3>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
+        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+          <MessageCircle className="h-4.5 w-4.5 text-red-600" />
+          <span>Diskusi & Tanggapan ({comments.length})</span>
+        </h3>
+        
+        {/* Filters */}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="relative">
+            <Search className="h-3.5 w-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input 
+              type="text"
+              placeholder="Cari pesan..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:border-red-400 focus:bg-white transition-all w-full sm:w-40"
+            />
+          </div>
+          <button
+            onClick={() => setFilterMediaOnly(!filterMediaOnly)}
+            className={cn(
+              "p-1.5 rounded-lg border transition-all flex items-center justify-center cursor-pointer",
+              filterMediaOnly 
+                ? "bg-red-50 border-red-200 text-red-600 shadow-3xs" 
+                : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+            )}
+            title="Hanya tampilkan lampiran media"
+          >
+            <ImageIcon className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
 
       {/* Discussion List */}
-      <div className="space-y-4 max-h-100 overflow-y-auto pr-1">
-        {comments.length > 0 ? (
-          comments.map((comment) => {
+      <div 
+        ref={scrollContainerRef} 
+        onScroll={handleScroll}
+        className="space-y-4 max-h-100 overflow-y-auto pr-1"
+      >
+        {filteredComments.length > 0 ? (
+          filteredComments.map((comment) => {
             const isOfficial = comment.isPic;
             return (
               <div 
                 key={comment.id} 
+                id={`comment-${comment.id}`}
                 className={cn(
                   "p-4 rounded-2xl text-xs space-y-2 max-w-[90%] border shadow-3xs",
                   isOfficial 
@@ -140,34 +247,93 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
                       </span>
                     )}
                   </div>
-                  <span className="text-[9px] text-slate-400 font-semibold shrink-0">
-                    {new Date(comment.createdAt).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "short",
-                    })}{" "}
-                    {new Date(comment.createdAt).toLocaleTimeString("id-ID", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button 
+                      type="button"
+                      onClick={() => setReplyingTo(comment)}
+                      className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-md hover:bg-slate-100"
+                      title="Balas pesan ini"
+                    >
+                      <Reply className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="text-[9px] text-slate-400 font-semibold">
+                      {new Date(comment.createdAt).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "short",
+                      })}{" "}
+                      {new Date(comment.createdAt).toLocaleTimeString("id-ID", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
                 </div>
+
+                {/* Parent Quote Block */}
+                {comment.parent && (
+                  <div 
+                    onClick={() => {
+                      const el = document.getElementById(`comment-${comment.parent!.id}`);
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        const originalBg = el.style.backgroundColor;
+                        const originalTransition = el.style.transition;
+                        el.style.transition = 'background-color 0.5s ease';
+                        el.style.backgroundColor = '#fee2e2'; // Tailwind red-100
+                        setTimeout(() => {
+                          el.style.backgroundColor = originalBg;
+                          setTimeout(() => {
+                            el.style.transition = originalTransition;
+                          }, 500);
+                        }, 2000);
+                      }
+                    }}
+                    className="p-2 bg-slate-100/80 border-l-2 border-red-500 rounded text-[10px] text-slate-500 font-medium cursor-pointer hover:bg-slate-200/50 transition-colors"
+                  >
+                    <p className="font-bold text-red-600 mb-0.5">{comment.parent.user?.name || (comment.parent.isPic ? "Unit" : "Anonim")}</p>
+                    <p className="line-clamp-2">{comment.parent.content}</p>
+                  </div>
+                )}
 
                 {/* Message Content */}
                 <p className="text-slate-500 leading-relaxed font-semibold whitespace-pre-wrap">
                   {comment.content}
                 </p>
 
-              {/* Attached Image if exists */}
+              {/* Attached Image/File if exists */}
               {comment.evidenceUrl && (
                 <div className="pt-1.5">
-                  <div className="relative h-32 max-w-sm rounded-xl overflow-hidden border border-slate-200 bg-white shadow-sm">
-                    <img 
-                      src={comment.evidenceUrl} 
-                      alt="Attachment" 
-                      className="h-full w-full object-cover hover:scale-105 transition-transform duration-500 cursor-pointer"
-                      onClick={() => window.open(comment.evidenceUrl, "_blank")}
-                    />
-                  </div>
+                  {checkIsImage(comment.evidenceUrl) ? (
+                    <div 
+                      className="relative h-32 max-w-sm rounded-xl overflow-hidden border border-slate-200 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow group"
+                      onClick={() => setSelectedFile({ url: comment.evidenceUrl!, isImage: true })}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img 
+                        src={comment.evidenceUrl} 
+                        alt="Attachment" 
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                        <Eye className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => setSelectedFile({ url: comment.evidenceUrl!, isImage: false, name: "Dokumen Lampiran" })}
+                      className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors max-w-sm"
+                    >
+                      <div className="h-10 w-10 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+                        <FileText className="h-5 w-5 text-red-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-700 truncate">
+                          Dokumen Lampiran
+                        </p>
+                        <p className="text-[10px] text-slate-500">Klik untuk melihat file</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -209,6 +375,65 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-3 pt-3 border-t border-slate-100">
+          
+          {/* Reply Banner */}
+          {replyingTo && (
+            <div className="flex items-center justify-between bg-slate-50 border-l-2 border-red-500 p-2 rounded-r-xl">
+              <div>
+                <p className="text-[10px] font-bold text-red-600">Membalas {replyingTo.user?.name || (replyingTo.isPic ? "Unit" : "Anonim")}</p>
+                <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5 font-medium">{replyingTo.content}</p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setReplyingTo(null)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Pratinjau Lampiran Sebelum Kirim */}
+          {(attachedUrl || isUploading) && (
+            <div className="relative inline-block pb-2">
+              {isUploading ? (
+                <div className="h-20 w-20 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center bg-slate-50 text-slate-400">
+                  <Loader2 className="h-5 w-5 animate-spin mb-1" />
+                  <span className="text-[9px] font-bold">Uploading</span>
+                </div>
+              ) : (
+                <div className="relative h-20 w-20 rounded-xl border border-slate-200 shadow-3xs group">
+                  {attachedFile?.type.startsWith("image/") || (attachedUrl && checkIsImage(attachedUrl)) ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={attachedUrl!}
+                      alt="Preview"
+                      className="h-full w-full object-cover rounded-xl cursor-pointer"
+                      onClick={() => setSelectedFile({ url: attachedUrl!, isImage: true })}
+                    />
+                  ) : (
+                    <div 
+                      className="h-full w-full flex flex-col items-center justify-center bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors"
+                      onClick={() => setSelectedFile({ url: attachedUrl!, isImage: false, name: attachedFile?.name })}
+                    >
+                      <FileText className="h-6 w-6 text-red-500 mb-1" />
+                      <span className="text-[8px] font-bold text-slate-500 truncate w-full px-2 text-center">
+                        {attachedFile?.name || "Dokumen"}
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); removeAttachment(); }}
+                    className="absolute -top-1.5 -right-1.5 bg-white text-slate-500 hover:text-red-500 rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-all cursor-pointer border border-slate-100"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="relative">
             <textarea
               rows={3}
@@ -232,30 +457,16 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
               disabled={isSubmitting || isUploading}
             />
 
-            {/* Attachment preview or picker */}
-            {!attachedFile ? (
-              <button
-                type="button"
-                onClick={() => commentFileInputRef.current?.click()}
-                disabled={isSubmitting || isUploading}
-                className="cursor-pointer bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:border-red-200 hover:text-red-600 inline-flex items-center gap-1.5 transition-all shadow-sm select-none disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ImageIcon className="h-3.5 w-3.5" />
-                <span>Tambah Foto</span>
-              </button>
-            ) : (
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-[10px] font-semibold text-slate-700 max-w-xs">
-                <FileText className="h-3.5 w-3.5 text-red-500" />
-                <span className="line-clamp-1">{attachedFile.name}</span>
-                <button 
-                  type="button" 
-                  onClick={removeAttachment}
-                  className="text-slate-400 hover:text-red-500 transition-colors shrink-0"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
+            {/* Attachment picker */}
+            <button
+              type="button"
+              onClick={() => commentFileInputRef.current?.click()}
+              disabled={isSubmitting || isUploading}
+              className="cursor-pointer bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:border-red-200 hover:text-red-600 inline-flex items-center gap-1.5 transition-all shadow-sm select-none disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Paperclip className="h-3.5 w-3.5" />
+              <span>Lampirkan Media</span>
+            </button>
 
             {/* Submit button */}
             <Button
@@ -277,14 +488,42 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
               )}
             </Button>
           </div>
-
-          {isUploading && (
-            <p className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-              <Loader2 className="h-3 w-3 animate-spin text-red-600" />
-              Mengunggah lampiran tanggapan...
-            </p>
-          )}
         </form>
+      )}
+
+      {/* File/Image Preview Modal */}
+      {selectedFile && typeof document !== "undefined" && createPortal(
+        <div 
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={() => setSelectedFile(null)}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
+            className="absolute top-4 right-4 z-[10000] bg-black/50 hover:bg-black/80 text-white rounded-full p-2 transition-colors cursor-pointer"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          
+          <div className="relative w-full h-full flex items-center justify-center p-4 overflow-hidden">
+            {selectedFile.isImage ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img 
+                src={selectedFile.url} 
+                alt="Preview Full" 
+                className="w-full h-full object-contain drop-shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <iframe 
+                src={selectedFile.url}
+                className="w-11/12 h-5/6 bg-white rounded-xl shadow-2xl"
+                title="Document Preview"
+                onClick={(e: any) => e.stopPropagation()}
+              />
+            )}
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

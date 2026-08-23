@@ -218,11 +218,13 @@ export default function ComplaintBody({
       </div>
 
       {/* Discussion Section */}
-      <CommentSection
-        complaintId={complaint.id}
-        isClosed={complaint.status === "DONE"}
-        isOwner={isOwner}
-      />
+      {isOwner && (
+        <CommentSection
+          complaintId={complaint.id}
+          isClosed={complaint.status === "DONE"}
+          isOwner={isOwner}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Search, Forward, Eye, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getSlaStatus } from "@/lib/utils";
 import { Complaint, ComplaintUnit, UnitModel } from "@/types/complaint";
 import TablePagination from "../TablePagination";
 
@@ -182,11 +182,14 @@ export default function ComplaintsTab({
                         >
                           {c.title}
                         </span>
-                        {isNew && (
-                          <span className="text-[10px] font-bold text-white bg-[#b61722] px-2 py-0.5 rounded-full">
-                            48H+
-                          </span>
-                        )}
+                        {isNew && (() => {
+                          const sla = getSlaStatus(c.createdAt);
+                          return (
+                            <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", sla.color)}>
+                              {sla.text}
+                            </span>
+                          );
+                        })()}
                         {isWaiting && c.title.includes("AC") && (
                           <span className="text-[10px] font-bold text-white bg-[#b61722] px-2 py-0.5 rounded-full">
                             72H+

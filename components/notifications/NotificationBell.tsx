@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Check, CheckCheck, Loader2, MessageSquare, Info } from "lucide-react";
+import { Bell, Check, CheckCheck, Loader2, MessageSquare, Info, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api";
 import { DashboardNotification } from "@/types/dashboard";
@@ -67,6 +67,17 @@ export default function NotificationBell() {
     }
   };
 
+  const handleClearAll = async () => {
+    if (notifications.length === 0) return;
+    try {
+      await apiClient.notifications.clearAll();
+      setNotifications([]);
+      toast.success("Semua notifikasi berhasil dibersihkan");
+    } catch (err) {
+      toast.error("Gagal membersihkan notifikasi");
+    }
+  };
+
   const handleNotificationClick = async (notification: DashboardNotification) => {
     if (!notification.isRead) {
       try {
@@ -126,16 +137,29 @@ export default function NotificationBell() {
               )}
             </div>
 
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={handleMarkAllRead}
-                className="text-[11px] font-bold text-red-600 hover:text-red-700 transition-colors flex items-center gap-1 cursor-pointer"
-              >
-                <CheckCheck className="h-3.5 w-3.5" />
-                Tandai semua
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleMarkAllRead}
+                  className="text-[11px] font-bold text-red-600 hover:text-red-700 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  Tandai semua
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="text-[11px] font-bold text-slate-400 hover:text-red-600 transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Bersihkan semua"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Bersihkan
+                </button>
+              )}
+            </div>
           </div>
 
           {/* List */}

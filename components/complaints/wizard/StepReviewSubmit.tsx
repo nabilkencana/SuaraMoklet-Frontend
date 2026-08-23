@@ -54,21 +54,13 @@ export default function StepReviewSubmit({
               {watchedTitle}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                 Unit Sekolah
               </span>
               <span className="text-sm font-semibold text-slate-700 mt-0.5 block">
                 {watchedUnitName || "-"}
-              </span>
-            </div>
-            <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Tingkat Privasi
-              </span>
-              <span className="text-sm font-semibold text-slate-700 mt-0.5 block">
-                {watchedIsAnonymous ? "Anonim" : "Publik (Terlihat)"}
               </span>
             </div>
           </div>

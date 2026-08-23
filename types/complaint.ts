@@ -28,6 +28,7 @@ export interface Complaint {
   isAnonymous: boolean;
   evidenceUrl?: string; // Main image or attachment
   createdAt: string;
+  updatedAt?: string;
   supports: number;
   targetSupports?: number; // target count e.g. 500
   isSupported?: boolean;   // supported status by the current user

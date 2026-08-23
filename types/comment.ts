@@ -8,9 +8,13 @@ export interface Comment {
   createdAt: string;
   user: User;
   isPic: boolean;
+  parentId?: string;
+  parent?: Comment;
+  replies?: Comment[];
 }
 
 export interface CreateCommentRequest {
   content: string;
   evidenceUrl?: string;
+  parentId?: string;
 }
