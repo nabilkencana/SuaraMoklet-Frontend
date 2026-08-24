@@ -12,15 +12,28 @@ import {
   ScrollText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/app/store/auth.store";
+import RoleSwitchToggle from "@/components/dashboard/RoleSwitchToggle";
 
 type AdminTab = "dashboard" | "complaints" | "units" | "members" | "whatsapp" | "audit_logs";
 
 interface AdminSidebarProps {
   activeTab?: AdminTab;
   onTabChange?: (tab: AdminTab) => void;
+  /** Ada keluhan NEW yang menunggu delegasi ISO */
+  hasIsoNotification?: boolean;
+  /** Ada keluhan OPEN yang belum selesai di Admin */
+  hasAdminNotification?: boolean;
 }
 
-export default function AdminSidebar({ activeTab, onTabChange }: AdminSidebarProps) {
+export default function AdminSidebar({
+  activeTab,
+  onTabChange,
+  hasIsoNotification = false,
+  hasAdminNotification = false,
+}: AdminSidebarProps) {
+  const { user } = useAuthStore();
+  const isSuperPic = user?.role === "SUPER_PIC";
   const router = useRouter();
 
   const handleTabClick = (tab: AdminTab) => {
@@ -156,6 +169,17 @@ export default function AdminSidebar({ activeTab, onTabChange }: AdminSidebarPro
           </button>
         </nav>
       </div>
+
+      {/* Role Switch Toggle — only for SUPER_PIC */}
+      {isSuperPic && (
+        <div className="p-4 border-t border-zinc-900/60">
+          <RoleSwitchToggle
+            hasIsoNotification={hasIsoNotification}
+            hasAdminNotification={hasAdminNotification}
+            darkMode
+          />
+        </div>
+      )}
     </aside>
   );
 }

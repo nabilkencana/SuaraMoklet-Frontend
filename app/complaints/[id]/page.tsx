@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, AlertCircle, EyeOff, LogIn } from "lucide-react";
 import useComplaint from "@/hooks/useComplaint";
 import { useAuthStore } from "@/app/store/auth.store";
@@ -17,6 +17,7 @@ import ComplaintSidebar from "@/components/complaints/detail/ComplaintSidebar";
 export default function ComplaintDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const complaintId = params.id as string;
 
   const { isAuthenticated, user } = useAuthStore();
@@ -29,6 +30,9 @@ export default function ComplaintDetailPage() {
   const isOwner = Boolean(
     user && currentComplaint?.reporter?.id && user.id === currentComplaint.reporter.id
   );
+  
+  const source = searchParams.get("source");
+  const showDiscussion = isOwner && source === "my-complaints";
 
   const checkDislikeStatus = () => {
     if (typeof window !== "undefined") {
@@ -203,6 +207,7 @@ export default function ComplaintDetailPage() {
               complaint={currentComplaint}
               isDisliked={isDisliked}
               isOwner={isOwner}
+              showDiscussion={showDiscussion}
               onRestoreDisliked={handleRestoreDisliked}
             />
           </div>
@@ -211,6 +216,7 @@ export default function ComplaintDetailPage() {
             <ComplaintSidebar
               complaint={currentComplaint}
               isOwner={isOwner}
+              source={source}
               displayTimeline={displayTimeline}
               onSupport={supportComplaint}
             />

@@ -25,6 +25,13 @@ export default function StepUnitCategory({
         <p className="text-xs text-slate-500">
           Pilih departemen sekolah yang paling tepat untuk menindaklanjuti isu Anda.
         </p>
+        <div className="flex items-start gap-2 mt-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+          <span className="text-amber-500 text-sm mt-0.5 shrink-0">💡</span>
+          <p className="text-[11px] text-amber-700 leading-relaxed">
+            <span className="font-bold">Tidak tahu harus pilih unit mana?</span> Pilih{" "}
+            <span className="font-bold">Umum (ISO)</span> — tim koordinator kami akan menelaah dan meneruskan laporan ke unit yang tepat.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">

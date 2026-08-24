@@ -6,6 +6,7 @@ import {
   Building2,
   ChevronDown,
   EyeOff,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Complaint } from "@/types/complaint";
@@ -51,6 +52,7 @@ interface ComplaintBodyProps {
   complaint: Complaint;
   isDisliked: boolean;
   isOwner: boolean;
+  showDiscussion: boolean;
   onRestoreDisliked: () => void;
 }
 
@@ -58,6 +60,7 @@ export default function ComplaintBody({
   complaint,
   isDisliked,
   isOwner,
+  showDiscussion,
   onRestoreDisliked,
 }: ComplaintBodyProps) {
   if (isDisliked) {
@@ -218,12 +221,34 @@ export default function ComplaintBody({
       </div>
 
       {/* Discussion Section */}
-      {isOwner && (
-        <CommentSection
-          complaintId={complaint.id}
-          isClosed={complaint.status === "DONE"}
-          isOwner={isOwner}
-        />
+      {showDiscussion && (
+        <div className="space-y-4">
+          {/* Banner: waiting for response (only for NEW status) */}
+          {isOwner && complaint.status === "NEW" && (
+            <div className="flex items-start gap-3.5 bg-blue-50 border border-blue-200 rounded-2xl p-4">
+              <div className="h-9 w-9 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center shrink-0 mt-0.5">
+                <Clock className="h-4.5 w-4.5 text-blue-600" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-blue-800">Laporan Anda Telah Diterima! 🎉</p>
+                <p className="text-xs text-blue-600 leading-relaxed">
+                  Tim unit terkait sedang menelaah laporan Anda. Silakan tunggu respons resmi dari pihak sekolah —
+                  biasanya kami akan membalas dalam <span className="font-bold">1–3 hari kerja</span>.
+                  Anda akan mendapatkan notifikasi saat ada pembaruan.
+                </p>
+                <p className="text-[10px] text-blue-400 font-medium mt-1">
+                  💬 Anda juga bisa menambahkan informasi tambahan melalui kolom diskusi di bawah ini.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <CommentSection
+            complaintId={complaint.id}
+            isClosed={complaint.status === "DONE"}
+            isOwner={isOwner}
+          />
+        </div>
       )}
     </div>
   );

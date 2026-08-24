@@ -11,7 +11,7 @@ interface SupportWidgetProps {
   supports: number;
   isSupported?: boolean;
   isOwner?: boolean;
-  onSupport: (id: string, name?: string, comment?: string) => Promise<boolean>;
+  onSupport: (id: string, action: 'LIKE' | 'UNLIKE' | 'DISLIKE' | 'UNDISLIKE') => Promise<{ supports: number, dislikes: number } | null>;
 }
 
 export default function SupportWidget({
@@ -20,31 +20,33 @@ export default function SupportWidget({
   isSupported = false,
   isOwner = false,
   onSupport,
-}: SupportWidgetProps) {
-  const { isAuthenticated } = useAuthStore();
+  dislikes = 0,
+  isDisliked = false,
+}: SupportWidgetProps & { dislikes?: number; isDisliked?: boolean }) {
+  const { isAuthenticated, user } = useAuthStore();
   const [localLiked, setLocalLiked] = useState<boolean>(false);
   const [localDisliked, setLocalDisliked] = useState<boolean>(false);
   const [likeCount, setLikeCount] = useState<number>(supports);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [dislikeCount, setDislikeCount] = useState<number>(dislikes);
+
+  // Initialize from backend
   useEffect(() => {
     setLikeCount(supports);
-  }, [supports]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
+    setDislikeCount(dislikes);
+    if (isAuthenticated) {
+      setLocalLiked(isSupported);
+      setLocalDisliked(isDisliked);
+    } else {
       const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
       const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
-      setLocalLiked(likedList.includes(complaintId) || isSupported);
+      setLocalLiked(likedList.includes(complaintId));
       setLocalDisliked(dislikedList.includes(complaintId));
     }
-  }, [complaintId, isSupported]);
+  }, [supports, dislikes, isSupported, isDisliked, complaintId, isAuthenticated]);
 
   const handleLike = async () => {
-    if (isOwner) {
-      toast.error("Anda tidak bisa menyukai aspirasi milik Anda sendiri.");
-      return;
-    }
     if (!isAuthenticated) {
       toast.error("Silakan login untuk menyukai aspirasi ini.");
       return;
@@ -54,20 +56,24 @@ export default function SupportWidget({
 
     if (localLiked) {
       // Toggle OFF (Unlike)
-      setLocalLiked(false);
-      setLikeCount((prev) => Math.max(0, prev - 1));
-      const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
-      const updatedLiked = likedList.filter((id: string) => id !== complaintId);
-      localStorage.setItem("liked_complaints", JSON.stringify(updatedLiked));
-      toast.success("Batal menyukai aspirasi.");
+      const success = await onSupport(complaintId, 'UNLIKE');
+      if (success) {
+        setLocalLiked(false);
+        setLikeCount(success.supports);
+        const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
+        const updatedLiked = likedList.filter((id: string) => id !== complaintId);
+        localStorage.setItem("liked_complaints", JSON.stringify(updatedLiked));
+        toast.success("Batal menyukai aspirasi.");
+      }
     } else {
       // Toggle ON (Like)
-      const success = await onSupport(complaintId);
+      const success = await onSupport(complaintId, 'LIKE');
       if (success) {
         setLocalLiked(true);
-        setLikeCount((prev) => prev + 1);
+        setLikeCount(success.supports);
+        setDislikeCount(success.dislikes);
 
-        // If previously disliked, remove dislike
+        // If previously disliked, remove dislike from local
         if (localDisliked) {
           setLocalDisliked(false);
           const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
@@ -92,62 +98,75 @@ export default function SupportWidget({
     setIsSubmitting(false);
   };
 
-  const handleDislike = () => {
-    if (isOwner) {
-      toast.error("Anda tidak bisa memberikan dislike pada aspirasi milik Anda sendiri.");
-      return;
-    }
+  const handleDislike = async () => {
     if (!isAuthenticated) {
       toast.error("Silakan login untuk memberikan dislike.");
       return;
     }
 
-    // If previously liked, decrement count
-    if (localLiked) {
-      setLikeCount((prev) => Math.max(0, prev - 1));
-    }
+    const success = await onSupport(complaintId, 'DISLIKE');
+    if (success) {
+      setLikeCount(success.supports);
+      setDislikeCount(success.dislikes);
+      setLocalDisliked(true);
+      setLocalLiked(false);
 
-    setLocalDisliked(true);
-    setLocalLiked(false);
+      const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
+      if (!dislikedList.includes(complaintId)) {
+        dislikedList.push(complaintId);
+        localStorage.setItem("disliked_complaints", JSON.stringify(dislikedList));
+      }
+      const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
+      const updatedLiked = likedList.filter((id: string) => id !== complaintId);
+      localStorage.setItem("liked_complaints", JSON.stringify(updatedLiked));
 
-    const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
-    if (!dislikedList.includes(complaintId)) {
-      dislikedList.push(complaintId);
-      localStorage.setItem("disliked_complaints", JSON.stringify(dislikedList));
-    }
-    const likedList = JSON.parse(localStorage.getItem("liked_complaints") || "[]");
-    const updatedLiked = likedList.filter((id: string) => id !== complaintId);
-    localStorage.setItem("liked_complaints", JSON.stringify(updatedLiked));
+      toast.info("Aspirasi disembunyikan karena dislike.");
 
-    toast.info("Aspirasi disembunyikan karena dislike.");
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("local-disliked-change"));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("local-disliked-change"));
+      }
     }
   };
 
-  const handleUndoDislike = () => {
-    setLocalDisliked(false);
-    const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
-    const updatedDisliked = dislikedList.filter((id: string) => id !== complaintId);
-    localStorage.setItem("disliked_complaints", JSON.stringify(updatedDisliked));
+  const handleUndoDislike = async () => {
+    const success = await onSupport(complaintId, 'UNDISLIKE');
+    if (success) {
+      setLocalDisliked(false);
+      setDislikeCount(success.dislikes);
+      const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
+      const updatedDisliked = dislikedList.filter((id: string) => id !== complaintId);
+      localStorage.setItem("disliked_complaints", JSON.stringify(updatedDisliked));
 
-    toast.success("Dislike dibatalkan.");
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("local-disliked-change"));
+      toast.success("Dislike dibatalkan.");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("local-disliked-change"));
+      }
     }
   };
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-        <div>
-          <span className="block text-2xl font-extrabold text-slate-800 leading-none">
-            {likeCount}
-          </span>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1.5 block">
-            Jumlah Suka
-          </span>
+        <div className="flex items-center gap-6">
+          <div>
+            <span className="block text-2xl font-extrabold text-slate-800 leading-none">
+              {likeCount}
+            </span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1.5 block">
+              Jumlah Suka
+            </span>
+          </div>
+
+          {(user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC") && (
+            <div>
+              <span className="block text-2xl font-extrabold text-slate-800 leading-none">
+                {dislikeCount}
+              </span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1.5 block">
+                Jumlah Dislike
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2">

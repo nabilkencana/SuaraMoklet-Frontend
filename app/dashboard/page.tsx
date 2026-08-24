@@ -3,11 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/app/store/auth.store";
-import { Loader2 } from "lucide-react";
+import { useRoleViewStore } from "@/app/store/role-view.store";
 import FullScreenLoader from "@/components/shared/FullScreenLoader";
 
 import AdminDashboard from "@/components/dashboard/AdminDashboard";
-import IsoDashboard from "@/components/dashboard/IsoDashboard";
 import UnitDashboard from "@/components/dashboard/UnitDashboard";
 
 let isAppHydrated = false;
@@ -15,6 +14,7 @@ let isAppHydrated = false;
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
+  const { activeView } = useRoleViewStore();
   const [mounted, setMounted] = useState(isAppHydrated);
 
   useEffect(() => {
@@ -36,7 +36,18 @@ export default function DashboardPage() {
     return <FullScreenLoader />;
   }
 
-  if (user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC") {
+  // SUPERADMIN murni → selalu AdminDashboard
+  if (user?.role === "SUPERADMIN") {
+    return <AdminDashboard />;
+  }
+
+  // SUPER_PIC → bisa toggle antara iso view (UnitDashboard) dan admin view (AdminDashboard)
+  if (user?.role === "SUPER_PIC") {
+    if (activeView === "iso") {
+      // Tampilan seperti PIC biasa / ketua PIC
+      return <UnitDashboard />;
+    }
+    // Tampilan Super Admin penuh
     return <AdminDashboard />;
   }
 

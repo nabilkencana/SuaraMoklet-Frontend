@@ -16,6 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Info,
+  Globe,
+  EyeOff,
   Star,
   Clock,
 } from "lucide-react";
@@ -25,6 +27,7 @@ import { Complaint, ComplaintStatus } from "@/types/complaint";
 import UnitSidebar from "@/components/dashboard/UnitSidebar";
 import UnitComplaintsList from "@/components/dashboard/UnitComplaintsList";
 import DetailComplaintModal from "@/components/dashboard/admin/modals/DetailComplaintModal";
+import PublishCategoryModal from "@/components/dashboard/admin/modals/PublishCategoryModal";
 import { cn, getSlaStatus } from "@/lib/utils";
 
 interface ExtendedComplaint extends Complaint {
@@ -97,6 +100,47 @@ export default function UnitDashboard() {
     router.push(`/dashboard/complaints/${id}${hash}`);
   };
 
+  // Modal Publish / Visibility
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [selectedComplaintId, setSelectedComplaintId] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [selectedComplaintTitle, setSelectedComplaintTitle] = useState("");
+  const [selectedComplaintDesc, setSelectedComplaintDesc] = useState("");
+
+  const handleToggleVisibility = async (c: ExtendedComplaint) => {
+    if (c.visibility === "PRIVATE") {
+      setSelectedComplaintId(c.id);
+      setSelectedComplaintTitle(c.title);
+      setSelectedComplaintDesc(c.description || "");
+      setIsPublishModalOpen(true);
+      return;
+    }
+
+    try {
+      await apiClient.complaints.updateVisibility(c.id, "PRIVATE");
+      toast.success("Visibilitas Diperbarui", { description: "Keluhan kini disetel menjadi PRIVATE." });
+      fetchComplaints();
+    } catch (err: any) {
+      toast.error("Gagal Memperbarui Visibilitas", { description: err?.response?.data?.message || "Terjadi kesalahan" });
+    }
+  };
+
+  const handlePublishComplaint = async (category: string) => {
+    if (!selectedComplaintId) return;
+    setIsPublishing(true);
+    try {
+      await apiClient.complaints.updateVisibility(selectedComplaintId, "PUBLIC", category);
+      toast.success("Keluhan Dipublikasikan", { description: `Keluhan kini disetel menjadi PUBLIC dengan kategori ${category}.` });
+      setIsPublishModalOpen(false);
+      setSelectedComplaintId(null);
+      fetchComplaints();
+    } catch (err: any) {
+      toast.error("Gagal Memperbarui Visibilitas", { description: err?.response?.data?.message || "Terjadi kesalahan pada server" });
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   // Modal Detail Komprehensif
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
@@ -160,14 +204,14 @@ export default function UnitDashboard() {
 
   // Auth guard
   useEffect(() => {
-    if (mounted && (!isAuthenticated || (user?.role !== "UNIT_PIC" && user?.role !== "UNIT_MEMBER" && user?.role !== "SUPERADMIN"))) {
+    if (mounted && (!isAuthenticated || (user?.role !== "UNIT_PIC" && user?.role !== "UNIT_MEMBER" && user?.role !== "SUPERADMIN" && user?.role !== "SUPER_PIC"))) {
       router.replace("/complaints");
     }
   }, [mounted, isAuthenticated, user, router]);
 
   // Load data
   useEffect(() => {
-    if (mounted && isAuthenticated && (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN")) {
+    if (mounted && isAuthenticated && (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC")) {
       fetchComplaints();
     }
   }, [mounted, isAuthenticated, user, activeTab, fetchComplaints]);
@@ -232,7 +276,7 @@ export default function UnitDashboard() {
     }
   }
 
-  if (!mounted || !isAuthenticated || (user?.role !== "UNIT_PIC" && user?.role !== "UNIT_MEMBER" && user?.role !== "SUPERADMIN")) {
+  if (!mounted || !isAuthenticated || (user?.role !== "UNIT_PIC" && user?.role !== "UNIT_MEMBER" && user?.role !== "SUPERADMIN" && user?.role !== "SUPER_PIC")) {
     return (
       <div className="flex h-screen w-screen overflow-hidden bg-[#f9f9f9] font-sans antialiased text-slate-800">
         <UnitSidebar activeTab={activeTab} onTabChange={setActiveTab} />
@@ -262,7 +306,7 @@ export default function UnitDashboard() {
                   {user?.name || "PIC Unit"}
                 </span>
                 <span className="block text-[10px] font-medium text-slate-400 uppercase tracking-wider">
-                  {user?.role === "UNIT_PIC" ? "Ketua PIC" : "Anggota PIC"}
+                  {user?.role === "UNIT_PIC" ? "Ketua PIC" : user?.role === "SUPER_PIC" ? "Koordinator ISO" : "Anggota PIC"}
                 </span>
               </div>
               <div className="h-9 w-9 rounded-full bg-[#b61722] text-white flex items-center justify-center font-bold text-sm shadow-sm select-none">
@@ -361,20 +405,23 @@ export default function UnitDashboard() {
                     <th className="pb-3 font-semibold">Pelapor</th>
                     <th className="pb-3 font-semibold">Status</th>
                     <th className="pb-3 font-semibold">Tanggal</th>
+                    {user?.role === "UNIT_PIC" && (
+                      <th className="pb-3 font-semibold">Visibility</th>
+                    )}
                     <th className="pb-3 text-right pr-2 font-semibold">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {isLoading ? (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
+                      <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
                         <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2 text-[#b61722]" />
                         Memuat data keluhan...
                       </td>
                     </tr>
                   ) : paginatedComplaints.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-slate-400 font-semibold text-xs leading-relaxed">
+                      <td colSpan={7} className="py-12 text-center text-slate-400 font-semibold text-xs leading-relaxed">
                         <Building className="h-7 w-7 text-slate-350 mx-auto mb-2 opacity-50" />
                         {statusFilter !== "Semua Status"
                           ? `Tidak ada keluhan dengan status "${statusFilter}".`
@@ -440,6 +487,28 @@ export default function UnitDashboard() {
                             </span>
                           </td>
                           <td className="py-4 font-semibold text-slate-500">{formatDate(c.createdAt)}</td>
+                          {user?.role === "UNIT_PIC" && (
+                            <td className="py-4">
+                              <button
+                                onClick={() => handleToggleVisibility(c)}
+                                className={cn("inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer",
+                                  c.visibility === "PUBLIC"
+                                    ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                                    : "bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-200"
+                                )}
+                              >
+                                {c.visibility === "PUBLIC" ? (
+                                  <>
+                                    <EyeOff className="h-3.5 w-3.5" /> Jadikan Privat
+                                  </>
+                                ) : (
+                                  <>
+                                    <Globe className="h-3.5 w-3.5" /> Publikasikan
+                                  </>
+                                )}
+                              </button>
+                            </td>
+                          )}
                           <td className="py-4 text-right pr-2">
                             <div className="inline-flex items-center gap-2 justify-end">
                               <button
@@ -511,12 +580,21 @@ export default function UnitDashboard() {
       {/* Modal Detail */}
       <DetailComplaintModal
         isOpen={isDetailModalOpen}
-        isLoading={isDetailLoading}
+        onClose={() => setIsDetailModalOpen(false)}
         data={detailModalData}
+        isLoading={isDetailLoading}
+      />
+
+      <PublishCategoryModal
+        isOpen={isPublishModalOpen}
         onClose={() => {
-          setIsDetailModalOpen(false);
-          setDetailModalData(null);
+          setIsPublishModalOpen(false);
+          setSelectedComplaintId(null);
         }}
+        onSubmit={handlePublishComplaint}
+        complaintTitle={selectedComplaintTitle}
+        complaintContent={selectedComplaintDesc}
+        isSubmitting={isPublishing}
       />
     </div>
   );

@@ -62,6 +62,11 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
 
   const evidenceUrl = c.media && c.media.length > 0 ? c.media[0].url : undefined;
 
+  const collaboratorUnits = c.collaboratorUnits ? c.collaboratorUnits.map((u: any) => ({
+    id: u.id,
+    name: mapBackendUnitToFrontend(u.name),
+  })) : [];
+
   let reporter = null;
   if (c.author) {
     reporter = {
@@ -127,12 +132,17 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
     description: c.content || "",
     expectedOutput: c.expectedOutput || "",
     unit: mappedUnit,
+    collaboratorUnits,
+    isCollaborationForMe: !!c.isCollaborationForMe,
     status: c.status,
     isAnonymous: c.isAnonymous,
     evidenceUrl,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
     supports: c.supports || 0,
+    dislikes: c.dislikes || 0,
+    isSupported: !!c.isSupported,
+    isDisliked: !!c.isDisliked,
     reporter,
     visibility: c.visibility,
     timeline,
@@ -334,8 +344,9 @@ export const complaintsApi = {
     return rawList.map(mapBackendComplaintToFrontend);
   },
 
-  getById: async (id: string): Promise<Complaint> => {
-    const response = await api.get<any>(`/complaints/${id}`);
+  getById: async (id: string, forceRefresh = false): Promise<Complaint> => {
+    const url = forceRefresh ? `/complaints/${id}?_t=${Date.now()}` : `/complaints/${id}`;
+    const response = await api.get<any>(url);
     return mapBackendComplaintToFrontend(response.data);
   },
 
@@ -351,9 +362,9 @@ export const complaintsApi = {
     return mapBackendComplaintToFrontend(response.data);
   },
 
-  support: async (id: string, data?: { name?: string; comment?: string }): Promise<{ supports: number }> => {
-    // Fallback locally as backend doesn't store upvote/support entities
-    return { supports: 1 };
+  support: async (id: string, data: { action: 'LIKE' | 'UNLIKE' | 'DISLIKE' | 'UNDISLIKE' }): Promise<{ supports: number, dislikes: number }> => {
+    const response = await api.patch<any>(`/complaints/${id}/interaction`, data);
+    return response.data;
   },
 
   forward: async (id: string, data: { toUnitId: string; forwardNote?: string }): Promise<Complaint> => {
@@ -361,8 +372,15 @@ export const complaintsApi = {
     return mapBackendComplaintToFrontend(response.data);
   },
 
-  updateVisibility: async (id: string, visibility: "PUBLIC" | "PRIVATE"): Promise<Complaint> => {
-    const response = await api.patch<any>(`/complaints/${id}/visibility`, { visibility });
+  collaborate: async (id: string, data: { targetUnitId: string; collaborateNote?: string }): Promise<Complaint> => {
+    const response = await api.post<any>(`/complaints/${id}/collaborate`, data);
+    return mapBackendComplaintToFrontend(response.data);
+  },
+
+  updateVisibility: async (id: string, visibility: "PUBLIC" | "PRIVATE", category?: string): Promise<Complaint> => {
+    const payload: any = { visibility };
+    if (category) payload.category = category;
+    const response = await api.patch<any>(`/complaints/${id}/visibility`, payload);
     return mapBackendComplaintToFrontend(response.data);
   },
 
@@ -678,6 +696,25 @@ export const auditLogsApi = {
   }
 };
 
+export const categoriesApi = {
+  getAll: async (): Promise<any[]> => {
+    const response = await api.get<any[]>("/categories");
+    return response.data;
+  },
+  create: async (data: { name: string; icon?: string }): Promise<any> => {
+    const response = await api.post<any>("/categories", data);
+    return response.data;
+  },
+  update: async (id: string, data: { name?: string; icon?: string }): Promise<any> => {
+    const response = await api.patch<any>(`/categories/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: string): Promise<any> => {
+    const response = await api.delete<any>(`/categories/${id}`);
+    return response.data;
+  },
+};
+
 export const apiClient = {
   auth: authApi,
   profile: profileApi,
@@ -690,6 +727,7 @@ export const apiClient = {
   users: usersApi,
   whatsapp: whatsappApi,
   auditLogs: auditLogsApi,
+  categories: categoriesApi,
 };
 
 export default apiClient;

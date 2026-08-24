@@ -182,7 +182,7 @@ export default function ComplaintWizard() {
         toast.success("Aspirasi Berhasil Diajukan!", {
           description: "Laporan Anda telah masuk ke sistem dan akan segera ditindaklanjuti.",
         });
-        router.push(`/complaints/${result.id}`);
+        router.push(`/complaints/${result.id}?source=my-complaints`);
       }
     } catch (err: any) {
       toast.error("Gagal mengajukan aspirasi", {

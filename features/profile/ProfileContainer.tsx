@@ -185,7 +185,7 @@ export default function ProfileContainer() {
           
           <div className="space-y-3 pt-2">
             <label className="flex items-center justify-between p-3.5 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
-              <span className="text-xs font-semibold text-slate-700 group-hover:text-slate-900">Notifikasi WA (Keluhan Baru Masuk)</span>
+              <span className="text-xs font-semibold text-slate-700 group-hover:text-slate-900">Notifikasi WhatsApp (Keluhan Baru Masuk)</span>
               <input 
                 type="checkbox" 
                 checked={preferences.wa_new_complaint !== false} 
@@ -205,7 +205,7 @@ export default function ProfileContainer() {
               />
             </label>
             <label className="flex items-center justify-between p-3.5 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group">
-              <span className="text-xs font-semibold text-slate-700 group-hover:text-slate-900">Notifikasi WA (Keluhan Diteruskan)</span>
+              <span className="text-xs font-semibold text-slate-700 group-hover:text-slate-900">Notifikasi WhatsApp (Keluhan Diteruskan)</span>
               <input 
                 type="checkbox" 
                 checked={preferences.wa_forwarded_complaint !== false} 

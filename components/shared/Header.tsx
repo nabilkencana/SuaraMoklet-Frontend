@@ -22,16 +22,18 @@ export default function Header() {
   const [scrolled,    setScrolled]    = useState(false);
   const [mounted,     setMounted]     = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [querySource, setQuerySource] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    setQuerySource(new URLSearchParams(window.location.search).get("source"));
     const handler = () => {
       setScrolled(window.scrollY > 20);
     };
     handler();
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
@@ -62,9 +64,49 @@ export default function Header() {
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
-    if (href === "/complaints")
-      return pathname === "/complaints" ||
-        (pathname?.startsWith("/complaints/") && !pathname?.startsWith("/complaints/create"));
+    
+    // For "Keluhan Saya", highlight if on /complaints index OR if viewing detail with source=my-complaints
+    if (href === "/complaints") {
+      if (pathname === "/complaints") return true;
+      if (pathname?.startsWith("/complaints/") && !pathname?.startsWith("/complaints/create")) {
+        return querySource === "my-complaints";
+      }
+      return false;
+    }
+
+    // For "Jelajahi", highlight if on /search OR if viewing detail without source=my-complaints
+    if (href === "/search") {
+      if (pathname === "/search") return true;
+      if (pathname?.startsWith("/complaints/") && !pathname?.startsWith("/complaints/create")) {
+        return querySource !== "my-complaints";
+      }
+      return false;
+    }
+
+    return pathname === href || pathname?.startsWith(href + "/");
+  };
+
+  const isMobileActive = (href: string) => {
+    if (href === "/") return pathname === "/";
+    
+    // For "Keluhan Saya", highlight if on /complaints index OR if viewing detail with source=my-complaints
+    if (href === "/complaints") {
+      if (pathname === "/complaints") return true;
+      if (pathname?.startsWith("/complaints/") && !pathname?.startsWith("/complaints/create")) {
+        return querySource === "my-complaints";
+      }
+      return false;
+    }
+
+    // For "Jelajahi", highlight if on /search OR if viewing detail without source=my-complaints
+    if (href === "/search") {
+      if (pathname === "/search") return true;
+      if (pathname?.startsWith("/complaints/") && !pathname?.startsWith("/complaints/create")) {
+        return querySource !== "my-complaints";
+      }
+      return false;
+    }
+
     return pathname === href || pathname?.startsWith(href + "/");
   };
 

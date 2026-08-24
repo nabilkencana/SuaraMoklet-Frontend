@@ -14,6 +14,9 @@ import {
   FileText,
   TrendingUp,
   TrendingDown,
+  Globe,
+  EyeOff,
+  X,
 } from "lucide-react";
 import { cn, getSlaStatus } from "@/lib/utils";
 import { Complaint, ComplaintUnit, UnitModel } from "@/types/complaint";
@@ -406,24 +409,21 @@ export default function OverviewTab({
                           onClick={() =>
                             onToggleVisibility(c.id, c.visibility || "PUBLIC")
                           }
-                          className="flex items-center gap-2 group cursor-pointer focus:outline-none"
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                            c.visibility === "PUBLIC"
+                              ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                              : "bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-200"
+                          }`}
                         >
-                          <div
-                            className={`w-10 h-5.5 flex items-center rounded-full p-0.5 transition-all ${
-                              c.visibility === "PUBLIC" ? "bg-blue-600" : "bg-slate-300"
-                            }`}
-                          >
-                            <div
-                              className={`bg-white w-4.5 h-4.5 rounded-full shadow-md transform transition-all ${
-                                c.visibility === "PUBLIC"
-                                  ? "translate-x-4.5"
-                                  : "translate-x-0"
-                              }`}
-                            />
-                          </div>
-                          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                            {c.visibility === "PUBLIC" ? "Public" : "Private"}
-                          </span>
+                          {c.visibility === "PUBLIC" ? (
+                            <>
+                              <EyeOff className="h-3.5 w-3.5" /> Jadikan Privat
+                            </>
+                          ) : (
+                            <>
+                              <Globe className="h-3.5 w-3.5" /> Publikasikan
+                            </>
+                          )}
                         </button>
                       </td>
 

@@ -5,9 +5,9 @@ import { ShieldCheck, MessageSquare } from "lucide-react";
 
 export default function AuthVisual() {
   return (
-    <div className="relative w-full h-full min-h-90 lg:min-h-screen overflow-hidden group">
+    <div className="relative w-full h-full min-h-90 lg:min-h-screen overflow-hidden group bg-neutral-950">
       {/* Background Video with poster fallback */}
-      <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden bg-neutral-950">
         <video
           autoPlay
           loop
@@ -15,7 +15,7 @@ export default function AuthVisual() {
           playsInline
           className="w-full h-full object-cover scale-[1.02]"
         >
-          <source src="/videos/DJI_0001.MP4" type="video/mp4" />
+          <source src="/videos/Moklet_compressed.mp4" type="video/mp4" />
         </video>
         {/* Sleek Dark Gradient Overlay for text readability */}
         <div className="absolute inset-0 bg-linear-to-t from-neutral-950/90 via-neutral-950/30 to-transparent lg:bg-linear-to-r lg:from-neutral-950/50 lg:via-transparent lg:to-transparent" />

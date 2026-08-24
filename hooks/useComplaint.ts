@@ -31,7 +31,7 @@ export function useComplaint(complaintId?: string, options?: { skipFetchUnits?: 
     if (!silent) setIsLoading(true);
     try {
       const { apiClient } = await import("@/lib/api");
-      const data = await apiClient.complaints.getById(id);
+      const data = await apiClient.complaints.getById(id, silent);
       if (data && data.id) {
         setCurrentComplaint(data);
         return data;
@@ -40,7 +40,9 @@ export function useComplaint(complaintId?: string, options?: { skipFetchUnits?: 
       return null;
     } catch (err: any) {
       console.error("Failed to fetch complaint detail:", err);
-      toast.error("Keluhan tidak ditemukan atau Anda tidak memiliki akses.");
+      if (!silent) {
+        toast.error("Keluhan tidak ditemukan atau Anda tidak memiliki akses.");
+      }
       setCurrentComplaint(null);
       return null;
     } finally {
@@ -80,27 +82,15 @@ export function useComplaint(complaintId?: string, options?: { skipFetchUnits?: 
     }
   };
 
-  const supportComplaint = async (id: string, name?: string, comment?: string) => {
+  const supportComplaint = async (id: string, action: 'LIKE' | 'UNLIKE' | 'DISLIKE' | 'UNDISLIKE') => {
     try {
       const { apiClient } = await import("@/lib/api");
-      const res = await apiClient.complaints.support(id, { name, comment });
-      toast.success("Dukungan Anda berhasil dikirim!");
-      if (currentComplaint?.id === id) {
-        setCurrentComplaint((prev) =>
-          prev ? { ...prev, supports: res.supports, isSupported: true } : null
-        );
-      }
-      return true;
+      const res = await apiClient.complaints.support(id, { action });
+      return res; // { supports: number, dislikes: number }
     } catch (err: any) {
-      console.error("Failed to submit support:", err);
-      // Fallback locally if the endpoint fails (e.g. backend does not support it)
-      toast.success("Dukungan Anda berhasil dikirim!");
-      if (currentComplaint?.id === id) {
-        setCurrentComplaint((prev) =>
-          prev ? { ...prev, supports: (prev.supports ?? 0) + 1, isSupported: true } : null
-        );
-      }
-      return true;
+      console.error("Failed to submit interaction:", err);
+      toast.error(err?.response?.data?.message || "Gagal menyimpan dukungan.");
+      return null;
     }
   };
 

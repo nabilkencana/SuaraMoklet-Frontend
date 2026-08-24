@@ -8,7 +8,6 @@ import { apiClient } from "@/lib/api";
 
 // Subcomponents & Types
 import ExploreLandingView from "./ExploreLandingView";
-import SearchResultsView from "./SearchResultsView";
 
 export default function SearchContent() {
   const searchParams = useSearchParams();
@@ -27,6 +26,7 @@ export default function SearchContent() {
   const [complaints, setComplaints] = useState<
     (Complaint & { category?: string; location?: string })[]
   >([]);
+  const [categories, setCategories] = useState<{id: string; name: string; icon?: string}[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -39,32 +39,38 @@ export default function SearchContent() {
 
   useEffect(() => {
     let active = true;
-    async function loadComplaints() {
+    async function loadData() {
       try {
         setIsLoading(true);
-        const data = await apiClient.complaints.getPublic({ limit: 100 });
+        const [cats, data] = await Promise.all([
+          apiClient.categories.getAll().catch(() => []),
+          apiClient.complaints.getPublic({ limit: 100 })
+        ]);
+        
         if (active) {
+          setCategories(cats);
+          
           const dislikedIds =
             typeof window !== "undefined"
               ? JSON.parse(localStorage.getItem("disliked_complaints") || "[]")
               : [];
-          const filtered = data.filter((item) => !dislikedIds.includes(item.id));
-          const mapped = filtered.map((item) => ({
+          const filtered = data.filter((item: any) => !dislikedIds.includes(item.id));
+          const mapped = filtered.map((item: any) => ({
             ...item,
-            category: typeof item.unit === "string" ? item.unit : (item.unit as any)?.name || "Umum",
+            category: item.category || (typeof item.unit === "string" ? item.unit : (item.unit as any)?.name || "Umum"),
             location: (item as any).location || "Gedung Sekolah",
           }));
           setComplaints(mapped);
         }
       } catch (error) {
-        console.error("Failed to load complaints from API:", error);
+        console.error("Failed to load data:", error);
       } finally {
         if (active) {
           setIsLoading(false);
         }
       }
     }
-    loadComplaints();
+    loadData();
     return () => {
       active = false;
     };
@@ -72,41 +78,29 @@ export default function SearchContent() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push(`/search?q=${encodeURIComponent(searchVal.trim())}`);
+    // Search is handled by searchVal state directly
   };
 
   const handleCategorySelect = (category: string) => {
     setSelectedTopic(category);
-    const params = new URLSearchParams();
-    if (query) params.set("q", query);
-    if (statusParam !== "ALL") params.set("status", statusParam);
-    if (sortBy !== "POPULAR") params.set("sort", sortBy);
-    if (category !== "Semua Topik") params.set("topic", category);
-    router.push(`/search?${params.toString()}`);
   };
-
-  const isResultsView =
-    Boolean(query) ||
-    statusParam !== "ALL" ||
-    searchParams.has("sort") ||
-    topicParam !== "Semua Topik";
 
   const filteredResults = complaints
     .filter((item) => {
-      const queryNormalized = query.toLowerCase();
+      const queryNormalized = searchVal.toLowerCase();
       const titleMatch = item.title.toLowerCase().includes(queryNormalized);
       const descMatch = item.description.toLowerCase().includes(queryNormalized);
       const unitMatch = item.unit.toLowerCase().includes(queryNormalized);
       const categoryMatch = item.category?.toLowerCase().includes(queryNormalized);
 
-      const matchesSearch = !query || titleMatch || descMatch || unitMatch || categoryMatch;
+      const matchesSearch = !searchVal || titleMatch || descMatch || unitMatch || categoryMatch;
 
       const matchesTopic =
-        topicParam === "Semua Topik" ||
-        item.category === topicParam ||
-        item.unit === topicParam;
+        selectedTopic === "Semua Topik" ||
+        item.category === selectedTopic ||
+        item.unit === selectedTopic;
 
-      const matchesStatus = statusParam === "ALL" || item.status === statusParam;
+      const matchesStatus = selectedStatus === "ALL" || item.status === selectedStatus;
 
       return matchesSearch && matchesTopic && matchesStatus;
     })
@@ -121,52 +115,22 @@ export default function SearchContent() {
     <div className="min-h-screen bg-[#FAFAFA] text-slate-800 font-sans flex flex-col pt-16">
       <Header />
 
-      {!isResultsView ? (
-        <ExploreLandingView
-          searchVal={searchVal}
-          topicParam={topicParam}
-          isLoading={isLoading}
-          complaints={complaints}
-          onSearchChange={setSearchVal}
-          onSearchSubmit={handleSearchSubmit}
-          onTopicSelect={handleCategorySelect}
-        />
-      ) : (
-        <SearchResultsView
-          query={query}
-          statusParam={statusParam}
-          searchVal={searchVal}
-          sortBy={sortBy}
-          selectedStatus={selectedStatus}
-          selectedTopic={selectedTopic}
-          filteredResults={filteredResults}
-          onSearchChange={setSearchVal}
-          onSearchSubmit={handleSearchSubmit}
-          onResetSearch={() => {
-            setSelectedStatus("ALL");
-            setSelectedTopic("Semua Topik");
-            setSearchVal("");
-            router.push("/search");
-          }}
-          onSortChange={(newSort) => {
-            setSortBy(newSort);
-            const params = new URLSearchParams();
-            if (query) params.set("q", query);
-            if (statusParam !== "ALL") params.set("status", statusParam);
-            if (newSort !== "POPULAR") params.set("sort", newSort);
-            router.push(`/search?${params.toString()}`);
-          }}
-          onStatusChange={(newStatus) => {
-            setSelectedStatus(newStatus);
-            const params = new URLSearchParams();
-            if (query) params.set("q", query);
-            if (newStatus !== "ALL") params.set("status", newStatus);
-            if (sortBy !== "POPULAR") params.set("sort", sortBy);
-            router.push(`/search?${params.toString()}`);
-          }}
-          onTopicChange={setSelectedTopic}
-        />
-      )}
+      <ExploreLandingView
+        searchVal={searchVal}
+        topicParam={selectedTopic}
+        statusParam={selectedStatus}
+        sortParam={sortBy}
+        isLoading={isLoading}
+        complaints={filteredResults}
+        categories={categories}
+        onSearchChange={setSearchVal}
+        onSearchSubmit={handleSearchSubmit}
+        onTopicSelect={handleCategorySelect}
+        onQuickAction={(status, sort) => {
+          if (status) setSelectedStatus(status);
+          if (sort) setSortBy(sort);
+        }}
+      />
     </div>
   );
 }

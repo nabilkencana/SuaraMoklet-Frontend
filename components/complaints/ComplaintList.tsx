@@ -38,9 +38,10 @@ export default function ComplaintList() {
   const [search, setSearch] = useState(() => searchParams.get("q") || "");
   const [activeFilter, setActiveFilter] = useState<"ALL" | ComplaintStatus>("ALL");
   const [sortBy, setSortBy] = useState<"NEWEST" | "OLDEST">("NEWEST");
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
-    fetchOwnComplaints();
+    fetchOwnComplaints().finally(() => setIsInitialLoad(false));
   }, []);
 
   // Filtering Logic — guard against non-array state
@@ -59,7 +60,7 @@ export default function ComplaintList() {
       return sortBy === "NEWEST" ? dateB - dateA : dateA - dateB;
     });
 
-  if (isLoading) {
+  if (isLoading || isInitialLoad) {
     return (
       <div className="space-y-6">
         {/* Filters skeleton */}
@@ -141,7 +142,7 @@ export default function ComplaintList() {
             return (
               <div
                 key={complaint.id}
-                onClick={() => router.push(`/complaints/${complaint.id}`)}
+                onClick={() => router.push(`/complaints/${complaint.id}?source=my-complaints`)}
                 className="group flex flex-col justify-between bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
               >
                 {/* Header info */}
@@ -180,10 +181,14 @@ export default function ComplaintList() {
                 {/* Footer details */}
                 <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
                   {/* Support */}
-                  <div className="flex items-center gap-1.5 text-red-500 text-xs font-bold">
-                    <ThumbsUp className="h-3.5 w-3.5" />
-                    <span>{complaint.supports} Suka</span>
-                  </div>
+                  {complaint.visibility === "PUBLIC" ? (
+                    <div className="flex items-center gap-1.5 text-red-500 text-xs font-bold">
+                      <ThumbsUp className="h-3.5 w-3.5" />
+                      <span>{complaint.supports} Suka</span>
+                    </div>
+                  ) : (
+                    <div />
+                  )}
                   {/* Date */}
                   <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-semibold">
                     <Clock className="h-3.5 w-3.5" />

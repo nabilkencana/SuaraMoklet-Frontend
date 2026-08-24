@@ -24,14 +24,18 @@ export interface Complaint {
   description: string;
   expectedOutput?: string;
   unit: ComplaintUnit;
+  collaboratorUnits?: { id: string, name: string }[];
+  isCollaborationForMe?: boolean;
   status: ComplaintStatus;
   isAnonymous: boolean;
   evidenceUrl?: string; // Main image or attachment
   createdAt: string;
   updatedAt?: string;
   supports: number;
+  dislikes: number;
   targetSupports?: number; // target count e.g. 500
   isSupported?: boolean;   // supported status by the current user
+  isDisliked?: boolean;    // disliked status by the current user
   visibility?: ComplaintVisibility;
   handlingPlan?: string;
   resolution?: string;

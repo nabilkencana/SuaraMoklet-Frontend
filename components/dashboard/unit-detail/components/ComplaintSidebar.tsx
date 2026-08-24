@@ -4,6 +4,9 @@ import {
   Share2,
   CheckCircle,
   ChevronDown,
+  Globe,
+  EyeOff,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Complaint } from "@/types/complaint";
@@ -18,8 +21,10 @@ interface ComplaintSidebarProps {
   onToggleTimeline: () => void;
   onOpenProcessModal: () => void;
   onOpenForwardModal: () => void;
+  onOpenCollaborateModal: () => void;
   onOpenCloseModal: () => void;
   onReopenComplaint: () => void;
+  onOpenPublishModal: () => void;
 }
 
 export default function ComplaintSidebar({
@@ -31,8 +36,10 @@ export default function ComplaintSidebar({
   onToggleTimeline,
   onOpenProcessModal,
   onOpenForwardModal,
+  onOpenCollaborateModal,
   onOpenCloseModal,
   onReopenComplaint,
+  onOpenPublishModal,
 }: ComplaintSidebarProps) {
   const formatTime = (isoString: string) => {
     try {
@@ -156,6 +163,34 @@ export default function ComplaintSidebar({
           )}
         </div>
 
+        {/* Support Info (Only shown when complaint is PUBLIC) */}
+        {complaint.visibility === "PUBLIC" && (
+          <div className="rounded-2xl p-4 border border-blue-200 bg-blue-50 text-center relative overflow-hidden transition-all mt-3">
+            <span className="block text-[9px] font-bold uppercase tracking-widest text-blue-700 opacity-80 mb-2">
+              Statistik Dukungan Publik
+            </span>
+            <div className="flex items-center justify-center gap-6">
+              <div>
+                <span className="block text-xl font-extrabold text-blue-800 leading-none">
+                  {complaint.supports || 0}
+                </span>
+                <span className="text-[10px] font-bold text-blue-700/80 uppercase tracking-wider mt-1 block">
+                  Suka
+                </span>
+              </div>
+              <div className="w-px h-8 bg-blue-200" />
+              <div>
+                <span className="block text-xl font-extrabold text-blue-800 leading-none">
+                  {complaint.dislikes || 0}
+                </span>
+                <span className="text-[10px] font-bold text-blue-700/80 uppercase tracking-wider mt-1 block">
+                  Dislike
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Rating Info */}
         {complaint.rating && (
           <div className="rounded-2xl p-4 border border-yellow-200 bg-yellow-50 text-center relative overflow-hidden transition-all mt-3">
@@ -194,6 +229,21 @@ export default function ComplaintSidebar({
               </span>
             </div>
           </div>
+
+          {complaint.collaboratorUnits && complaint.collaboratorUnits.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-slate-100 space-y-2">
+              <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                Unit Kolaborator
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {complaint.collaboratorUnits.map((cu: any) => (
+                  <div key={cu.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-50 border border-indigo-100">
+                    <span className="text-[10px] font-bold text-indigo-700">{cu.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Action Controls */}
@@ -222,6 +272,35 @@ export default function ComplaintSidebar({
           >
             <Share2 className={cn("h-4 w-4", forwardCount >= 3 ? "text-slate-400" : "text-slate-500")} />
             <span>Teruskan (Forward) {forwardCount >= 3 ? "(Maks)" : ""}</span>
+          </button>
+
+          {/* Kolaborasi */}
+          <button
+            onClick={onOpenCollaborateModal}
+            className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer active:scale-[0.98]"
+          >
+            <Share2 className="h-4 w-4" />
+            <span>Kolaborasi Unit</span>
+          </button>
+
+          {/* Publikasikan / Jadikan Privat */}
+          <button
+            onClick={onOpenPublishModal}
+            className={`w-full h-11 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] ${
+              complaint.visibility === "PUBLIC"
+                ? "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200"
+                : "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 shadow-sm"
+            }`}
+          >
+            {complaint.visibility === "PUBLIC" ? (
+              <>
+                <EyeOff className="h-4 w-4" /> <span>Jadikan Privat</span>
+              </>
+            ) : (
+              <>
+                <Globe className="h-4 w-4" /> <span>Publikasikan</span>
+              </>
+            )}
           </button>
 
           {/* Tutup / Reopen */}

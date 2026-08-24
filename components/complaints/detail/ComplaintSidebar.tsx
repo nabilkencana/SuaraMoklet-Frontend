@@ -7,13 +7,15 @@ import RatingWidget from "@/components/complaints/RatingWidget";
 interface ComplaintSidebarProps {
   complaint: Complaint;
   isOwner: boolean;
+  source?: string | null;
   displayTimeline: TimelineEvent[];
-  onSupport: (id: string, name?: string, comment?: string) => Promise<boolean>;
+  onSupport: (id: string, action: 'LIKE' | 'UNLIKE' | 'DISLIKE' | 'UNDISLIKE') => Promise<{ supports: number, dislikes: number } | null>;
 }
 
 export default function ComplaintSidebar({
   complaint,
   isOwner,
+  source,
   displayTimeline,
   onSupport,
 }: ComplaintSidebarProps) {
@@ -23,13 +25,16 @@ export default function ComplaintSidebar({
         <SupportWidget
           complaintId={complaint.id}
           supports={complaint.supports}
+          dislikes={complaint.dislikes}
           isSupported={complaint.isSupported}
+          isDisliked={complaint.isDisliked}
           isOwner={isOwner}
           onSupport={onSupport}
         />
       )}
 
-      <Timeline events={displayTimeline} />
+      {/* Timeline: only show to complaint owner if they accessed from my-complaints */}
+      {isOwner && source === "my-complaints" && <Timeline events={displayTimeline} />}
 
       {/* Rating: only show to complaint owner after status DONE */}
       {isOwner && complaint.status === "DONE" && (

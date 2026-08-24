@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Tag, ThumbsUp, Calendar, User as UserIcon, Building2, AlertCircle } from "lucide-react";
+import { Tag, ThumbsUp, Calendar, User as UserIcon, Building2, AlertCircle, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Complaint, ComplaintStatus } from "@/types/complaint";
 import { apiClient } from "@/lib/api";
@@ -97,6 +97,12 @@ export default function ComplaintHeader({ complaint }: ComplaintHeaderProps) {
               <Tag className="h-3 w-3" />
               {complaint.unit}
             </span>
+            {complaint.visibility === "PRIVATE" && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700">
+                <EyeOff className="h-3 w-3" />
+                PRIVATE
+              </span>
+            )}
           </div>
         </div>
 
@@ -148,6 +154,12 @@ export default function ComplaintHeader({ complaint }: ComplaintHeaderProps) {
                   <Tag className="h-3.5 w-3.5" />
                   {complaint.unit}
                 </span>
+                {complaint.visibility === "PRIVATE" && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-red-100 text-red-700">
+                    <EyeOff className="h-3.5 w-3.5" />
+                    PRIVATE
+                  </span>
+                )}
               </div>
             </div>
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400">

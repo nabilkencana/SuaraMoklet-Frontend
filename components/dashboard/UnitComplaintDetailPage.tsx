@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/app/store/auth.store";
+import { useRoleViewStore } from "@/app/store/role-view.store";
 import { Loader2 } from "lucide-react";
 import imageCompression from "browser-image-compression";
 import { toast } from "sonner";
@@ -22,10 +23,13 @@ import ComplaintSidebar from "./unit-detail/components/ComplaintSidebar";
 import ProcessReportModal from "./unit-detail/modals/ProcessReportModal";
 import CloseComplaintModal from "./unit-detail/modals/CloseComplaintModal";
 import ForwardUnitModal from "./unit-detail/modals/ForwardUnitModal";
+import CollaborateUnitModal from "./unit-detail/modals/CollaborateUnitModal";
+import PublishCategoryModal from "./admin/modals/PublishCategoryModal";
 
 export default function UnitComplaintDetailPage({ complaintId }: { complaintId: string }) {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
+  const { activeView } = useRoleViewStore();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSidebarTab, setActiveSidebarTab] = useState<"dashboard" | "keluhan">("keluhan");
@@ -60,6 +64,15 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   const [forwardUnitId, setForwardUnitId] = useState("");
   const [forwardNote, setForwardNote] = useState("");
   const [availableUnits, setAvailableUnits] = useState<any[]>([]);
+
+  // Modal: Collaborate
+  const [isCollaborateModalOpen, setIsCollaborateModalOpen] = useState(false);
+  const [collaborateUnitId, setCollaborateUnitId] = useState("");
+  const [collaborateNote, setCollaborateNote] = useState("");
+
+  // Modal: Publish
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const loadComplaintData = async () => {
     setIsLoading(true);
@@ -142,12 +155,28 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       }
       loadComplaintData();
 
-      // Polling for realtime comment updates every 5 seconds
+      // Polling for realtime updates every 5 seconds
       const pollInterval = setInterval(async () => {
         try {
+          // Poll comments
           const freshComments = await apiClient.comments.getByComplaintId(complaintId);
           if (Array.isArray(freshComments)) {
             setComments(freshComments);
+          }
+          // Poll complaint details for live stats
+          const freshComplaint = await apiClient.complaints.getById(complaintId);
+          if (freshComplaint && freshComplaint.id) {
+            setComplaint((prev) => {
+              if (!prev) return freshComplaint;
+              return {
+                ...prev,
+                supports: freshComplaint.supports,
+                dislikes: freshComplaint.dislikes,
+                status: freshComplaint.status,
+                visibility: freshComplaint.visibility,
+                timeline: freshComplaint.timeline
+              };
+            });
           }
         } catch { /* ignore polling errors */ }
       }, 5000);
@@ -307,10 +336,71 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     }
   };
 
+  const handleCollaborateComplaint = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!collaborateUnitId) {
+      toast.error("Pilih unit kerja tujuan kolaborasi");
+      return;
+    }
+
+    try {
+      await apiClient.complaints.collaborate(complaintId, {
+        targetUnitId: collaborateUnitId,
+        collaborateNote: collaborateNote.trim(),
+      });
+      toast.success("Kolaborasi laporan berhasil dimulai");
+      setIsCollaborateModalOpen(false);
+      setCollaborateNote("");
+      loadComplaintData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal mengajak kolaborasi laporan");
+    }
+  };
+
+  const handleToggleVisibility = async () => {
+    if (!complaint) return;
+    if (complaint.visibility === "PRIVATE") {
+      setIsPublishModalOpen(true);
+      return;
+    }
+    
+    // Making it PRIVATE
+    try {
+      await apiClient.complaints.updateVisibility(complaintId, "PRIVATE");
+      toast.success("Visibilitas Diperbarui", {
+        description: `Keluhan kini disetel menjadi PRIVATE.`,
+      });
+      loadComplaintData();
+    } catch (err: any) {
+      toast.error("Gagal Memperbarui Visibilitas", {
+        description: err?.response?.data?.message || "Terjadi kesalahan pada server",
+      });
+    }
+  };
+
+  const handlePublishComplaint = async (category: string) => {
+    if (!complaint) return;
+    setIsPublishing(true);
+    try {
+      await apiClient.complaints.updateVisibility(complaint.id, "PUBLIC", category);
+      toast.success("Keluhan Dipublikasikan", {
+        description: `Keluhan kini disetel menjadi PUBLIC dengan kategori ${category}.`,
+      });
+      setIsPublishModalOpen(false);
+      loadComplaintData();
+    } catch (err: any) {
+      toast.error("Gagal Memperbarui Visibilitas", {
+        description: err?.response?.data?.message || "Terjadi kesalahan pada server",
+      });
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   if (!mounted || isLoading || !complaint) {
     return (
       <div className="h-screen w-screen flex overflow-hidden bg-slate-50 font-sans text-slate-800">
-        {user?.role === "SUPERADMIN" ? (
+        {user?.role === "SUPERADMIN" || (user?.role === "SUPER_PIC" && activeView === "admin") ? (
           <AdminSidebar activeTab="complaints" />
         ) : (
           <UnitSidebar activeTab={activeSidebarTab} />
@@ -330,7 +420,7 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   return (
     <div className="h-screen w-screen flex overflow-hidden bg-slate-50 font-sans text-slate-800">
       {/* Dynamic Sidebar based on role */}
-      {user?.role === "SUPERADMIN" ? (
+      {user?.role === "SUPERADMIN" || (user?.role === "SUPER_PIC" && activeView === "admin") ? (
         <AdminSidebar activeTab="complaints" />
       ) : (
         <UnitSidebar activeTab={activeSidebarTab} />
@@ -373,7 +463,9 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
                 onToggleTimeline={() => setIsTimelineExpanded(!isTimelineExpanded)}
                 onOpenProcessModal={() => setIsOpenModal(true)}
                 onOpenForwardModal={() => setIsForwardModalOpen(true)}
+                onOpenCollaborateModal={() => setIsCollaborateModalOpen(true)}
                 onOpenCloseModal={() => setIsCloseModal(true)}
+                onOpenPublishModal={handleToggleVisibility}
                 onReopenComplaint={() =>
                   apiClient.complaints
                     .updateStatus(complaint.id, "OPEN")
@@ -423,6 +515,28 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
         onChangeNote={setForwardNote}
         onAppendNote={(chip) => setForwardNote(chip)}
         onSubmit={handleForwardComplaint}
+      />
+      
+      <CollaborateUnitModal
+        isOpen={isCollaborateModalOpen}
+        complaint={complaint}
+        collaborateUnitId={collaborateUnitId}
+        collaborateNote={collaborateNote}
+        availableUnits={availableUnits}
+        onClose={() => setIsCollaborateModalOpen(false)}
+        onSelectUnit={setCollaborateUnitId}
+        onChangeNote={setCollaborateNote}
+        onAppendNote={(chip) => setCollaborateNote(chip)}
+        onSubmit={handleCollaborateComplaint}
+      />
+
+      <PublishCategoryModal
+        isOpen={isPublishModalOpen}
+        onClose={() => setIsPublishModalOpen(false)}
+        onSubmit={handlePublishComplaint}
+        complaintTitle={complaint?.title}
+        complaintContent={complaint?.description}
+        isSubmitting={isPublishing}
       />
     </div>
   );

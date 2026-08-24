@@ -125,7 +125,7 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
 
   // Load data
   useEffect(() => {
-    if (mounted && isAuthenticated && (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN")) {
+    if (mounted && isAuthenticated && (user?.role === "UNIT_PIC" || user?.role === "UNIT_MEMBER" || user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC")) {
       fetchComplaints();
     }
   }, [mounted, isAuthenticated, user, fetchComplaints]);
@@ -185,7 +185,7 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
     router.push("/");
   };
 
-  if (!mounted || !isAuthenticated || (user?.role !== "UNIT_PIC" && user?.role !== "UNIT_MEMBER" && user?.role !== "SUPERADMIN")) {
+  if (!mounted || !isAuthenticated || (user?.role !== "UNIT_PIC" && user?.role !== "UNIT_MEMBER" && user?.role !== "SUPERADMIN" && user?.role !== "SUPER_PIC")) {
     return null;
   }
 
@@ -350,7 +350,11 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
 
                       {/* Attribute Badges */}
                       <div className="flex flex-wrap items-center gap-2">
-
+                        {c.isCollaborationForMe && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase tracking-wider">
+                            Kolaborasi
+                          </span>
+                        )}
                         <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider", statusBadgeClass)}>
                           {statusLabel}
                         </span>

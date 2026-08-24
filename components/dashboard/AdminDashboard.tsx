@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/app/store/auth.store";
+import { useRoleViewStore } from "@/app/store/role-view.store";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient, mapBackendUnitToFrontend } from "@/lib/api";
@@ -29,10 +30,12 @@ import UserFormModal from "./admin/modals/UserFormModal";
 import ViewUserModal from "./admin/modals/ViewUserModal";
 import DetailComplaintModal from "./admin/modals/DetailComplaintModal";
 import DeleteComplaintModal from "./admin/modals/DeleteComplaintModal";
+import PublishCategoryModal from "./admin/modals/PublishCategoryModal";
 
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
+  const { activeView } = useRoleViewStore();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -123,6 +126,9 @@ export default function AdminDashboard() {
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [complaintIdToDelete, setComplaintIdToDelete] = useState<string | null>(null);
+
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [selectedComplaintForPublish, setSelectedComplaintForPublish] = useState<{ id: string; title: string } | null>(null);
 
   // Sync activeTab with localStorage
   useEffect(() => {
@@ -258,17 +264,47 @@ export default function AdminDashboard() {
 
   // Handler: Toggle Visibility
   const handleToggleVisibility = async (id: string, current: string) => {
-    const nextVisibility = current === "PUBLIC" ? "PRIVATE" : "PUBLIC";
+    if (current === "PRIVATE") {
+      // Trying to make it PUBLIC, so ask for category
+      const c = complaints.find((x) => x.id === id);
+      if (c) {
+        setSelectedComplaintForPublish({ id: c.id, title: c.title });
+        setIsPublishModalOpen(true);
+      }
+      return;
+    }
+
+    // Making it PRIVATE
     try {
-      await apiClient.complaints.updateVisibility(id, nextVisibility);
+      await apiClient.complaints.updateVisibility(id, "PRIVATE");
       toast.success("Visibilitas Diperbarui", {
-        description: `Keluhan kini disetel menjadi ${nextVisibility}.`,
+        description: `Keluhan kini disetel menjadi PRIVATE.`,
       });
       fetchData();
     } catch (err: any) {
       toast.error("Gagal Memperbarui Visibilitas", {
         description: err?.response?.data?.message || "Terjadi kesalahan pada server",
       });
+    }
+  };
+
+  const handlePublishComplaint = async (category: string) => {
+    if (!selectedComplaintForPublish) return;
+    setIsSubmitting(true);
+    try {
+      await apiClient.complaints.updateVisibility(selectedComplaintForPublish.id, "PUBLIC", category);
+      toast.success("Keluhan Dipublikasikan", {
+        description: `Keluhan kini disetel menjadi PUBLIC dengan kategori ${category}.`,
+      });
+      setIsPublishModalOpen(false);
+      setSelectedComplaintForPublish(null);
+      fetchData();
+    } catch (err: any) {
+      toast.error("Gagal Memperbarui Visibilitas", {
+        description: err?.response?.data?.message || "Terjadi kesalahan pada server",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -703,10 +739,21 @@ export default function AdminDashboard() {
     userPage * userPageSize
   );
 
+  // Notification flags — dipakai untuk dot indikator di RoleSwitchToggle
+  // Ada keluhan NEW yang belum diteruskan = ISO perlu aksi (Umum/ISO)
+  const hasIsoNotification = complaints.some((c) => c.status === "NEW" && (c.unit === "Umum" || c.unit === "Umum (ISO)"));
+  // Ada keluhan OPEN yang belum selesai = Admin perlu aksi
+  const hasAdminNotification = complaints.some((c) => c.status === "OPEN");
+
   if (!mounted || !isAuthenticated || (user?.role !== "SUPERADMIN" && user?.role !== "SUPER_PIC")) {
     return (
       <div className="h-screen w-screen overflow-hidden bg-[#f9f9f9] flex font-sans antialiased text-slate-800">
-        <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <AdminSidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          hasIsoNotification={hasIsoNotification}
+          hasAdminNotification={hasAdminNotification}
+        />
         <div className="grow h-full flex items-center justify-center bg-[#f9f9f9]">
           <Loader2 className="h-8 w-8 animate-spin text-red-600" />
         </div>
@@ -717,7 +764,12 @@ export default function AdminDashboard() {
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#f9f9f9] flex font-sans antialiased text-slate-800">
       {/* ─── 1. LEFT SIDEBAR ─── */}
-      <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <AdminSidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        hasIsoNotification={hasIsoNotification}
+        hasAdminNotification={hasAdminNotification}
+      />
 
       {/* ─── 2. MAIN CONTAINER ─── */}
       <div className="grow h-full flex flex-col min-w-0 overflow-hidden bg-[#f9f9f9]">
@@ -992,9 +1044,18 @@ export default function AdminDashboard() {
 
       <DeleteComplaintModal
         isOpen={isDeleteModalOpen}
-        isSubmitting={isSubmitting}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDeleteComplaint}
+        isSubmitting={isSubmitting}
+      />
+
+      <PublishCategoryModal
+        isOpen={isPublishModalOpen}
+        onClose={() => setIsPublishModalOpen(false)}
+        onSubmit={handlePublishComplaint}
+        complaintTitle={selectedComplaintForPublish?.title}
+        complaintContent={(selectedComplaintForPublish as any)?.description || (selectedComplaintForPublish as any)?.content}
+        isSubmitting={isSubmitting}
       />
     </div>
   );
