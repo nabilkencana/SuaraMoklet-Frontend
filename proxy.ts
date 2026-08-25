@@ -1,7 +1,23 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// ─── Role type ────────────────────────────────────────────────────────────────
+// ─── Next.js Edge Proxy (Route Protection + RBAC) ─────────────────────────────
+//
+// F3 FIX (MD-2 / Frontend Middleware hardening):
+// Proxy ini adalah lapisan perlindungan server-side pertama untuk semua route.
+// Berjalan di Edge Runtime sebelum React render, sehingga:
+//   - Route protected tidak pernah ter-render di client tanpa token valid
+//   - Token kadaluarsa otomatis dibersihkan (cookie delete) + redirect ke login
+//   - RBAC: setiap role hanya bisa akses route yang diizinkan
+//
+// Skenario serangan yang ditutup:
+//   - Direct URL access ke /dashboard, /admin tanpa login (atau dengan token kadaluarsa)
+//   - Role escalation: USER mengakses /admin (seharusnya SUPERADMIN only)
+//   - Attacker menahan token lama yang kadaluarsa → dideteksi dan dihapus di sini
+//
+// CATATAN: decodeJwt() TIDAK memverifikasi signature — ini by design.
+// JWT_SECRET tidak boleh ada di frontend. Verifikasi signature dilakukan
+// di setiap API call oleh backend. Fungsi ini hanya membaca claims & cek expiry.
 
 type UserRole = "SUPERADMIN" | "SUPER_PIC" | "UNIT_PIC" | "UNIT_MEMBER" | "USER";
 

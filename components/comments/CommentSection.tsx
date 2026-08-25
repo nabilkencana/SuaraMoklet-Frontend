@@ -24,16 +24,29 @@ import useComments from "@/hooks/useComments";
 import { apiClient } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/app/store/auth.store";
+import { isSafeMediaUrl } from "@/lib/utils";
 
 interface CommentSectionProps {
   complaintId: string;
   isClosed?: boolean;
   /** Only show the section to the complaint owner (pelapor). Others see nothing. */
   isOwner?: boolean;
+  // F4: Context anonimitas untuk sensor nama pelapor anonim di komentar
+  complaintAuthorId?: string;
+  isAnonymousComplaint?: boolean;
 }
 
-export default function CommentSection({ complaintId, isClosed = false, isOwner = false }: CommentSectionProps) {
-  const { comments, isLoading, isSubmitting, addComment } = useComments(complaintId);
+export default function CommentSection({
+  complaintId,
+  isClosed = false,
+  isOwner = false,
+  complaintAuthorId,
+  isAnonymousComplaint,
+}: CommentSectionProps) {
+  const { comments, isLoading, isSubmitting, addComment } = useComments(complaintId, {
+    complaintAuthorId,
+    isAnonymousComplaint,
+  });
   const { isAuthenticated } = useAuthStore();
   const [content, setContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<any | null>(null);
@@ -240,7 +253,9 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
                 {/* User Identity info header */}
                 <div className="flex items-center justify-between gap-6">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-800">{comment.user.name || "Anonim"}</span>
+                    <span className="font-bold text-slate-800">
+                      {isAnonymousComplaint && !isOfficial ? "Anonim" : comment.user.name || "Anonim"}
+                    </span>
                     {isOfficial && (
                       <span className="px-2 py-0.5 bg-[#b61722] text-white font-extrabold text-[8px] uppercase tracking-wider rounded-md">
                         Respon Resmi Unit
@@ -290,7 +305,11 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
                     }}
                     className="p-2 bg-slate-100/80 border-l-2 border-red-500 rounded text-[10px] text-slate-500 font-medium cursor-pointer hover:bg-slate-200/50 transition-colors"
                   >
-                    <p className="font-bold text-red-600 mb-0.5">{comment.parent.user?.name || (comment.parent.isPic ? "Unit" : "Anonim")}</p>
+                    <p className="font-bold text-red-600 mb-0.5">
+                      {isAnonymousComplaint && !comment.parent.isPic
+                        ? "Anonim"
+                        : comment.parent.user?.name || (comment.parent.isPic ? "Unit" : "Anonim")}
+                    </p>
                     <p className="line-clamp-2">{comment.parent.content}</p>
                   </div>
                 )}
@@ -380,7 +399,11 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
           {replyingTo && (
             <div className="flex items-center justify-between bg-slate-50 border-l-2 border-red-500 p-2 rounded-r-xl">
               <div>
-                <p className="text-[10px] font-bold text-red-600">Membalas {replyingTo.user?.name || (replyingTo.isPic ? "Unit" : "Anonim")}</p>
+                <p className="text-[10px] font-bold text-red-600">
+                  Membalas {isAnonymousComplaint && !replyingTo.isPic
+                    ? "Anonim"
+                    : replyingTo.user?.name || (replyingTo.isPic ? "Unit" : "Anonim")}
+                </p>
                 <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5 font-medium">{replyingTo.content}</p>
               </div>
               <button 
@@ -505,7 +528,11 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
           </button>
           
           <div className="relative w-full h-full flex items-center justify-center p-4 overflow-hidden">
-            {selectedFile.isImage ? (
+            {!isSafeMediaUrl(selectedFile.url) ? (
+              <div className="p-4 bg-red-50 text-red-700 rounded-xl text-xs font-semibold text-center max-w-sm">
+                Tautan media tidak valid atau tidak aman untuk ditampilkan.
+              </div>
+            ) : selectedFile.isImage ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img 
                 src={selectedFile.url} 
@@ -518,6 +545,7 @@ export default function CommentSection({ complaintId, isClosed = false, isOwner 
                 src={selectedFile.url}
                 className="w-11/12 h-5/6 bg-white rounded-xl shadow-2xl"
                 title="Document Preview"
+                sandbox="allow-scripts allow-same-origin"
                 onClick={(e: any) => e.stopPropagation()}
               />
             )}

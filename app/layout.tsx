@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Geist } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import AuthRehydrator from "@/components/shared/AuthRehydrator";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -32,6 +33,8 @@ export default function RootLayout({
   return (
     <html lang="id" className={cn("scroll-smooth", plusJakartaSans.variable, "font-sans", geist.variable)}>
       <body className="min-h-screen font-sans antialiased">
+        {/* F2: Re-hydrate user state dari /users/me saat reload (menggantikan localStorage) */}
+        <AuthRehydrator />
         {children}
         <Toaster position="bottom-right" richColors closeButton />
       </body>

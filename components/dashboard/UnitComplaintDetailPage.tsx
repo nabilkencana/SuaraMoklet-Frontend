@@ -99,7 +99,10 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       // Load comments (api.ts flattenComments already returns flat sorted list with parent refs)
       let loadedComments: Comment[] = [];
       try {
-        loadedComments = await apiClient.comments.getByComplaintId(complaintId);
+        loadedComments = await apiClient.comments.getByComplaintId(complaintId, {
+          isAnonymousComplaint: activeDetail?.isAnonymous,
+          complaintAuthorId: activeDetail?.reporter?.id,
+        });
         if (Array.isArray(loadedComments)) {
           setComments(loadedComments);
         }
@@ -159,7 +162,10 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
       const pollInterval = setInterval(async () => {
         try {
           // Poll comments
-          const freshComments = await apiClient.comments.getByComplaintId(complaintId);
+          const freshComments = await apiClient.comments.getByComplaintId(complaintId, {
+            isAnonymousComplaint: complaint?.isAnonymous,
+            complaintAuthorId: complaint?.reporter?.id,
+          });
           if (Array.isArray(freshComments)) {
             setComments(freshComments);
           }

@@ -247,6 +247,9 @@ export default function ComplaintBody({
             complaintId={complaint.id}
             isClosed={complaint.status === "DONE"}
             isOwner={isOwner}
+            // F4: Teruskan context anonimitas agar sensor nama pelapor anonim aktif
+            isAnonymousComplaint={complaint.isAnonymous}
+            complaintAuthorId={complaint.reporter?.id}
           />
         </div>
       )}

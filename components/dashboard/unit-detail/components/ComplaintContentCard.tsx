@@ -1,6 +1,7 @@
 import React from "react";
 import { Globe, User as UserIcon } from "lucide-react";
 import { Complaint } from "@/types/complaint";
+import { isSafeMediaUrl } from "@/lib/utils";
 
 interface ComplaintContentCardProps {
   complaint: Complaint;
@@ -72,7 +73,7 @@ export default function ComplaintContentCard({ complaint }: ComplaintContentCard
       </div>
 
       {/* Attachments Card */}
-      {complaint.evidenceUrl && (
+      {complaint.evidenceUrl && isSafeMediaUrl(complaint.evidenceUrl) && (
         <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs space-y-4">
           <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
             Lampiran Bukti
@@ -87,7 +88,11 @@ export default function ComplaintContentCard({ complaint }: ComplaintContentCard
               onError={(e) => {
                 e.currentTarget.style.display = "none";
               }}
-              onClick={() => window.open(complaint.evidenceUrl, "_blank")}
+              onClick={() => {
+                if (isSafeMediaUrl(complaint.evidenceUrl)) {
+                  window.open(complaint.evidenceUrl, "_blank", "noopener,noreferrer");
+                }
+              }}
             />
           </div>
         </div>

@@ -37,6 +37,7 @@ export default function ComplaintWizard() {
     getValues,
     setValue,
     watch,
+    control,
     formState: { errors },
   } = useForm<ComplaintFormData>({
     resolver: zodResolver(complaintSchema),
@@ -216,7 +217,7 @@ export default function ComplaintWizard() {
         }
       >
         <Step>
-          <StepTitle register={register} errors={errors} />
+          <StepTitle register={register} errors={errors} control={control} />
         </Step>
 
         <Step>

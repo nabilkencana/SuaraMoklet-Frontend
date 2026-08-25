@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MessageSquare, RefreshCw, Send, Paperclip, X, Loader2, FileText, Reply, Eye, Search, Image as ImageIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, isSafeMediaUrl } from "@/lib/utils";
 import { Complaint } from "@/types/complaint";
 import { Comment } from "@/types/comment";
 
@@ -145,7 +145,7 @@ export default function DiscussionThread({
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-slate-800">
-                      {comment.user?.name || "Anonim"}
+                      {complaint.isAnonymous && !isOfficial ? "Anonim" : comment.user?.name || "Anonim"}
                     </span>
                     {isOfficial && (
                       <span className="px-2 py-0.5 bg-[#b61722] text-white font-extrabold text-[8px] uppercase tracking-wider rounded-md">
@@ -155,7 +155,7 @@ export default function DiscussionThread({
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <button 
-                      type="button"
+                      type="button" 
                       onClick={() => setReplyingTo(comment)}
                       className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-md hover:bg-slate-100"
                       title="Balas pesan ini"
@@ -196,7 +196,11 @@ export default function DiscussionThread({
                     }}
                     className="p-2 bg-slate-100/80 border-l-2 border-red-500 rounded text-[10px] text-slate-500 font-medium cursor-pointer hover:bg-slate-200/50 transition-colors mt-1 mb-2"
                   >
-                    <p className="font-bold text-red-600 mb-0.5">{comment.parent.user?.name || (comment.parent.isPic ? "Unit" : "Anonim")}</p>
+                    <p className="font-bold text-red-600 mb-0.5">
+                      {complaint.isAnonymous && !comment.parent.isPic
+                        ? "Anonim"
+                        : comment.parent.user?.name || (comment.parent.isPic ? "Unit" : "Anonim")}
+                    </p>
                     <p className="line-clamp-2">{comment.parent.content}</p>
                   </div>
                 )}
@@ -255,7 +259,11 @@ export default function DiscussionThread({
           {replyingTo && (
             <div className="flex items-center justify-between bg-slate-50 border-l-2 border-red-500 p-2 rounded-r-xl">
               <div>
-                <p className="text-[10px] font-bold text-red-600">Membalas {replyingTo.user?.name || (replyingTo.isPic ? "Unit" : "Anonim")}</p>
+                <p className="text-[10px] font-bold text-red-600">
+                  Membalas {complaint.isAnonymous && !replyingTo.isPic
+                    ? "Anonim"
+                    : replyingTo.user?.name || (replyingTo.isPic ? "Unit" : "Anonim")}
+                </p>
                 <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5 font-medium">{replyingTo.content}</p>
               </div>
               <button 
@@ -373,7 +381,11 @@ export default function DiscussionThread({
           </button>
           
           <div className="relative w-full h-full flex items-center justify-center p-4 overflow-hidden">
-            {selectedFile.isImage ? (
+            {!isSafeMediaUrl(selectedFile.url) ? (
+              <div className="p-4 bg-red-50 text-red-700 rounded-xl text-xs font-semibold text-center max-w-sm">
+                Tautan media tidak valid atau tidak aman untuk ditampilkan.
+              </div>
+            ) : selectedFile.isImage ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img 
                 src={selectedFile.url} 
@@ -387,6 +399,7 @@ export default function DiscussionThread({
                 className="w-11/12 h-5/6 rounded-xl shadow-2xl bg-white"
                 onClick={(e) => e.stopPropagation()}
                 title="Document Preview"
+                sandbox="allow-scripts allow-same-origin"
               />
             )}
           </div>

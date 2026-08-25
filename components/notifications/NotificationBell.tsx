@@ -91,7 +91,10 @@ export default function NotificationBell() {
     }
     setIsOpen(false);
     if (notification.link) {
-      router.push(notification.link);
+      // LO-5 Defense-in-depth: Cegah open redirect / javascript: link injection
+      if (notification.link.startsWith("/") && !notification.link.startsWith("//")) {
+        router.push(notification.link);
+      }
     }
   };
 

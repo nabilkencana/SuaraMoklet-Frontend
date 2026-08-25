@@ -4,7 +4,17 @@ import { Comment, CreateCommentRequest } from "@/types/comment";
 
 const POLL_INTERVAL_MS = 5000; // 5 seconds
 
-export function useComments(complaintId: string) {
+// F4 FIX (HI-2): Tambahkan context anonimitas agar identitas pelapor anonim
+// tersensor ketika mereka berkomentar di complaint mereka sendiri.
+// Skenario serangan: nama asli pelapor anonim terekspos via endpoint komentar.
+interface UseCommentsOptions {
+  /** ID author complaint. Digunakan untuk sensor jika complaint anonim. */
+  complaintAuthorId?: string;
+  /** Apakah complaint ini anonim? */
+  isAnonymousComplaint?: boolean;
+}
+
+export function useComments(complaintId: string, options: UseCommentsOptions = {}) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -16,8 +26,11 @@ export function useComments(complaintId: string) {
 
     try {
       const { apiClient } = await import("@/lib/api");
-      // api.ts flattenComments already returns a flat, sorted list with parent references
-      const data = await apiClient.comments.getByComplaintId(complaintId);
+      // F4: Teruskan context anonimitas ke API agar sensor diterapkan
+      const data = await apiClient.comments.getByComplaintId(complaintId, {
+        complaintAuthorId: options.complaintAuthorId,
+        isAnonymousComplaint: options.isAnonymousComplaint,
+      });
       if (Array.isArray(data)) {
         setComments(data);
       } else {
@@ -31,7 +44,8 @@ export function useComments(complaintId: string) {
     } finally {
       if (!silent) setIsLoading(false);
     }
-  }, [complaintId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [complaintId, options.complaintAuthorId, options.isAnonymousComplaint]);
 
   const addComment = async (data: CreateCommentRequest) => {
     if (!complaintId) return null;
@@ -80,3 +94,4 @@ export function useComments(complaintId: string) {
 }
 
 export default useComments;
+

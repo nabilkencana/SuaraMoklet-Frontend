@@ -67,8 +67,14 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
     name: mapBackendUnitToFrontend(u.name),
   })) : [];
 
+  // F5 FIX (HI-3): Jika complaint anonim, NULL-kan seluruh objek reporter termasuk id-nya.
+  // Skenario serangan: author.id UUID asli masih muncul meski nama disembunyikan di UI.
+  // Attacker dapat cross-reference author.id ini dengan complaint non-anonim milik user
+  // yang sama di /complaints/public untuk mendapatkan nama aslinya (deanonymisasi).
+  // Fix: frontend tidak meneruskan data reporter sama sekali untuk complaint anonim.
+  // NOTE: Fix definitif tetap harus di backend — null-kan author.id di response API.
   let reporter = null;
-  if (c.author) {
+  if (c.author && !c.isAnonymous) {
     reporter = {
       id: c.author.id,
       name: c.author.name,
@@ -152,7 +158,35 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
   };
 }
 
-export function flattenComments(tree: any[]): Comment[] {
+// F4 FIX (HI-2): Interface parameter untuk anonimisasi komentar
+interface FlattenCommentsOptions {
+  /** ID author complaint asli. Jika commenter = author dan complaint anonim, sensoridentitas. */
+  complaintAuthorId?: string;
+  /** Apakah complaint ini anonim? */
+  isAnonymousComplaint?: boolean;
+}
+
+/**
+ * Flatten tree komentar dari backend menjadi flat list.
+ *
+ * F4 FIX (HI-2): Jika `isAnonymousComplaint=true` dan commenter adalah author
+ * complaint tersebut (berdasarkan `complaintAuthorId`), sensor identitas commenter:
+ * nama → "Anonim", email → "", id → "", avatarUrl → undefined.
+ *
+ * Skenario serangan yang ditutup:
+ *   - Pelapor anonim berkomentar di complaintnya sendiri
+ *   - Guru/siswa lain membaca komentar → nama asli pelapor terekspos
+ *   - Ini membatalkan jaminan anonimitas komplain
+ *
+ * NOTE: Fix definitif harus di backend (sensor di endpoint /complaints/:id/comments).
+ * Fix ini adalah defense-in-depth layer di frontend.
+ */
+export function flattenComments(
+  tree: any[],
+  options: FlattenCommentsOptions = {}
+): Comment[] {
+  const { complaintAuthorId, isAnonymousComplaint } = options;
+
   // First pass: build a flat list with all nodes
   const allNodes: any[] = [];
   function collectAll(node: any) {
@@ -174,22 +208,40 @@ export function flattenComments(tree: any[]): Comment[] {
   const mapNode = (node: any, parentNode?: any): Comment => {
     const isPic = node.comment_by === "ADMIN" || node.isPic || false;
     const mappedParent: Comment | undefined = parentNode ? mapNode(parentNode) : undefined;
+
+    // F4 / HI-2 & HI-3 Defense-in-depth:
+    // Jika complaint bersifat anonim dan commenter bukan ADMIN/PIC,
+    // identitas commenter WAJIB disensor total (nama 'Anonim', avatar null, id/email kosong),
+    // bahkan jika API backend secara tidak sengaja mengembalikan data author.
+    const isCommenterPic = isPic || node.comment_by === "ADMIN";
+    const commenterId = node.author?.id || node.authorId;
+    const shouldAnonymize = Boolean(isAnonymousComplaint) && !isCommenterPic;
+
     return {
       id: node.id,
       complaintId: node.complaintId,
       content: node.content,
       evidenceUrl: node.media && node.media.length > 0 ? node.media[0].url : undefined,
       createdAt: node.createdAt,
-      isPic,
+      isPic: isCommenterPic,
       parentId: node.parentId || undefined,
       parent: mappedParent,
-      user: {
-        id: node.author?.id || node.authorId,
-        name: node.author?.name || "User",
-        email: node.author?.email || "",
-        role: isPic ? "UNIT_PIC" : "USER",
-        avatarUrl: node.author?.profilePicture || undefined,
-      },
+      user: shouldAnonymize
+        ? {
+            // Sensor identitas — commenter pada komplain anonim
+            id: "",
+            name: "Anonim",
+            email: "",
+            role: "USER" as const,
+            avatarUrl: undefined,
+          }
+        : {
+            id: commenterId,
+            name: node.author?.name || "User",
+            email: node.author?.email || "",
+            role: isCommenterPic ? "UNIT_PIC" : "USER",
+            avatarUrl: node.author?.profilePicture || undefined,
+          },
     };
   };
 
@@ -426,10 +478,15 @@ export const complaintsApi = {
 
 
 export const commentsApi = {
-  getByComplaintId: async (complaintId: string): Promise<Comment[]> => {
+  // F4: Tambahkan options untuk sensor identitas pelapor anonim di komentar
+  getByComplaintId: async (
+    complaintId: string,
+    options?: { complaintAuthorId?: string; isAnonymousComplaint?: boolean }
+  ): Promise<Comment[]> => {
     const response = await api.get<any>(`/complaints/${complaintId}/comments`);
-    return flattenComments(response.data);
+    return flattenComments(response.data, options ?? {});
   },
+
 
   create: async (complaintId: string, data: CreateCommentRequest): Promise<Comment> => {
     const payload = {

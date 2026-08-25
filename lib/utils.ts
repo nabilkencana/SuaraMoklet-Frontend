@@ -36,3 +36,22 @@ export function getSlaStatus(createdAt: string | Date) {
     };
   }
 }
+
+/**
+ * LO-5 Defense-in-depth:
+ * Memvalidasi apakah URL aman untuk dimuat di <img> / <iframe> / link,
+ * mencegah javascript: URI, data:text/html, atau protocol-relative XSS vectors.
+ */
+export function isSafeMediaUrl(url?: string | null): boolean {
+  if (!url) return false;
+  const trimmed = url.trim();
+  if (
+    trimmed.startsWith("javascript:") ||
+    trimmed.startsWith("data:text/html") ||
+    trimmed.startsWith("vbscript:")
+  ) {
+    return false;
+  }
+  // Izinkan http://, https://, blob:, atau path internal /
+  return /^(https?:\/\/|blob:|\/[^\/\\])/i.test(trimmed);
+}

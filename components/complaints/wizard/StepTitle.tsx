@@ -1,14 +1,24 @@
 import React from "react";
-import { UseFormRegister, FieldErrors } from "react-hook-form";
+import { UseFormRegister, FieldErrors, useWatch, Control } from "react-hook-form";
 import { Input } from "@/components/ui/input";
+import { AlertTriangle } from "lucide-react";
 import { ComplaintFormData } from "./types";
 
 interface StepTitleProps {
   register: UseFormRegister<ComplaintFormData>;
   errors: FieldErrors<ComplaintFormData>;
+  control: Control<ComplaintFormData>;
 }
 
-export default function StepTitle({ register, errors }: StepTitleProps) {
+// F7 FIX (MD-3): Karakter WhatsApp formatting yang bisa disalahgunakan.
+// Jika diinterpolasi mentah ke template WA → pesan resmi sekolah bisa dipalsukan formatnya.
+// Skenario: judul "*SEGERA* Admin Minta Dana" → pesan WA tampil bold, menyerupai notifikasi resmi.
+const WA_INJECTION_REGEX = /[*_`~\n]/;
+
+export default function StepTitle({ register, errors, control }: StepTitleProps) {
+  const titleValue = useWatch({ control, name: "title", defaultValue: "" });
+  const hasWaChars = WA_INJECTION_REGEX.test(titleValue ?? "");
+
   return (
     <div className="space-y-4">
       <div className="space-y-1">
@@ -40,7 +50,18 @@ export default function StepTitle({ register, errors }: StepTitleProps) {
         {errors.title && (
           <p className="text-xs font-medium text-red-600 mt-1">{errors.title.message}</p>
         )}
+        {/* F7: Warning karakter WhatsApp formatting — MD-3 defense-in-depth */}
+        {hasWaChars && !errors.title && (
+          <div className="flex items-start gap-2 mt-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-[11px] text-amber-700 leading-relaxed">
+              Judul mengandung karakter spesial (<code className="font-mono bg-amber-100 px-0.5 rounded">*</code>, <code className="font-mono bg-amber-100 px-0.5 rounded">_</code>, backtick, atau baris baru)
+              yang dapat memengaruhi tampilan notifikasi WhatsApp. Pertimbangkan untuk menghapusnya.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
