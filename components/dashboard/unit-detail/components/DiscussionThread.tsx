@@ -334,7 +334,7 @@ export default function DiscussionThread({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingReplyFile || isSendingReply}
-              className="w-[52px] h-[52px] shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-40 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.98]"
+              className="w-13 h-13 shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-600 disabled:opacity-40 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.98]"
               title="Lampirkan File/Gambar"
             >
               <Paperclip className="h-4 w-4" />
@@ -351,7 +351,7 @@ export default function DiscussionThread({
             <button
               type="submit"
               disabled={isSendingReply || isUploadingReplyFile || (!replyText.trim() && !replyFileUrl)}
-              className="w-[52px] h-[52px] shrink-0 bg-[#b61722] hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.98]"
+              className="w-13 h-13 shrink-0 bg-[#b61722] hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.98]"
             >
               {isSendingReply ? (
                 <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -370,12 +370,12 @@ export default function DiscussionThread({
       {/* File/Image Preview Modal */}
       {selectedFile && typeof document !== "undefined" && createPortal(
         <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          className="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 backdrop-blur-sm"
           onClick={() => setSelectedFile(null)}
         >
           <button
             onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
-            className="absolute top-4 right-4 z-[10000] bg-black/50 hover:bg-black/80 text-white rounded-full p-2 transition-colors cursor-pointer"
+            className="absolute top-4 right-4 z-10000 bg-black/50 hover:bg-black/80 text-white rounded-full p-2 transition-colors cursor-pointer"
           >
             <X className="h-6 w-6" />
           </button>

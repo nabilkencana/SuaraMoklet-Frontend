@@ -517,12 +517,12 @@ export default function CommentSection({
       {/* File/Image Preview Modal */}
       {selectedFile && typeof document !== "undefined" && createPortal(
         <div 
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          className="fixed inset-0 z-9999 flex items-center justify-center bg-black/90 backdrop-blur-sm"
           onClick={() => setSelectedFile(null)}
         >
           <button
             onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
-            className="absolute top-4 right-4 z-[10000] bg-black/50 hover:bg-black/80 text-white rounded-full p-2 transition-colors cursor-pointer"
+            className="absolute top-4 right-4 z-10000 bg-black/50 hover:bg-black/80 text-white rounded-full p-2 transition-colors cursor-pointer"
           >
             <X className="h-6 w-6" />
           </button>
