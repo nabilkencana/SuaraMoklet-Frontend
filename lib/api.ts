@@ -282,7 +282,12 @@ export const authApi = {
   },
 
   ssoExchange: async (token: string): Promise<LoginResponse> => {
-    const response = await api.post<any>("/auth/sso/exchange", { sso_token: token });
+    // DTO normalization: Kirim sso_token dan ssoToken agar kompatibel
+    // dengan schema backend camelCase maupun snake_case selama masa transisi
+    const response = await api.post<any>("/auth/sso/exchange", {
+      sso_token: token,
+      ssoToken: token,
+    });
     const user = response.data.user;
     return {
       user: {
@@ -419,8 +424,18 @@ export const complaintsApi = {
     return response.data;
   },
 
-  forward: async (id: string, data: { toUnitId: string; forwardNote?: string }): Promise<Complaint> => {
-    const response = await api.patch<any>(`/complaints/${id}/forward`, data);
+  forward: async (id: string, data: { toUnitId?: string; unitId?: string; forwardNote?: string; note?: string }): Promise<Complaint> => {
+    const targetUnitId = data.toUnitId || data.unitId || "";
+    const noteText = data.forwardNote || data.note;
+    const payload: Record<string, any> = {
+      toUnitId: targetUnitId,
+      unitId: targetUnitId,
+    };
+    if (noteText !== undefined) {
+      payload.forwardNote = noteText;
+      payload.note = noteText;
+    }
+    const response = await api.patch<any>(`/complaints/${id}/forward`, payload);
     return mapBackendComplaintToFrontend(response.data);
   },
 
