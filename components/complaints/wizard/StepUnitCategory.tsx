@@ -29,7 +29,7 @@ export default function StepUnitCategory({
           <span className="text-amber-500 text-sm mt-0.5 shrink-0">💡</span>
           <p className="text-[11px] text-amber-700 leading-relaxed">
             <span className="font-bold">Tidak tahu harus pilih unit mana?</span> Pilih{" "}
-            <span className="font-bold">Umum (ISO)</span> — tim koordinator kami akan menelaah dan meneruskan laporan ke unit yang tepat.
+            <span className="font-bold">Umum (ISO)</span>, tim koordinator kami akan menelaah dan meneruskan laporan ke unit yang tepat.
           </p>
         </div>
       </div>

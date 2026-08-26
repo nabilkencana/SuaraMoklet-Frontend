@@ -14,19 +14,18 @@ const FAQ_DATA: FaqItem[] = [
   {
     question: "Apa itu SuaraMoklet?",
     answer:
-      "SuaraMoklet adalah platform aspirasi dan pengaduan resmi untuk seluruh civitas SMK Telkom Malang guna menyampaikan masukan, ide, dan keluhan terkait sarana prasarana, kurikulum, kesiswaan, hubungan industri, dan tata kelola sekolah secara transparan.",
+      "SuaraMoklet adalah platform aspirasi dan pengaduan resmi bagi seluruh siswa, guru, dan warga SMK Telkom Malang untuk menyampaikan masukan, ide, maupun kendala terkait sarana prasarana, kurikulum, kesiswaan, hubungan industri, tata usaha, dan layanan umum secara terbuka dan terpercaya.",
   },
   {
     question: "Apakah saya bisa melapor secara anonim?",
     answer:
-      "Ya! Pada langkah terakhir pengisian laporan (Langkah 5), Anda dapat mengaktifkan opsi 'Kirim Sebagai Anonim'. Identitas Anda akan disembunyikan dari publik dan petugas unit, namun tetap tersimpan secara aman di sistem untuk kebutuhan verifikasi resmi.",
+      "Ya, tentu saja! Kamu dapat mengaktifkan opsi 'Kirim Sebagai Anonim'. Identitasmu (nama dan profil) dijamin 100% dirahasiakan oleh sistem dan tidak akan pernah ditampilkan baik ke publik maupun ke petugas unit sekolah yang menangani laporan. Kamu bisa menyampaikan keluhan dan aspirasi dengan tenang dan aman.",
   },
   {
     question: "Bagaimana alur tindak lanjut dari laporan saya?",
     answer:
-      "Setiap laporan baru (NEW) akan langsung masuk ke dashboard Unit Kerja terkait (seperti Sarpras atau Kesiswaan) dan diproses (OPEN). Anda dapat memantau progres penanganan secara transparan melalui linimasa dan saling bertukar tanggapan hingga status selesai (DONE).",
+      "Setiap laporan baru (BARU) akan langsung masuk ke antrean verifikasi unit sekolah yang dituju (seperti Sarpras, Kurikulum, atau Kesiswaan) dan diproses (DIPROSES). Kamu dapat memantau progres penanganan secara transparan melalui linimasa riwayat dan saling berdiskusi hingga masalah dinyatakan selesai (SELESAI).",
   },
-
   {
     question: "Format dokumen bukti apa saja yang didukung?",
     answer:

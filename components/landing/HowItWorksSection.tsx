@@ -10,18 +10,21 @@ import SplitText from "@/components/SplitText";
 const STEPS = [
   {
     num: 1,
-    title: "Tulis Laporan",
-    description: "Sampaikan keluhanmu beserta bukti pendukung.",
+    title: "Tulis & Pilih Privasi",
+    description:
+      "Sampaikan aspirasimu, unggah bukti foto, dan pilih mode publik atau 100% anonim.",
   },
   {
     num: 2,
     title: "Proses Penanganan",
-    description: "Unit sekolah langsung meninjau dan menindaklanjuti.",
+    description:
+      "Unit terkait langsung memverifikasi dan menindaklanjuti keluhan secara terkoordinasi.",
   },
   {
     num: 3,
-    title: "Selesai & Evaluasi",
-    description: "Masalah terselesaikan dan kamu dapat memberi penilaian.",
+    title: "Solusi & Evaluasi",
+    description:
+      "Pantau progres transparan, terima solusi resmi, dan berikan penilaian kepuasan.",
   },
 ];
 

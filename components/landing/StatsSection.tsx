@@ -70,7 +70,7 @@ export default function StatsSection({ isLoading, summaryStats }: StatsSectionPr
             </p>
           </div>
 
-          {/* Metric 3: Tingkat Penyelesaian */}
+          {/* Metric 3: Komitmen Layanan */}
           <div className="flex flex-col items-start space-y-1.5 sm:space-y-2 p-4 sm:p-0 rounded-2xl bg-slate-50/60 sm:bg-transparent border border-slate-100/80 sm:border-none shadow-2xs sm:shadow-none">
             <div className="w-10 sm:w-12 h-1 bg-red-600 rounded-full mb-1.5 sm:mb-3" />
             <div
@@ -79,17 +79,11 @@ export default function StatsSection({ isLoading, summaryStats }: StatsSectionPr
               }`}
             >
               <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
-                {isLoading
-                  ? "0%"
-                  : `${
-                      summaryStats.total > 0
-                        ? Math.round((summaryStats.resolved / summaryStats.total) * 100)
-                        : 0
-                    }%`}
+                100%
               </span>
             </div>
             <p className="text-[11px] sm:text-xs lg:text-sm font-medium text-slate-500 leading-relaxed max-w-55">
-              Tingkat komitmen tindak lanjut oleh sekolah.
+              Komitmen respons &amp; peninjauan oleh 6 unit sekolah.
             </p>
           </div>
 

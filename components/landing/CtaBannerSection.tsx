@@ -44,8 +44,8 @@ export default function CtaBannerSection() {
               Suaramu Membawa Perubahan Nyata
             </h2>
             <p className="mt-4 text-red-100 text-sm sm:text-base max-w-lg mx-auto leading-relaxed font-medium">
-              Ayo laporkan kendala sarana, fasilitas, atau aspirasi belajarmu dan kawal
-              penyelesaiannya bersama civitas Moklet.
+              Ayo sampaikan kendala fasilitas, kebutuhan belajar, atau ide inovasimu dan kawal
+              penyelesaiannya bersama seluruh warga SMK Telkom Malang.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
               <Link

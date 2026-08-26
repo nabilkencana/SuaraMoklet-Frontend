@@ -229,15 +229,13 @@ export default function ComplaintBody({
               <div className="h-9 w-9 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center shrink-0 mt-0.5">
                 <Clock className="h-4.5 w-4.5 text-blue-600" />
               </div>
-              <div className="space-y-1">
-                <p className="text-sm font-bold text-blue-800">Laporan Anda Telah Diterima! 🎉</p>
-                <p className="text-xs text-blue-600 leading-relaxed">
-                  Tim unit terkait sedang menelaah laporan Anda. Silakan tunggu respons resmi dari pihak sekolah —
-                  biasanya kami akan membalas dalam <span className="font-bold">1–3 hari kerja</span>.
-                  Anda akan mendapatkan notifikasi saat ada pembaruan.
+              <div className="space-y-1.5">
+                <p className="text-sm font-bold text-blue-900">Laporan Anda Telah Diterima 🎉</p>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  Tim unit terkait sedang menelaah laporan Anda. Tanggapan dan rencana tindak lanjut resmi akan diberikan dalam kurun waktu <span className="font-bold">1 hingga 3 hari kerja</span>. Anda akan mendapatkan notifikasi otomatis saat status diperbarui.
                 </p>
-                <p className="text-[10px] text-blue-400 font-medium mt-1">
-                  💬 Anda juga bisa menambahkan informasi tambahan melalui kolom diskusi di bawah ini.
+                <p className="text-[11px] text-blue-600 font-medium pt-0.5">
+                  💬 Anda juga dapat menambahkan informasi atau bukti pendukung tambahan melalui kolom diskusi di bawah.
                 </p>
               </div>
             </div>

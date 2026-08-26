@@ -142,8 +142,8 @@ export default function CreditsPage() {
     {
       id: "pembimbing-1",
       name: "Zainul Abidin, S.Kom",
-      role: '"Project Supervisor"',
-      description: "Pembimbing & Pengarah Pengembangan Sistem SuaraMoklet",
+      role: "Project Supervisor",
+      description: "Membimbing arah strategis, visi, dan pengawasan pengembangan SuaraMoklet.",
       image: "/images/pembimbing-1.png",
       bgClass: "bg-slate-100",
       imagePosition: "center 10%",
@@ -153,8 +153,8 @@ export default function CreditsPage() {
     {
       id: "pembimbing-2",
       name: "Zakaria, S.Pd",
-      role: '"Technical Mentor"',
-      description: "Pembimbing Teknis & Konsultan Arsitektur Perangkat Lunak",
+      role: "Technical Mentor",
+      description: "Mengarahkan arsitektur perangkat lunak, standar kode, dan solusi teknis.",
       image: "/images/pembimbing-2.png",
       bgClass: "bg-slate-100",
       imagePosition: "center 15%",
@@ -162,8 +162,8 @@ export default function CreditsPage() {
     {
       id: "pembimbing-3",
       name: "Whyna Agustin, S.Pd.",
-      role: '"Product & Quality Advisor"',
-      description: "Penasihat Mutu Produk & Kualitas Alur Pengaduan Sekolah",
+      role: "Product & Quality Advisor",
+      description: "Menyelaraskan alur layanan dengan tata kelola dan penjaminan mutu sekolah.",
       image: "/images/pembimbing-3.png",
       bgClass: "bg-slate-100",
       imagePosition: "center 12%",
@@ -174,9 +174,9 @@ export default function CreditsPage() {
     {
       id: "nabil-kencana",
       name: "Nabil Kencana",
-      role: '"Frontend Developer"',
+      role: "Frontend Developer",
       description:
-        "Pengembang Utama Antarmuka, Animasi & UI Design System SuaraMoklet",
+        "Merancang pengalaman pengguna (UI/UX), sistem komponen, animasi, dan antarmuka web.",
       image: "/images/nabilkencana.jpg",
       bgClass: "bg-slate-100",
       imagePosition: "center 55%",
@@ -190,9 +190,9 @@ export default function CreditsPage() {
     {
       id: "alfareza",
       name: "Alfareza Hans",
-      role: '"Backend Developer"',
+      role: "Backend Developer",
       description:
-        "Pengembang Utama Arsitektur Backend, Integrasi RESTful API & Basis Data SuaraMoklet",
+        "Membangun arsitektur server, integrasi RESTful API, keamanan SSO, dan basis data.",
       image: "/images/alfareza.jpg",
       bgClass: "bg-slate-100",
       imagePosition: "center 75%",
@@ -222,13 +222,13 @@ export default function CreditsPage() {
           </Link>
         </div>
 
-        {/* Centered Main Title (Ref Image Style) */}
+        {/* Centered Main Title */}
         <div className="text-center space-y-2 pt-2">
-          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-slate-950 uppercase font-sans">
-            OUR CREDITS
+          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-950 uppercase font-sans">
+            Tim &amp; Pengembang
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium tracking-wide uppercase">
-            Tim Pengembang &amp; Guru Pembimbing Platform SuaraMoklet
+          <p className="text-xs sm:text-sm text-slate-500 font-medium tracking-wide">
+            Kolaborasi dedikasi siswa dan bimbingan guru SMK Telkom Malang
           </p>
         </div>
 
@@ -254,7 +254,7 @@ export default function CreditsPage() {
           <div className="flex items-center gap-4 justify-center">
             <div className="h-px w-16 bg-slate-200" />
             <span className="text-xs sm:text-sm font-bold uppercase tracking-widest text-slate-800 bg-slate-100 px-4 py-1.5 rounded-full border border-slate-200">
-              Tim Pengembang Inti
+              Tim Pengembang Aplikasi
             </span>
             <div className="h-px w-16 bg-slate-200" />
           </div>

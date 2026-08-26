@@ -5,11 +5,27 @@ import { Complaint, ComplaintStatus } from "@/types/complaint";
 import { apiClient } from "@/lib/api";
 import { useComments } from "@/hooks/useComments";
 
-const STATUS_CONFIG: Record<ComplaintStatus | "FORWARDED", { label: string; classes: string }> = {
-  NEW: { label: "BARU", classes: "bg-red-50 text-red-600 border border-red-200" },
-  OPEN: { label: "DIPROSES", classes: "bg-amber-50 text-amber-700 border border-amber-200" },
-  DONE: { label: "SELESAI", classes: "bg-emerald-50 text-emerald-700 border border-emerald-200" },
-  FORWARDED: { label: "FORWARDED", classes: "bg-purple-50 text-purple-600 border border-purple-200" },
+const STATUS_CONFIG: Record<ComplaintStatus | "FORWARDED", { label: string; description: string; classes: string }> = {
+  NEW: {
+    label: "BARU",
+    description: "Menunggu Peninjauan Unit",
+    classes: "bg-sky-50 text-sky-700 border border-sky-200",
+  },
+  OPEN: {
+    label: "DIPROSES",
+    description: "Sedang Ditindaklanjuti",
+    classes: "bg-amber-50 text-amber-700 border border-amber-200",
+  },
+  DONE: {
+    label: "SELESAI",
+    description: "Solusi Telah Diberikan",
+    classes: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  },
+  FORWARDED: {
+    label: "DITERUSKAN",
+    description: "Disposisi Antar Unit",
+    classes: "bg-purple-50 text-purple-700 border border-purple-200",
+  },
 };
 
 interface ComplaintHeaderProps {
@@ -87,11 +103,13 @@ export default function ComplaintHeader({ complaint }: ComplaintHeaderProps) {
           <div className="flex flex-wrap gap-2 items-center">
             <span
               className={cn(
-                "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide",
+                "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide",
                 statusInfo.classes
               )}
             >
-              {statusInfo.label}
+              <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
+              <span>{statusInfo.label}</span>
+              <span className="opacity-70 text-[9px] font-medium hidden sm:inline">• {statusInfo.description}</span>
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600">
               <Tag className="h-3 w-3" />
@@ -127,7 +145,7 @@ export default function ComplaintHeader({ complaint }: ComplaintHeaderProps) {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-semibold text-slate-400">
           <span className="flex items-center gap-1">
             <UserIcon className="h-3 w-3" />
-            {complaint.isAnonymous ? "Anonim" : complaint.reporter?.name || "Civitas Moklet"}
+            {complaint.isAnonymous ? "Anonim" : complaint.reporter?.name || "Warga Moklet"}
           </span>
           <span>•</span>
           <span className="flex items-center gap-1">
@@ -144,18 +162,20 @@ export default function ComplaintHeader({ complaint }: ComplaintHeaderProps) {
               <div className="flex items-center gap-2">
                 <span
                   className={cn(
-                    "inline-flex items-center px-3 py-0.5 rounded-full text-xs font-bold tracking-wide",
+                    "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide shadow-3xs",
                     statusInfo.classes
                   )}
                 >
-                  {statusInfo.label}
+                  <span className="h-2 w-2 rounded-full bg-current opacity-80" />
+                  <span>{statusInfo.label}</span>
+                  <span className="opacity-75 text-[11px] font-medium">• {statusInfo.description}</span>
                 </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-600">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-600">
                   <Tag className="h-3.5 w-3.5" />
                   {complaint.unit}
                 </span>
                 {complaint.visibility === "PRIVATE" && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-red-100 text-red-700">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-100 text-red-700">
                     <EyeOff className="h-3.5 w-3.5" />
                     PRIVATE
                   </span>
@@ -184,7 +204,7 @@ export default function ComplaintHeader({ complaint }: ComplaintHeaderProps) {
         <div className="flex items-center gap-4 text-xs font-semibold text-slate-500 pt-1 border-t border-slate-100">
           <div className="flex items-center gap-1.5">
             <UserIcon className="h-4 w-4 text-slate-400" />
-            <span>{complaint.isAnonymous ? "Anonim" : complaint.reporter?.name || "Civitas Moklet"}</span>
+            <span>{complaint.isAnonymous ? "Anonim" : complaint.reporter?.name || "Warga Moklet"}</span>
           </div>
           <span>•</span>
           <div className="flex items-center gap-1.5 text-slate-500">

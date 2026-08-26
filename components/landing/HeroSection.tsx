@@ -106,8 +106,8 @@ export default function HeroSection({
         </h1>
 
         <SplitText
-          text="Platform pengaduan dan aspirasi terintegrasi SMK Telkom Malang. Laporkan kendala sarana, kurikulum, hingga kesiswaan secara transparan untuk lingkungan sekolah yang lebih baik."
-          className="mt-6 sm:mt-8 text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed"
+          text="Platform pengaduan dan aspirasi terintegrasi seluruh unit SMK Telkom Malang secara transparan untuk sekolah yang lebih baik."
+          className="mt-5 sm:mt-6 text-base sm:text-lg text-slate-500 max-w-xl mx-auto leading-relaxed"
           delay={30}
           duration={0.8}
           ease="power3.out"
