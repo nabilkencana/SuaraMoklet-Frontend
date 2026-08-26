@@ -11,9 +11,11 @@ import {
   Maximize2,
   FileText,
   ExternalLink,
+  Download,
 } from "lucide-react";
 import { Complaint } from "@/types/complaint";
 import CommentSection from "@/components/comments/CommentSection";
+import PdfViewer from "@/components/common/PdfViewer";
 
 interface ComplaintBodyProps {
   complaint: Complaint;
@@ -33,6 +35,7 @@ export default function ComplaintBody({
   const [activeLightbox, setActiveLightbox] = useState<{
     url: string;
     title: string;
+    type?: "image" | "pdf";
   } | null>(null);
 
   // Close on Escape key
@@ -147,11 +150,15 @@ export default function ComplaintBody({
 
               {evidenceList.length === 1 ? (
                 isPdf(evidenceList[0]) ? (
-                  <a
-                    href={evidenceList[0]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between p-4 rounded-2xl border border-rose-200 bg-rose-50/50 hover:bg-rose-50 hover:border-rose-300 transition-all group"
+                  <div
+                    onClick={() =>
+                      setActiveLightbox({
+                        url: evidenceList[0],
+                        title: "Dokumen Lampiran Bukti",
+                        type: "pdf",
+                      })
+                    }
+                    className="flex items-center justify-between p-4 rounded-2xl border border-rose-200 bg-rose-50/50 hover:bg-rose-50 hover:border-rose-300 transition-all group cursor-pointer"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="h-12 w-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
@@ -162,21 +169,22 @@ export default function ComplaintBody({
                           Dokumen Lampiran Bukti (PDF)
                         </span>
                         <span className="block text-[10.5px] text-slate-400">
-                          Klik untuk melihat atau mengunduh dokumen
+                          Klik untuk membuka dokumen di popup
                         </span>
                       </div>
                     </div>
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-rose-200 text-rose-700 text-xs font-bold shadow-3xs group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                    <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-rose-200 text-rose-700 text-xs font-bold shadow-3xs group-hover:bg-rose-600 group-hover:text-white transition-colors">
                       <span>Buka Dokumen PDF</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
+                      <Maximize2 className="h-3.5 w-3.5" />
                     </div>
-                  </a>
+                  </div>
                 ) : (
                   <div
                     onClick={() =>
                       setActiveLightbox({
                         url: evidenceList[0],
                         title: "Foto Bukti Keluhan",
+                        type: "image",
                       })
                     }
                     className="relative rounded-2xl overflow-hidden border border-slate-200/80 bg-slate-900/5 group max-h-[380px] cursor-pointer"
@@ -199,12 +207,16 @@ export default function ComplaintBody({
                     const isDoc = isPdf(fileUrl);
                     if (isDoc) {
                       return (
-                        <a
+                        <div
                           key={idx}
-                          href={fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="h-48 rounded-2xl border border-rose-200 bg-rose-50/40 hover:bg-rose-50 p-4 flex flex-col justify-between transition-all group shadow-3xs"
+                          onClick={() =>
+                            setActiveLightbox({
+                              url: fileUrl,
+                              title: `Dokumen Bukti ${idx + 1}`,
+                              type: "pdf",
+                            })
+                          }
+                          className="h-48 rounded-2xl border border-rose-200 bg-rose-50/40 hover:bg-rose-50 p-4 flex flex-col justify-between transition-all group shadow-3xs cursor-pointer"
                         >
                           <div className="flex items-center justify-between">
                             <div className="h-10 w-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
@@ -219,14 +231,14 @@ export default function ComplaintBody({
                               Dokumen Bukti {idx + 1}
                             </span>
                             <span className="block text-[10px] text-slate-400 mt-0.5">
-                              Dokumen Terlampir
+                              Klik untuk membuka
                             </span>
                           </div>
                           <div className="flex items-center gap-1 text-[11px] font-bold text-rose-600 group-hover:text-rose-700 pt-1">
                             <span>Buka Dokumen PDF</span>
-                            <ExternalLink className="h-3 w-3" />
+                            <Maximize2 className="h-3 w-3" />
                           </div>
-                        </a>
+                        </div>
                       );
                     }
 
@@ -237,6 +249,7 @@ export default function ComplaintBody({
                           setActiveLightbox({
                             url: fileUrl,
                             title: `Foto Bukti Keluhan (${idx + 1}/${evidenceList.length})`,
+                            type: "image",
                           })
                         }
                         className="relative h-48 rounded-2xl overflow-hidden border border-slate-200/80 bg-slate-900/5 group cursor-pointer shadow-3xs"
@@ -426,45 +439,58 @@ export default function ComplaintBody({
         </div>
       )}
 
-      {/* ── IMAGE LIGHTBOX POPUP MODAL (REUSABLE FOR EVIDENCE & SOLUTION) ── */}
+      {/* ── PDF VIEWER MODAL & IMAGE LIGHTBOX POPUP MODAL ── */}
       {activeLightbox && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-150"
-          onClick={() => setActiveLightbox(null)}
-        >
+        activeLightbox.type === "pdf" || activeLightbox.url.toLowerCase().includes(".pdf") ? (
+          <PdfViewer
+            url={activeLightbox.url}
+            title={activeLightbox.title}
+            onClose={() => setActiveLightbox(null)}
+          />
+        ) : (
           <div
-            className="relative max-w-5xl max-h-[90vh] w-full flex flex-col items-center justify-center space-y-3"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150"
+            onClick={() => setActiveLightbox(null)}
           >
-            {/* Header controls */}
-            <div className="w-full flex items-center justify-between px-2 text-white">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-white/90">{activeLightbox.title}</span>
-                <span className="text-[11px] text-white/60 font-mono">
-                  #{complaint.id?.slice(0, 8)}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveLightbox(null)}
-                className="h-9 w-9 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer active:scale-95"
-                title="Tutup (Esc)"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+            <div
+              className="relative max-w-5xl w-full flex flex-col items-center justify-center space-y-3 max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header controls */}
+              <div className="w-full flex items-center justify-between px-2 text-white shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs font-bold text-white/90 truncate">
+                    {activeLightbox.title}
+                  </span>
+                  <span className="text-[11px] text-white/60 font-mono shrink-0">
+                    #{complaint.id?.slice(0, 8)}
+                  </span>
+                </div>
 
-            {/* Image container */}
-            <div className="relative max-h-[80vh] w-auto max-w-full rounded-2xl overflow-hidden shadow-2xl bg-black/40 border border-white/10 flex items-center justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={activeLightbox.url}
-                alt={activeLightbox.title}
-                className="max-h-[78vh] w-auto max-w-full object-contain rounded-2xl select-none"
-              />
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setActiveLightbox(null)}
+                    className="h-8.5 w-8.5 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer active:scale-95"
+                    title="Tutup (Esc)"
+                  >
+                    <X className="h-4.5 w-4.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Image container */}
+              <div className="relative max-h-[80vh] w-auto max-w-full rounded-2xl overflow-hidden shadow-2xl bg-black/40 border border-white/10 flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={activeLightbox.url}
+                  alt={activeLightbox.title}
+                  className="max-h-[78vh] w-auto max-w-full object-contain rounded-2xl select-none"
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )
       )}
     </div>
   );
