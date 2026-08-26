@@ -94,12 +94,10 @@ export default function UnitSidebar({ activeTab, onTabChange }: UnitSidebarProps
         </nav>
       </div>
 
-      {/* Role Switch Toggle — only for SUPER_PIC */}
-      {isSuperPic && (
-        <div className="p-4 border-t border-zinc-900/60">
-          <RoleSwitchToggle darkMode />
-        </div>
-      )}
+      {/* Footer User Profile & Role Selector */}
+      <div className="pt-4 border-t border-zinc-900/60 mt-auto">
+        <RoleSwitchToggle darkMode />
+      </div>
     </aside>
   );
 }

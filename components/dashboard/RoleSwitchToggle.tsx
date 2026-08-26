@@ -3,149 +3,220 @@
 /**
  * RoleSwitchToggle.tsx
  *
- * Toggle untuk user SUPER_PIC agar bisa beralih
- * antara tampilan "Koordinator ISO" dan "Super Admin".
+ * Komponen terintegrasi di footer sidebar ala Vercel / Slack / Notion:
+ * Menampilkan profil user aktif dan popover switcher mode (Koordinator ISO / Super Admin)
+ * untuk pengguna SUPER_PIC tanpa gangguan dot kuning.
  */
 
-import React from "react";
-import { Shield, UserCog } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { Shield, UserCog, ChevronsUpDown, Check, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/app/store/auth.store";
 import { useRoleViewStore, RoleView } from "@/app/store/role-view.store";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface RoleSwitchToggleProps {
-  /** Ada keluhan NEW yang belum ditangani di sisi ISO */
   hasIsoNotification?: boolean;
-  /** Ada keluhan OPEN yang belum selesai di sisi Admin */
   hasAdminNotification?: boolean;
-  /** Apakah di dalam sidebar gelap */
   darkMode?: boolean;
 }
 
 export default function RoleSwitchToggle({
-  hasIsoNotification = false,
-  hasAdminNotification = false,
   darkMode = true,
 }: RoleSwitchToggleProps) {
+  const { user, logout } = useAuthStore();
   const { activeView, setActiveView } = useRoleViewStore();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  const isSuperPic = user?.role === "SUPER_PIC";
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Close on Escape
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const handleSelect = (key: RoleView) => {
+    setActiveView(key);
+    setIsOpen(false);
+    toast.success(`Beralih ke mode ${key === "admin" ? "Super Admin" : "Koordinator ISO"}`);
+  };
+
+  const handleLogout = () => {
+    logout();
+    toast.success("Berhasil keluar dari portal");
+    router.push("/");
+  };
+
+  const currentRoleLabel = isSuperPic
+    ? activeView === "admin"
+      ? "Super Admin"
+      : "Koordinator ISO"
+    : user?.role === "SUPERADMIN"
+    ? "Superadmin"
+    : user?.role === "UNIT_PIC"
+    ? "Unit PIC"
+    : "Tim Unit";
 
   const options: {
     key: RoleView;
     label: string;
-    sublabel: string;
+    description: string;
     icon: React.ComponentType<any>;
-    hasNotif: boolean;
   }[] = [
-    {
-      key: "iso",
-      label: "Koordinator ISO",
-      sublabel: "Aksi: delegasi & teruskan",
-      icon: UserCog,
-      hasNotif: hasIsoNotification,
-    },
     {
       key: "admin",
       label: "Super Admin",
-      sublabel: "Aksi: kelola & pantau",
+      description: "Kelola governance, anggota & sistem",
       icon: Shield,
-      hasNotif: hasAdminNotification,
+    },
+    {
+      key: "iso",
+      label: "Koordinator ISO",
+      description: "Tindak lanjut & delegasi unit",
+      icon: UserCog,
     },
   ];
 
+  const userInitial = (user?.name || "Admin").charAt(0).toUpperCase();
+
   return (
-    <div
-      className={cn(
-        "rounded-2xl p-1 border",
-        darkMode
-          ? "bg-white/[0.03] border-white/[0.06]"
-          : "bg-slate-50 border-slate-200"
+    <div className="relative w-full" ref={dropdownRef}>
+      {/* Popover Dropdown (Appears Upward from footer) */}
+      {isOpen && isSuperPic && (
+        <div className="absolute bottom-full mb-2 left-0 right-0 z-50 bg-[#141416] border border-white/10 rounded-2xl p-2 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150 space-y-1">
+          {/* Header */}
+          <div className="px-2.5 py-1.5 flex items-center justify-between border-b border-white/[0.06] mb-1">
+            <span className="text-[9.5px] font-extrabold uppercase tracking-widest text-neutral-400">
+              Ganti Mode Akses
+            </span>
+          </div>
+
+          {/* Option List */}
+          <div className="space-y-1">
+            {options.map((opt) => {
+              const Icon = opt.icon;
+              const isActive = activeView === opt.key;
+
+              return (
+                <button
+                  key={opt.key}
+                  onClick={() => handleSelect(opt.key)}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-2.5 rounded-xl text-left transition-all cursor-pointer group",
+                    isActive
+                      ? "bg-white/[0.08] text-white border border-white/[0.12] shadow-xs"
+                      : "text-neutral-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                      isActive
+                        ? "bg-[#b61722] text-white"
+                        : "bg-white/[0.05] text-neutral-400 group-hover:text-white group-hover:bg-white/[0.08]"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <span className="block text-xs font-bold text-white leading-tight">
+                      {opt.label}
+                    </span>
+                    <span className="block text-[10px] text-neutral-400 font-medium truncate mt-0.5">
+                      {opt.description}
+                    </span>
+                  </div>
+
+                  {isActive && (
+                    <div className="shrink-0 h-5 w-5 rounded-full bg-white/10 flex items-center justify-center text-white">
+                      <Check className="h-3 w-3" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Divider & Logout option */}
+          <div className="pt-1 mt-1 border-t border-white/[0.06]">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left text-neutral-400 hover:text-red-400 hover:bg-red-950/20 text-xs font-medium transition-all cursor-pointer"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span>Keluar dari Portal</span>
+            </button>
+          </div>
+        </div>
       )}
-    >
-      {/* Label atas */}
-      <p
+
+      {/* Main Footer Profile Row / Trigger */}
+      <button
+        type="button"
+        disabled={!isSuperPic}
+        onClick={() => isSuperPic && setIsOpen(!isOpen)}
         className={cn(
-          "text-[9px] font-bold uppercase tracking-widest mb-1.5 px-2 pt-1",
-          darkMode ? "text-neutral-500" : "text-slate-400"
+          "w-full flex items-center justify-between gap-3 p-2.5 rounded-2xl border transition-all duration-200 text-left select-none group",
+          darkMode
+            ? "bg-white/[0.03] hover:bg-white/[0.06] border-white/[0.06]"
+            : "bg-slate-50 hover:bg-slate-100 border-slate-200",
+          isSuperPic ? "cursor-pointer" : "cursor-default"
         )}
       >
-        ROLE
-      </p>
+        {/* Left: Avatar & Info */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <div className="h-8.5 w-8.5 rounded-xl bg-[#b61722] text-white flex items-center justify-center font-extrabold text-xs shrink-0 shadow-xs ring-1 ring-white/10">
+            {userInitial}
+          </div>
 
-      {/* Toggle Buttons */}
-      <div className="flex flex-col gap-0.5">
-        {options.map((opt) => {
-          const Icon = opt.icon;
-          const isActive = activeView === opt.key;
-          // Notifikasi hanya relevan ditampilkan saat opsi ini TIDAK aktif
-          const showNotif = opt.hasNotif && !isActive;
+          <div className="min-w-0 flex-1">
+            <span className="block text-xs font-bold text-white leading-tight truncate">
+              {user?.name || "Admin ISO"}
+            </span>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="block text-[10px] text-neutral-400 font-medium truncate">
+                {currentRoleLabel}
+              </span>
+            </div>
+          </div>
+        </div>
 
-          return (
-            <button
-              key={opt.key}
-              onClick={() => setActiveView(opt.key)}
-              className={cn(
-                "relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 cursor-pointer group",
-                isActive
-                  ? darkMode
-                    ? "bg-[#b61722] text-white shadow-sm shadow-red-900/40"
-                    : "bg-[#b61722] text-white shadow-sm"
-                  : darkMode
-                  ? "text-neutral-400 hover:text-white hover:bg-white/[0.05]"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-              )}
-            >
-              {/* Icon */}
-              <div className="relative shrink-0">
-                <Icon
-                  className={cn(
-                    "h-4 w-4 transition-colors",
-                    isActive
-                      ? "text-white"
-                      : darkMode
-                      ? "text-neutral-500 group-hover:text-white"
-                      : "text-slate-400"
-                  )}
-                />
-                {/* Dot notifikasi di pojok kanan atas icon */}
-                {showNotif && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
-                  </span>
-                )}
-              </div>
-
-              {/* Label */}
-              <div className="min-w-0 flex-1">
-                <span
-                  className={cn(
-                    "block text-[11px] font-bold leading-tight",
-                    isActive ? "text-white" : ""
-                  )}
-                >
-                  {opt.label}
-                </span>
-                <span
-                  className={cn(
-                    "block text-[9px] font-medium leading-tight mt-0.5",
-                    isActive
-                      ? "text-white/70"
-                      : darkMode
-                      ? "text-neutral-600"
-                      : "text-slate-400"
-                  )}
-                >
-                  {opt.sublabel}
-                </span>
-              </div>
-
-              {/* Active indicator dot */}
-              {isActive && (
-                <span className="shrink-0 h-1.5 w-1.5 rounded-full bg-white/60" />
-              )}
-            </button>
-          );
-        })}
-      </div>
+        {/* Right: Chevrons Up Down icon for Super PIC */}
+        {isSuperPic && (
+          <div className="h-6 w-6 rounded-lg bg-white/[0.04] group-hover:bg-white/[0.08] flex items-center justify-center shrink-0 transition-colors">
+            <ChevronsUpDown className="h-3.5 w-3.5 text-neutral-400 group-hover:text-white" />
+          </div>
+        )}
+      </button>
     </div>
   );
 }
