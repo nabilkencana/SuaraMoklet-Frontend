@@ -8,9 +8,9 @@ import TextLoop from "@/components/TextLoop";
 
 export default function CtaBannerSection() {
   return (
-    <section className="relative py-16 sm:py-24 overflow-hidden bg-white">
-      {/* TextLoop: absolute background, pointer-events-none so card stays interactive */}
-      <div className="absolute inset-0 flex items-center pointer-events-none select-none">
+    <section className="relative py-20 sm:py-28 overflow-hidden bg-white flex items-center justify-center">
+      {/* TextLoop: Absolute background centered directly behind the card */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
         <TextLoop
           text="Suaramu Penting ✦ Laporkan Masalah ✦ Bersama Membangun Moklet ✦ Transparan & Terpercaya"
           shape="wave"
@@ -30,8 +30,8 @@ export default function CtaBannerSection() {
         />
       </div>
 
-      {/* Card — sits above the wave via z-10 */}
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      {/* Card — sits directly above the wave via z-10 */}
+      <div className="relative z-10 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className="relative bg-linear-to-br from-red-600 to-red-700 rounded-3xl px-8 py-14 sm:py-20 overflow-hidden shadow-2xl shadow-red-200">
           {/* Decorative circles */}
           <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-white/5" />

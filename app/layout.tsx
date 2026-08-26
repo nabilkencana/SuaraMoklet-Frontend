@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import AuthRehydrator from "@/components/shared/AuthRehydrator";
+import ScrollSmootherProvider from "@/components/shared/ScrollSmootherProvider";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -31,11 +32,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" data-scroll-behavior="smooth" className={cn("scroll-smooth", plusJakartaSans.variable, "font-sans", geist.variable)}>
+    <html lang="id" className={cn(plusJakartaSans.variable, "font-sans", geist.variable)}>
       <body className="min-h-screen font-sans antialiased">
+        {/* Layer untuk elemen position:fixed (Navbar) — di luar #smooth-wrapper
+            agar tidak terpengaruh transform ScrollSmoother */}
+        <div id="fixed-layer" />
         {/* F2: Re-hydrate user state dari /users/me saat reload (menggantikan localStorage) */}
         <AuthRehydrator />
-        {children}
+        <ScrollSmootherProvider>
+          {children}
+        </ScrollSmootherProvider>
         <Toaster position="bottom-right" richColors closeButton />
       </body>
     </html>

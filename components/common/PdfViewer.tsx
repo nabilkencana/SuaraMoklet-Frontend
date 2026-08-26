@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Portal from "@/components/common/Portal";
 import {
   ZoomIn,
   ZoomOut,
@@ -211,10 +212,11 @@ export default function PdfViewer({ url, title = "Dokumen PDF", onClose }: PdfVi
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 lg:p-5 animate-in fade-in duration-200"
-      onClick={onClose}
-    >
+    <Portal>
+      <div
+        className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 lg:p-5 animate-in fade-in duration-200"
+        onClick={onClose}
+      >
       {/* ── Compact Proportional Modal Container (Max-Width 780px to eliminate wide side gaps) ── */}
       <div
         className="relative max-w-[800px] w-full h-[92vh] max-h-[92vh] flex flex-col bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-200/90 ring-1 ring-black/5"
@@ -324,7 +326,7 @@ export default function PdfViewer({ url, title = "Dokumen PDF", onClose }: PdfVi
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex-1 overflow-y-auto bg-slate-100/95 px-3 sm:px-5 py-4 sm:py-6 flex flex-col items-center justify-start relative select-none scroll-smooth"
+          className="flex-1 overflow-y-auto bg-slate-100/95 px-3 sm:px-5 py-4 sm:py-6 flex flex-col items-center justify-start relative select-none scroll-smooth overscroll-contain"
         >
           {isLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-50/80 backdrop-blur-xs z-10 text-slate-700">
@@ -385,6 +387,7 @@ export default function PdfViewer({ url, title = "Dokumen PDF", onClose }: PdfVi
           </button>
         )}
       </div>
-    </div>
+      </div>
+    </Portal>
   );
 }

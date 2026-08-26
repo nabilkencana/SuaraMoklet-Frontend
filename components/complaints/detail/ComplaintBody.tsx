@@ -16,6 +16,7 @@ import {
 import { Complaint } from "@/types/complaint";
 import CommentSection from "@/components/comments/CommentSection";
 import PdfViewer from "@/components/common/PdfViewer";
+import Portal from "@/components/common/Portal";
 
 interface ComplaintBodyProps {
   complaint: Complaint;
@@ -441,7 +442,8 @@ export default function ComplaintBody({
 
       {/* ── PDF VIEWER MODAL & IMAGE LIGHTBOX POPUP MODAL ── */}
       {activeLightbox && (
-        activeLightbox.type === "pdf" || activeLightbox.url.toLowerCase().includes(".pdf") ? (
+        <Portal>
+          {activeLightbox.type === "pdf" || activeLightbox.url.toLowerCase().includes(".pdf") ? (
           <PdfViewer
             url={activeLightbox.url}
             title={activeLightbox.title}
@@ -490,7 +492,9 @@ export default function ComplaintBody({
               </div>
             </div>
           </div>
-        )
+          )
+          }
+        </Portal>
       )}
     </div>
   );

@@ -26,6 +26,7 @@ export default function HeroSection({
     >
       {/* Subtle grid background */}
       <div
+        data-speed="clamp(0.9)"
         className="pointer-events-none absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage:

@@ -176,7 +176,6 @@
 }
 
 html {
-  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -253,3 +252,8 @@ body {
     @apply font-sans;
   }
 }
+
+/* ── ScrollSmoother (GSAP) ── */
+/* Style #smooth-wrapper (position:fixed + overflow:hidden) diterapkan otomatis
+   oleh ScrollSmoother.create() dan dipulihkan saat .kill().
+   Elemen position: fixed HARUS dirender di luar wrapper (portal ke #fixed-layer). */

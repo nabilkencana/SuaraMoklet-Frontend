@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
@@ -23,9 +24,11 @@ export default function Header() {
   const [mounted,     setMounted]     = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [querySource, setQuerySource] = useState<string | null>(null);
+  const [fixedLayer,  setFixedLayer]  = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    setFixedLayer(document.getElementById("fixed-layer"));
     setQuerySource(new URLSearchParams(window.location.search).get("source"));
     const handler = () => {
       setScrolled(window.scrollY > 20);
@@ -118,7 +121,9 @@ export default function Header() {
     ? (scrolled ? 1160 : 1240)
     : (scrolled ? 1040 : 1160);
 
-  return (
+  // Chrome fixed (desktop navbar, backdrop & island mobile) di-portal ke #fixed-layer
+  // yang berada di luar #smooth-wrapper agar tidak terpengaruh transform ScrollSmoother.
+  const fixedChrome = (
     <>
       {/* ─── DESKTOP: Ultra-Smooth MacBook Notch Morphing Navbar ─── */}
       <div className="fixed top-0 left-0 right-0 z-50 hidden md:flex justify-center pointer-events-none font-sans px-4">
@@ -297,68 +302,66 @@ export default function Header() {
         </motion.header>
       </div>
 
-      {/* ─── MOBILE: True Morphing Dynamic Island Navbar ─── */}
-      {/* Dimmed Backdrop — fade via opacity only (GPU composited) */}
+      {/* ─── MOBILE: Top Curved Header matching reference screenshot ─── */}
+      {/* Dimmed Backdrop */}
       <motion.div
         initial={false}
         animate={{ opacity: mobileOpen ? 1 : 0, pointerEvents: mobileOpen ? "auto" : "none" }}
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
         onClick={() => setMobileOpen(false)}
-        className="fixed inset-0 bg-slate-950/20 backdrop-blur-[3px] z-40 md:hidden"
+        className="fixed inset-0 bg-slate-950/25 backdrop-blur-xs z-40 md:hidden"
       />
 
-      {/* Floating Dynamic Island */}
-      <div className="fixed top-3 inset-x-3 z-50 md:hidden flex justify-center pointer-events-none font-sans">
+      {/* Top MacBook Notch Header Container (Centered with Left & Right margins) */}
+      <div className="fixed top-0 left-0 right-0 z-50 md:hidden flex justify-center px-3.5 font-sans pointer-events-none">
         <motion.header
-          initial={{ y: -72, opacity: 0, scale: 0.9 }}
+          initial={{ y: -72, opacity: 0, scale: 0.95 }}
           animate={{
             y: 0,
             opacity: 1,
             scale: 1,
-            borderRadius: 26,
+            borderBottomLeftRadius: mobileOpen ? 28 : (scrolled ? 24 : 28),
+            borderBottomRightRadius: mobileOpen ? 28 : (scrolled ? 24 : 28),
             backgroundColor: mobileOpen
-              ? "rgba(255, 255, 255, 0.99)"
+              ? "rgba(255, 255, 255, 0.98)"
               : scrolled
-              ? "rgba(255, 255, 255, 0.93)"
-              : "rgba(255, 255, 255, 0.86)",
+              ? "rgba(255, 255, 255, 0.92)"
+              : "rgba(255, 255, 255, 0.85)",
             boxShadow: mobileOpen
-              ? "0 28px 64px -12px rgba(0, 0, 0, 0.20), 0 10px 28px -4px rgba(0, 0, 0, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 1)"
+              ? "0 24px 54px -10px rgba(0, 0, 0, 0.16), 0 8px 20px -4px rgba(0, 0, 0, 0.06), inset 0 1px 1px 0 rgba(255, 255, 255, 1)"
               : scrolled
-              ? "0 14px 34px -4px rgba(0, 0, 0, 0.12), 0 2px 8px -2px rgba(0, 0, 0, 0.05), inset 0 1px 0 0 rgba(255, 255, 255, 0.9)"
-              : "0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 0.9)",
-            borderColor: mobileOpen
+              ? "0 14px 34px -4px rgba(0, 0, 0, 0.11), 0 2px 8px -2px rgba(0, 0, 0, 0.04), inset 0 1px 1px 0 rgba(255, 255, 255, 0.9)"
+              : "0 8px 24px -4px rgba(0, 0, 0, 0.07), 0 2px 6px -2px rgba(0, 0, 0, 0.03), inset 0 1px 1px 0 rgba(255, 255, 255, 0.85)",
+            borderColor: scrolled
               ? "rgba(226, 232, 240, 0.9)"
-              : "rgba(220, 227, 234, 0.75)",
+              : "rgba(226, 232, 240, 0.75)",
           }}
           transition={{
-            // Entrance drop
-            y: { type: "spring", stiffness: 220, damping: 32, mass: 0.85 },
-            opacity: { duration: 0.55, ease: "easeOut" },
-            scale: { type: "spring", stiffness: 220, damping: 32, mass: 0.85 },
-            // Visual state changes
-            backgroundColor: { duration: 0.32, ease: "easeOut" },
-            boxShadow: { duration: 0.38, ease: "easeOut" },
-            borderColor: { duration: 0.32, ease: "easeOut" },
+            y: { type: "spring", stiffness: 220, damping: 30, mass: 0.8 },
+            opacity: { duration: 0.45 },
+            scale: { type: "spring", stiffness: 220, damping: 30, mass: 0.8 },
+            borderBottomLeftRadius: { duration: 0.3 },
+            borderBottomRightRadius: { duration: 0.3 },
+            backgroundColor: { duration: 0.3 },
+            boxShadow: { duration: 0.3 },
+            borderColor: { duration: 0.3 },
           }}
           className={cn(
-            "w-full max-w-md pointer-events-auto backdrop-blur-2xl border select-none overflow-hidden"
+            "w-full max-w-[440px] pointer-events-auto backdrop-blur-2xl border border-t-0 select-none overflow-hidden"
           )}
         >
-          {/* Island Header Row */}
-          <div className="h-13 px-4 flex items-center justify-between shrink-0">
+          {/* Header Bar Row: Notch Layout */}
+          <div className="h-14.5 px-4.5 flex items-center justify-between">
+            {/* Brand Logo & Name */}
             <Link
               href="/"
-              className="flex items-center gap-2.5 select-none group shrink-0 min-w-0"
+              className="flex items-center gap-2 select-none group min-w-0"
               onClick={() => setMobileOpen(false)}
             >
-              <motion.img
+              <img
                 src="/logo.png"
                 alt="Logo SuaraMoklet"
-                animate={{
-                  scale: mobileOpen ? 1.05 : 1,
-                }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="h-7 w-7 object-contain shrink-0"
+                className="h-7 w-7 object-contain shrink-0 transition-transform duration-200 group-hover:scale-105"
               />
               <span className="font-extrabold text-[15.5px] tracking-tight text-slate-900 shrink-0 select-none">
                 Suara<span className="text-red-600">Moklet</span>
@@ -367,34 +370,29 @@ export default function Header() {
 
             <div className="flex items-center gap-1.5 shrink-0">
               {mounted && isAuthenticated && user && <NotificationBell />}
-              
-              {/* Smooth Morphing Hamburger Button */}
-              <motion.button
-                onClick={() => setMobileOpen(v => !v)}
+
+              {/* Exact Two-Line Minimalist Hamburger Icon */}
+              <button
+                type="button"
+                onClick={() => setMobileOpen((v) => !v)}
                 aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
-                whileTap={{ scale: 0.88 }}
-                className={cn(
-                  "h-8.5 w-8.5 flex items-center justify-center rounded-full transition-colors duration-200 cursor-pointer overflow-hidden shrink-0",
-                  mobileOpen
-                    ? "bg-red-50 text-red-600 border border-red-200 shadow-xs"
-                    : "bg-slate-100/90 hover:bg-slate-200/80 text-slate-700 border border-slate-200/60"
-                )}
+                className="h-9 w-9 flex flex-col items-center justify-center gap-1.5 rounded-full hover:bg-slate-100/80 active:scale-90 transition-all cursor-pointer"
               >
-                <motion.div
-                  key={mobileOpen ? "close-icon" : "menu-icon"}
-                  initial={{ rotate: mobileOpen ? -90 : 90, opacity: 0, scale: 0.7 }}
-                  animate={{ rotate: 0, opacity: 1, scale: 1 }}
-                  exit={{ rotate: mobileOpen ? 90 : -90, opacity: 0, scale: 0.7 }}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                  className="flex items-center justify-center"
-                >
-                  {mobileOpen ? <X className="h-4.5 w-4.5" /> : <Menu className="h-4.5 w-4.5" />}
-                </motion.div>
-              </motion.button>
+                <motion.span
+                  animate={mobileOpen ? { rotate: 45, y: 4 } : { rotate: 0, y: 0 }}
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                  className="w-5 h-0.5 bg-slate-900 rounded-full origin-center block"
+                />
+                <motion.span
+                  animate={mobileOpen ? { rotate: -45, y: -4 } : { rotate: 0, y: 0 }}
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                  className="w-5 h-0.5 bg-slate-900 rounded-full origin-center block"
+                />
+              </button>
             </div>
           </div>
 
-          {/* Morphing Island Expanded Menu — Grid rows trick avoids height:auto jank */}
+          {/* Morphing Expanded Drawer Menu */}
           <motion.div
             initial={false}
             animate={{
@@ -402,157 +400,147 @@ export default function Header() {
               opacity: mobileOpen ? 1 : 0,
             }}
             transition={{
-              gridTemplateRows: { duration: 0.42, ease: [0.25, 1, 0.5, 1] },
+              gridTemplateRows: { duration: 0.38, ease: [0.25, 1, 0.5, 1] },
               opacity: {
-                duration: mobileOpen ? 0.28 : 0.18,
-                delay: mobileOpen ? 0.06 : 0,
+                duration: mobileOpen ? 0.25 : 0.15,
+                delay: mobileOpen ? 0.05 : 0,
                 ease: "easeOut",
               },
             }}
             style={{ display: "grid" }}
           >
-            {/* Inner wrapper clips overflow so grid-rows transition is clean */}
             <div style={{ overflow: "hidden" }}>
-            <div className="px-3.5 pb-4 pt-1 space-y-2.5 border-t border-slate-100/90">
-              {/* Navigation Links — staggered slide-up on open, instant hide on close */}
-              <div className="space-y-0.5 pt-1">
-                {links.map(({ label, href }, idx) => {
-                  const active = isActive(href);
-                  return (
-                    <motion.div
-                      key={href}
-                      animate={
-                        mobileOpen
-                          ? { opacity: 1, y: 0, filter: "blur(0px)" }
-                          : { opacity: 0, y: 8, filter: "blur(2px)" }
-                      }
-                      transition={{
-                        duration: mobileOpen ? 0.35 : 0.12,
-                        delay: mobileOpen ? 0.1 + idx * 0.04 : 0,
-                        ease: [0.25, 1, 0.5, 1],
-                      }}
-                    >
-                      <Link
-                        href={href}
-                        onClick={() => setMobileOpen(false)}
-                        className={cn(
-                          "block px-3.5 py-2.5 rounded-xl text-[13.5px] font-semibold transition-colors select-none",
-                          active
-                            ? "bg-red-50 text-red-600 font-bold border border-red-100/80"
-                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-50/80"
-                        )}
+              <div className="px-6 pb-6 pt-2 space-y-3 border-t border-slate-100">
+                {/* Navigation Links */}
+                <div className="space-y-1 pt-1">
+                  {links.map(({ label, href }, idx) => {
+                    const active = isActive(href);
+                    return (
+                      <motion.div
+                        key={href}
+                        animate={
+                          mobileOpen
+                            ? { opacity: 1, y: 0 }
+                            : { opacity: 0, y: 6 }
+                        }
+                        transition={{
+                          duration: mobileOpen ? 0.3 : 0.1,
+                          delay: mobileOpen ? 0.08 + idx * 0.03 : 0,
+                        }}
                       >
-                        {label}
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-              </div>
+                        <Link
+                          href={href}
+                          onClick={() => setMobileOpen(false)}
+                          className={cn(
+                            "block px-4 py-2.5 rounded-2xl text-[14px] font-semibold transition-all select-none",
+                            active
+                              ? "bg-red-50 text-red-600 font-bold border border-red-100"
+                              : "text-slate-700 hover:text-slate-900 hover:bg-slate-50"
+                          )}
+                        >
+                          {label}
+                        </Link>
+                      </motion.div>
+                    );
+                  })}
+                </div>
 
-              {/* Search Bar + Auth — staggered after nav links */}
-              <motion.div
-                animate={
-                  mobileOpen
-                    ? { opacity: 1, y: 0, filter: "blur(0px)" }
-                    : { opacity: 0, y: 8, filter: "blur(2px)" }
-                }
-                transition={{
-                  duration: mobileOpen ? 0.35 : 0.1,
-                  delay: mobileOpen ? 0.18 + links.length * 0.04 : 0,
-                  ease: [0.25, 1, 0.5, 1],
-                }}
-                className="pt-2 border-t border-slate-100 space-y-2.5"
-              >
-                <form onSubmit={handleSearch} className="flex items-center gap-1.5">
-                  <div className="relative flex-1">
+                {/* Search Bar + Auth */}
+                <div className="pt-2 border-t border-slate-100 space-y-3">
+                  <form onSubmit={handleSearch} className="flex items-center gap-2">
                     <input
                       type="text"
                       value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Cari keluhan..."
-                      className="h-9.5 w-full rounded-xl border border-slate-200 bg-slate-50/90 px-3.5 text-[13px] text-slate-800 placeholder:text-slate-400 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-500/10 focus:bg-white transition-all"
+                      className="h-10 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-xs text-slate-800 placeholder:text-slate-400 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-500/10 focus:bg-white transition-all"
                     />
-                  </div>
-                  <button
-                    type="submit"
-                    className="h-9.5 px-3.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shrink-0 flex items-center gap-1 cursor-pointer shadow-xs active:scale-95 transition-all"
-                  >
-                    <Search className="h-3.5 w-3.5" />
-                    Cari
-                  </button>
-                </form>
+                    <button
+                      type="submit"
+                      className="h-10 px-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shrink-0 flex items-center gap-1 cursor-pointer shadow-xs active:scale-95 transition-all"
+                    >
+                      <Search className="h-3.5 w-3.5" />
+                      <span>Cari</span>
+                    </button>
+                  </form>
 
-                {/* User Auth Section */}
-                {mounted && isAuthenticated && user ? (
-                  <div className="space-y-1 pt-1">
-                    {/* User Profile Summary */}
-                    <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="h-8 w-8 rounded-full bg-linear-to-br from-red-500 to-red-700 text-white flex items-center justify-center font-black text-xs uppercase shadow-xs shrink-0">
-                        {user.name.charAt(0)}
+                  {/* User Auth Section */}
+                  {mounted && isAuthenticated && user ? (
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-slate-50 border border-slate-100">
+                        <div className="h-8.5 w-8.5 rounded-full bg-linear-to-br from-red-500 to-red-700 text-white flex items-center justify-center font-black text-xs uppercase shadow-xs shrink-0">
+                          {user.name.charAt(0)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13.5px] font-bold text-slate-900 truncate leading-tight">{user.name}</p>
+                          <p className="text-[11px] text-slate-400 capitalize">{user.role?.toLowerCase()}</p>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-bold text-slate-900 truncate leading-tight">{user.name}</p>
-                        <p className="text-[10.5px] text-slate-400 capitalize">{user.role?.toLowerCase()}</p>
-                      </div>
-                    </div>
 
-                    {user.role !== "USER" && (
+                      {user.role !== "USER" && (
+                        <Link
+                          href="/dashboard"
+                          onClick={() => setMobileOpen(false)}
+                          className={cn(
+                            "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all",
+                            pathname === "/dashboard" ? "bg-red-50 text-red-600 font-bold" : "text-slate-700 hover:bg-slate-50"
+                          )}
+                        >
+                          <Settings className="h-4 w-4 text-slate-500" />
+                          <span>Dashboard Kelola</span>
+                        </Link>
+                      )}
+
                       <Link
-                        href="/dashboard"
+                        href="/profile"
                         onClick={() => setMobileOpen(false)}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-semibold transition-all",
-                          pathname === "/dashboard" ? "bg-red-50 text-red-600 font-bold" : "text-slate-700 hover:bg-slate-50"
+                          "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all",
+                          pathname === "/profile" ? "bg-red-50 text-red-600 font-bold" : "text-slate-700 hover:bg-slate-50"
                         )}
                       >
-                        <Settings className="h-3.5 w-3.5 text-slate-500" />
-                        <span>Dashboard Kelola</span>
+                        <div className="h-5 w-5 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-[9px] uppercase">
+                          {user.name.charAt(0)}
+                        </div>
+                        <span>Profil Saya</span>
                       </Link>
-                    )}
 
-                    <Link
-                      href="/profile"
-                      onClick={() => setMobileOpen(false)}
-                      className={cn(
-                        "flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-semibold transition-all",
-                        pathname === "/profile" ? "bg-red-50 text-red-600 font-bold" : "text-slate-700 hover:bg-slate-50"
-                      )}
-                    >
-                      <div className="h-5 w-5 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-[9px] uppercase">
-                        {user.name.charAt(0)}
-                      </div>
-                      <span>Profil Saya</span>
-                    </Link>
-
-                    <button
-                      onClick={() => { handleLogout(); setMobileOpen(false); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[13px] font-semibold text-red-600 hover:bg-red-50 active:scale-[0.98] transition-all cursor-pointer"
-                    >
-                      <LogOut className="h-3.5 w-3.5" />
-                      <span>Keluar</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="pt-1">
-                    <Link
-                      href="/login"
-                      onClick={() => setMobileOpen(false)}
-                      className="h-10 w-full flex items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-xs shadow-red-500/20 active:scale-[0.98] transition-all"
-                    >
-                      <LogIn className="h-3.5 w-3.5" />
-                      <span>Masuk</span>
-                    </Link>
-                  </div>
-                )}
-              </motion.div>
+                      <button
+                        onClick={() => { handleLogout(); setMobileOpen(false); }}
+                        className="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-red-600 hover:bg-red-50 active:scale-[0.98] transition-all cursor-pointer"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Keluar</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="pt-1">
+                      <Link
+                        href="/login"
+                        onClick={() => setMobileOpen(false)}
+                        className="h-11 w-full flex items-center justify-center gap-2 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-xs shadow-red-500/20 active:scale-[0.98] transition-all"
+                      >
+                        <LogIn className="h-4 w-4" />
+                        <span>Masuk</span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            </div>{/* end grid inner wrapper */}
           </motion.div>
         </motion.header>
       </div>
+    </>
+  );
 
-      {/* Spacer so content doesn't hide under mobile floating Dynamic Island */}
-      <div className="h-17 md:hidden" />
+  return (
+    <>
+      {mounted && fixedLayer
+        ? createPortal(fixedChrome, fixedLayer)
+        : fixedChrome}
+      {/* Spacer so content doesn't hide under mobile curved header */}
+      <div className="h-18 md:hidden" />
     </>
   );
 }
