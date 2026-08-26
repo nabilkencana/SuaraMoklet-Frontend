@@ -29,6 +29,7 @@ export interface Complaint {
   status: ComplaintStatus;
   isAnonymous: boolean;
   evidenceUrl?: string; // Main image or attachment
+  evidenceUrls?: string[]; // All image attachments
   createdAt: string;
   updatedAt?: string;
   supports: number;
@@ -39,6 +40,8 @@ export interface Complaint {
   visibility?: ComplaintVisibility;
   handlingPlan?: string;
   resolution?: string;
+  resolutionImageUrl?: string;
+  resolutionImageUrls?: string[];
   category?: string;
   reporter?: {
     id: string;
@@ -59,5 +62,6 @@ export interface CreateComplaintRequest {
   expectedOutput?: string;
   unit: ComplaintUnit;
   evidenceUrl?: string;
+  evidenceUrls?: string[];
   isAnonymous: boolean;
 }

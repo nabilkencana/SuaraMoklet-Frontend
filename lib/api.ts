@@ -3,7 +3,7 @@
 import { api } from "./axios";
 import { User, UserRole } from "@/types/auth";
 import { UpdateProfileRequest, ChangePasswordRequest } from "@/types/profile";
-import { Complaint, CreateComplaintRequest, ComplaintUnit, UnitModel } from "@/types/complaint";
+import { Complaint, CreateComplaintRequest, ComplaintUnit, UnitModel, TimelineEvent } from "@/types/complaint";
 import { Comment, CreateCommentRequest } from "@/types/comment";
 import { DashboardStats, DashboardNotification } from "@/types/dashboard";
 
@@ -60,7 +60,17 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
     mappedUnit = mapBackendUnitToFrontend(c.forwardedToUnit.name);
   }
 
-  const evidenceUrl = c.media && c.media.length > 0 ? c.media[0].url : undefined;
+  const evidenceUrls: string[] = [];
+  if (c.media && Array.isArray(c.media) && c.media.length > 0) {
+    c.media.forEach((m: any) => {
+      if (m.url) evidenceUrls.push(m.url);
+    });
+  } else if (c.evidenceUrl) {
+    c.evidenceUrl.split(",").forEach((u: string) => {
+      if (u.trim()) evidenceUrls.push(u.trim());
+    });
+  }
+  const evidenceUrl = evidenceUrls[0] || c.evidenceUrl || undefined;
 
   const collaboratorUnits = c.collaboratorUnits ? c.collaboratorUnits.map((u: any) => ({
     id: u.id,
@@ -74,48 +84,39 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
   // Fix: frontend tidak meneruskan data reporter sama sekali untuk complaint anonim.
   // NOTE: Fix definitif tetap harus di backend — null-kan author.id di response API.
   let reporter = null;
-  if (c.author && !c.isAnonymous) {
+  if (!c.isAnonymous && c.author) {
     reporter = {
       id: c.author.id,
       name: c.author.name,
-      avatarUrl: c.author.profilePicture || undefined,
+      avatarUrl: c.author.avatarUrl,
     };
   }
 
-  // Use backend timeline if available, otherwise build fallback sequential timeline
-  const timeline = c.timeline && Array.isArray(c.timeline) && c.timeline.length > 0 
-    ? c.timeline 
-    : (() => {
-        const fallback = [
-          {
-            id: `${c.id}-created`,
-            title: "Keluhan Dibuat",
-            description: c.isAnonymous
-              ? "Keluhan diajukan secara anonim ke platform SuaraMoklet."
-              : `Keluhan resmi diajukan ke platform SuaraMoklet oleh ${c.author?.name || "Pelapor"}.`,
-            createdAt: c.createdAt,
-          },
-        ];
+  const timeline: TimelineEvent[] = [];
+  timeline.push({
+    id: `${c.id}-created`,
+    title: "Keluhan Dibuat",
+    description: `Keluhan resmi diajukan ke platform SuaraMoklet oleh ${c.isAnonymous ? "Pengguna (Anonim)" : c.author?.name || "Pelapor"}.`,
+    createdAt: c.createdAt,
+  });
 
-        if (c.forwardedToUnit) {
-          fallback.push({
-            id: `${c.id}-forwarded`,
-            title: `Diteruskan ke Unit ${mapBackendUnitToFrontend(c.forwardedToUnit.name)}`,
-            description: c.forwardNote || `Laporan diteruskan ke Unit ${mapBackendUnitToFrontend(c.forwardedToUnit.name)}.`,
-            createdAt: c.forwardedAt || c.createdAt,
-          });
-        }
-        
-        if (c.status === "DONE") {
-          fallback.push({
-            id: `${c.id}-closed`,
-            title: "Keluhan Diselesaikan",
-            description: "Isu laporan telah ditangani dan dinyatakan selesai.",
-            createdAt: c.closedAt || c.updatedAt,
-          });
-        }
-        return fallback;
-      })();
+  if (c.status === "OPEN" || c.status === "DONE") {
+    timeline.push({
+      id: `${c.id}-opened`,
+      title: "Status Diperbarui",
+      description: `Status keluhan diubah menjadi DIPROSES.`,
+      createdAt: c.updatedAt || c.createdAt,
+    });
+  }
+
+  if (c.status === "DONE") {
+    timeline.push({
+      id: `${c.id}-done`,
+      title: "Status Diperbarui",
+      description: `Status keluhan diubah menjadi SELESAI.`,
+      createdAt: c.closedAt || c.updatedAt || c.createdAt,
+    });
+  }
 
   let rating;
   if (c.rating) {
@@ -132,6 +133,25 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
     });
   }
 
+  let resolutionText: string | undefined = c.resolution || undefined;
+  let resolutionImageUrls: string[] = [];
+
+  if (resolutionText) {
+    if (resolutionText.includes("[BUKTI_SOLUSI]:")) {
+      const parts = resolutionText.split("[BUKTI_SOLUSI]:");
+      resolutionText = parts[0].trim();
+      const urlsRaw = parts[1]?.trim() || "";
+      resolutionImageUrls = urlsRaw.split(",").map((u) => u.trim()).filter(Boolean);
+    } else if (resolutionText.startsWith("[IMG:") && resolutionText.includes("]")) {
+      const match = resolutionText.match(/^\[IMG:(.*?)\]\n?([\s\S]*)$/);
+      if (match) {
+        resolutionImageUrls = match[1]?.split(",").map((u) => u.trim()).filter(Boolean) || [];
+        resolutionText = match[2]?.trim();
+      }
+    }
+  }
+  const resolutionImageUrl = resolutionImageUrls[0] || undefined;
+
   return {
     id: c.id,
     title: c.title,
@@ -143,6 +163,7 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
     status: c.status,
     isAnonymous: c.isAnonymous,
     evidenceUrl,
+    evidenceUrls,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
     supports: c.supports || 0,
@@ -154,7 +175,9 @@ export function mapBackendComplaintToFrontend(c: any): Complaint {
     timeline,
     rating,
     handlingPlan: c.handlingPlan,
-    resolution: c.resolution,
+    resolution: resolutionText,
+    resolutionImageUrl,
+    resolutionImageUrls,
   };
 }
 
@@ -408,12 +431,18 @@ export const complaintsApi = {
   },
 
   create: async (data: CreateComplaintRequest): Promise<Complaint> => {
+    const finalEvidenceUrl =
+      data.evidenceUrls && data.evidenceUrls.length > 0
+        ? data.evidenceUrls.join(",")
+        : data.evidenceUrl;
+
     const payload = {
       title: data.title,
       content: data.description,
       isAnonymous: data.isAnonymous,
       unitId: data.unit, // unit is now unitId from the form
-      evidenceUrl: data.evidenceUrl,
+      evidenceUrl: finalEvidenceUrl,
+      evidenceUrls: data.evidenceUrls,
     };
     const response = await api.post<any>("/complaints", payload);
     return mapBackendComplaintToFrontend(response.data);

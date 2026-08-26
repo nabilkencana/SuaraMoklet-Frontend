@@ -57,6 +57,9 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
   // Modal: Close Complaint
   const [isCloseModal, setIsCloseModal] = useState(false);
   const [solusiText, setSolusiText] = useState("");
+  const [solusiFiles, setSolusiFiles] = useState<File[]>([]);
+  const [solusiFileUrls, setSolusiFileUrls] = useState<string[]>([]);
+  const [isUploadingSolusiFile, setIsUploadingSolusiFile] = useState(false);
   const [isSubmittingClose, setIsSubmittingClose] = useState(false);
 
   // Modal: Forward
@@ -298,16 +301,74 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
     }
   };
 
+  const handleAddSolusiFiles = async (rawFiles: File[]) => {
+    const maxFiles = 5;
+    const availableSlots = maxFiles - solusiFiles.length;
+    if (availableSlots <= 0) {
+      toast.error(`Maksimal ${maxFiles} foto solusi`);
+      return;
+    }
+
+    const filesToProcess = rawFiles.slice(0, availableSlots);
+    setIsUploadingSolusiFile(true);
+
+    try {
+      const newFiles: File[] = [];
+      const newUrls: string[] = [];
+
+      for (const rawFile of filesToProcess) {
+        let fileToUpload = rawFile;
+        if (rawFile.type.startsWith("image/")) {
+          try {
+            const imageCompression = (await import("browser-image-compression")).default;
+            fileToUpload = await imageCompression(rawFile, {
+              maxSizeMB: 1,
+              maxWidthOrHeight: 1920,
+              useWebWorker: true,
+            });
+          } catch {
+            fileToUpload = rawFile;
+          }
+        }
+
+        const res = await apiClient.upload.uploadFile(fileToUpload);
+        if (res && res.url) {
+          newFiles.push(fileToUpload);
+          newUrls.push(res.url);
+        }
+      }
+
+      setSolusiFiles((prev) => [...prev, ...newFiles]);
+      setSolusiFileUrls((prev) => [...prev, ...newUrls]);
+      toast.success(`${newFiles.length} foto bukti solusi berhasil diunggah`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Gagal mengunggah beberapa foto");
+    } finally {
+      setIsUploadingSolusiFile(false);
+    }
+  };
+
+  const handleRemoveSolusiFile = (index: number) => {
+    setSolusiFiles((prev) => prev.filter((_, i) => i !== index));
+    setSolusiFileUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleTutupKeluhan = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!solusiText.trim() || isSubmittingClose) return;
+    if (!solusiText.trim() || isSubmittingClose || isUploadingSolusiFile) return;
 
     setIsSubmittingClose(true);
     try {
-      await apiClient.complaints.updateStatus(complaintId, "DONE", undefined, solusiText.trim());
+      let finalResolution = solusiText.trim();
+      if (solusiFileUrls.length > 0) {
+        finalResolution = `${solusiText.trim()}\n\n[BUKTI_SOLUSI]:${solusiFileUrls.join(",")}`;
+      }
+      await apiClient.complaints.updateStatus(complaintId, "DONE", undefined, finalResolution);
       toast.success("Keluhan berhasil ditutup dan diselesaikan");
       setIsCloseModal(false);
       setSolusiText("");
+      setSolusiFiles([]);
+      setSolusiFileUrls([]);
       loadComplaintData();
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Gagal menutup keluhan");
@@ -501,12 +562,19 @@ export default function UnitComplaintDetailPage({ complaintId }: { complaintId: 
         isOpen={isCloseModal}
         complaint={complaint}
         solusiText={solusiText}
+        solusiFiles={solusiFiles}
+        solusiFileUrls={solusiFileUrls}
+        isUploadingFile={isUploadingSolusiFile}
         isSubmitting={isSubmittingClose}
         onClose={() => {
           setIsCloseModal(false);
           setSolusiText("");
+          setSolusiFiles([]);
+          setSolusiFileUrls([]);
         }}
         onChangeText={setSolusiText}
+        onAddFiles={handleAddSolusiFiles}
+        onRemoveFile={handleRemoveSolusiFile}
         onSubmit={handleTutupKeluhan}
       />
 

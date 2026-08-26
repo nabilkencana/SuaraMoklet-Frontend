@@ -24,8 +24,8 @@ export default function ComplaintWizard() {
   const { createComplaint, units } = useComplaint();
 
   // File Upload State
-  const [file, setFile] = useState<File | null>(null);
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileUrls, setFileUrls] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -97,8 +97,8 @@ export default function ComplaintWizard() {
 
   // Upload Logic
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      await processAndUploadFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      await processAndUploadFiles(Array.from(e.target.files));
     }
   };
 
@@ -115,52 +115,63 @@ export default function ComplaintWizard() {
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      await processAndUploadFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      await processAndUploadFiles(Array.from(e.dataTransfer.files));
     }
   };
 
-  const processAndUploadFile = async (rawFile: File) => {
-    try {
-      setIsUploading(true);
-      let fileToUpload = rawFile;
+  const processAndUploadFiles = async (rawFiles: File[]) => {
+    const maxFiles = 5;
+    const availableSlots = maxFiles - files.length;
+    if (availableSlots <= 0) {
+      toast.error(`Maksimal ${maxFiles} file bukti`);
+      return;
+    }
 
-      if (rawFile.type.startsWith("image/")) {
-        const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true,
-        };
-        try {
-          fileToUpload = await imageCompression(rawFile, options);
-        } catch (compressionError) {
-          console.warn("Image compression failed, using original file:", compressionError);
+    const filesToProcess = rawFiles.slice(0, availableSlots);
+    setIsUploading(true);
+
+    try {
+      const newFiles: File[] = [];
+      const newUrls: string[] = [];
+
+      for (const rawFile of filesToProcess) {
+        let fileToUpload = rawFile;
+        if (rawFile.type.startsWith("image/")) {
+          const options = {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+          };
+          try {
+            fileToUpload = await imageCompression(rawFile, options);
+          } catch (compressionError) {
+            console.warn("Image compression failed, using original file:", compressionError);
+          }
+        }
+
+        const response = await apiClient.upload.uploadFile(fileToUpload);
+        if (response && response.url) {
+          newFiles.push(fileToUpload);
+          newUrls.push(response.url);
         }
       }
 
-      setFile(fileToUpload);
-
-      const response = await apiClient.upload.uploadFile(fileToUpload);
-      if (response && response.url) {
-        setFileUrl(response.url);
-        toast.success("Foto berhasil diunggah");
-      } else {
-        throw new Error("Format respon tidak valid");
-      }
+      setFiles((prev) => [...prev, ...newFiles]);
+      setFileUrls((prev) => [...prev, ...newUrls]);
+      toast.success(`${newFiles.length} file berhasil diunggah`);
     } catch (err: any) {
-      toast.error("Gagal mengunggah foto", {
+      toast.error("Gagal mengunggah beberapa file", {
         description: err.response?.data?.message || err.message || "Silakan coba lagi",
       });
-      setFile(null);
-      setFileUrl(null);
     } finally {
       setIsUploading(false);
     }
   };
 
-  const removeFile = () => {
-    setFile(null);
-    setFileUrl(null);
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setFileUrls((prev) => prev.filter((_, i) => i !== index));
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -175,7 +186,8 @@ export default function ComplaintWizard() {
         expectedOutput: data.expectedOutput,
         unit: data.unit,
         isAnonymous: data.isAnonymous,
-        evidenceUrl: fileUrl || undefined,
+        evidenceUrl: fileUrls.length > 0 ? fileUrls[0] : undefined,
+        evidenceUrls: fileUrls.length > 0 ? fileUrls : undefined,
       };
 
       const result = await createComplaint(payload);
@@ -235,8 +247,8 @@ export default function ComplaintWizard() {
 
         <Step>
           <StepMediaUpload
-            file={file}
-            fileUrl={fileUrl}
+            files={files}
+            fileUrls={fileUrls}
             isUploading={isUploading}
             isDragOver={isDragOver}
             fileInputRef={fileInputRef}

@@ -20,7 +20,7 @@ export default function ComplaintSidebar({
   onSupport,
 }: ComplaintSidebarProps) {
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="flex flex-col gap-5 h-full">
       {complaint.visibility === "PUBLIC" && (
         <SupportWidget
           complaintId={complaint.id}
@@ -33,8 +33,8 @@ export default function ComplaintSidebar({
         />
       )}
 
-      {/* Timeline: only show to complaint owner if they accessed from my-complaints */}
-      {isOwner && source === "my-complaints" && <Timeline events={displayTimeline} />}
+      {/* Timeline: Show Perkembangan Terbaru to all users viewing the complaint */}
+      <Timeline events={displayTimeline} status={complaint.status} />
 
       {/* Rating: only show to complaint owner after status DONE */}
       {isOwner && complaint.status === "DONE" && (

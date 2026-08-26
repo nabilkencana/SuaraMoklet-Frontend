@@ -98,7 +98,7 @@ export default function ComplaintHeader({ complaint }: ComplaintHeaderProps) {
   return (
     <>
       {/* ── MOBILE COMPACT HEADER CARD ── */}
-      <div className="lg:hidden bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+      <div className="lg:hidden bg-white border border-slate-200/90 rounded-3xl p-4 sm:p-5 shadow-xs space-y-3">
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap gap-2 items-center">
             <span
@@ -156,7 +156,7 @@ export default function ComplaintHeader({ complaint }: ComplaintHeaderProps) {
       </div>
 
       {/* ── DESKTOP HEADER ── */}
-      <div className="hidden lg:block bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+      <div className="hidden lg:block bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-7 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-2">

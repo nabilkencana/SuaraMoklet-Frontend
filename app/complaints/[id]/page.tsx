@@ -187,7 +187,7 @@ export default function ComplaintDetailPage() {
     <div className="min-h-screen bg-[#FAFAFA] text-slate-800 pt-16 font-sans">
       <Header />
 
-      <main className="grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-4 lg:space-y-6">
+      <main className="grow max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-5">
         {/* Back button */}
         <button
           onClick={() => router.back()}
@@ -201,8 +201,8 @@ export default function ComplaintDetailPage() {
         <ComplaintHeader complaint={currentComplaint} />
 
         {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-start">
-          <div className="lg:col-span-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+          <div className="lg:col-span-8 flex flex-col">
             <ComplaintBody
               complaint={currentComplaint}
               isDisliked={isDisliked}
@@ -212,7 +212,7 @@ export default function ComplaintDetailPage() {
             />
           </div>
 
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 flex flex-col">
             <ComplaintSidebar
               complaint={currentComplaint}
               isOwner={isOwner}
