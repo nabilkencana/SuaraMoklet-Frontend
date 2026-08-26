@@ -10,9 +10,9 @@ import SplitText from "@/components/SplitText";
 const STEPS = [
   {
     num: 1,
-    title: "Tulis & Pilih Privasi",
+    title: "Tulis Laporan",
     description:
-      "Sampaikan aspirasimu, unggah bukti foto, dan pilih mode publik atau 100% anonim.",
+      "Sampaikan keluhan atau ide perbaikanmu secara jelas beserta foto bukti pendukung.",
   },
   {
     num: 2,

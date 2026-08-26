@@ -321,14 +321,15 @@ interface StepConnectorProps {
 
 function StepConnector({ isComplete, accentColor = '#B61722' }: StepConnectorProps) {
   const lineVariants: Variants = {
-    incomplete: { width: 0, backgroundColor: 'transparent' },
-    complete: { width: '100%', backgroundColor: accentColor }
+    incomplete: { width: 0 },
+    complete: { width: '100%' }
   };
 
   return (
     <div className="relative mx-2 h-1 flex-1 overflow-hidden rounded bg-slate-200">
       <motion.div
         className="absolute left-0 top-0 h-full"
+        style={{ backgroundColor: accentColor }}
         variants={lineVariants}
         initial={false}
         animate={isComplete ? 'complete' : 'incomplete'}

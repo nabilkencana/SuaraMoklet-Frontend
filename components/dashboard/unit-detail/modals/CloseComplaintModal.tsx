@@ -1,5 +1,5 @@
 import React from "react";
-import { X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { X, CheckCircle, AlertCircle, Loader2, Ban, CheckCircle2 } from "lucide-react";
 import { Complaint } from "@/types/complaint";
 
 interface CloseComplaintModalProps {
@@ -12,6 +12,48 @@ interface CloseComplaintModalProps {
   onSubmit: (e: React.FormEvent) => void;
 }
 
+const DIRECT_CLOSE_TEMPLATES = [
+  {
+    label: "Laporan Palsu / Tidak Valid",
+    text: "Laporan telah diverifikasi dan dinyatakan tidak valid atau fiktif.",
+  },
+  {
+    label: "Laporan Duplikat",
+    text: "Laporan serupa sudah pernah diajukan sebelumnya dan sedang ditangani pada tiket lain.",
+  },
+  {
+    label: "Sudah Terselesaikan",
+    text: "Kendala yang dilaporkan telah terselesaikan sebelum proses tindak lanjut dimulai.",
+  },
+  {
+    label: "Informasi Tidak Lengkap",
+    text: "Laporan ditutup karena rincian bukti atau lokasi tidak memadai untuk ditindaklanjuti.",
+  },
+  {
+    label: "Bukan Wewenang Sekolah",
+    text: "Permasalahan yang dilaporkan berada di luar wewenang dan fasilitas operasional sekolah.",
+  },
+];
+
+const NORMAL_CLOSE_TEMPLATES = [
+  {
+    label: "Perbaikan Fasilitas Selesai",
+    text: "Kerusakan fasilitas telah diperbaiki dan dipastikan berfungsi normal.",
+  },
+  {
+    label: "Penggantian Peralatan Selesai",
+    text: "Peralatan yang rusak telah diganti dengan unit baru yang siap digunakan.",
+  },
+  {
+    label: "Koordinasi Unit Tuntas",
+    text: "Telah dikoordinasikan dan diselesaikan bersama unit penanggung jawab terkait.",
+  },
+  {
+    label: "Solusi Telah Diterapkan",
+    text: "Tindakan penanganan telah selesai dilaksanakan sesuai prosedur operasional.",
+  },
+];
+
 export default function CloseComplaintModal({
   isOpen,
   complaint,
@@ -23,21 +65,32 @@ export default function CloseComplaintModal({
 }: CloseComplaintModalProps) {
   if (!isOpen) return null;
 
+  const isDirectClose = complaint?.status === "NEW" || !complaint?.status;
+  const templates = isDirectClose ? DIRECT_CLOSE_TEMPLATES : NORMAL_CLOSE_TEMPLATES;
+
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 space-y-5 animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center">
-              <CheckCircle className="h-4.5 w-4.5" />
+            <div
+              className={`h-9 w-9 rounded-xl flex items-center justify-center border ${
+                isDirectClose
+                  ? "bg-rose-50 text-rose-600 border-rose-100"
+                  : "bg-emerald-50 text-emerald-600 border-emerald-100"
+              }`}
+            >
+              {isDirectClose ? <Ban className="h-4.5 w-4.5" /> : <CheckCircle className="h-4.5 w-4.5" />}
             </div>
             <div>
               <h3 className="font-extrabold text-slate-800 text-sm">
-                Tutup Keluhan &amp; Berikan Solusi
+                {isDirectClose ? "Tutup Keluhan Langsung" : "Selesaikan & Berikan Solusi"}
               </h3>
               <p className="text-[11px] text-slate-400">
-                Ubah status keluhan menjadi SELESAI (DONE)
+                {isDirectClose
+                  ? "Tutup laporan baru tanpa melalui proses penanganan lanjutan"
+                  : "Ubah status keluhan menjadi SELESAI (DONE)"}
               </p>
             </div>
           </div>
@@ -52,12 +105,18 @@ export default function CloseComplaintModal({
         {/* Complaint info pill */}
         {complaint && (
           <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 flex items-center gap-3">
-            <div className="h-7 w-7 rounded-lg bg-emerald-100 text-emerald-700 font-extrabold text-xs flex items-center justify-center shrink-0">
-              ✓
+            <div
+              className={`h-7 w-7 rounded-lg font-extrabold text-xs flex items-center justify-center shrink-0 ${
+                isDirectClose
+                  ? "bg-rose-100 text-rose-700"
+                  : "bg-emerald-100 text-emerald-700"
+              }`}
+            >
+              {isDirectClose ? "✕" : "✓"}
             </div>
             <div className="min-w-0">
               <span className="block text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
-                Keluhan yang Diselesaikan
+                {isDirectClose ? "Keluhan yang Ditutup Langsung" : "Keluhan yang Diselesaikan"}
               </span>
               <span className="block font-bold text-slate-800 text-xs truncate">
                 {complaint.title}
@@ -69,12 +128,23 @@ export default function CloseComplaintModal({
           </div>
         )}
 
-        {/* Warning Banner */}
-        <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/70 flex items-start gap-2.5 text-amber-800 text-xs">
-          <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+        {/* Warning / Guidance Banner */}
+        <div
+          className={`p-3.5 rounded-2xl border flex items-start gap-2.5 text-xs ${
+            isDirectClose
+              ? "bg-rose-50/70 border-rose-200/70 text-rose-900"
+              : "bg-amber-50/80 border-amber-200/70 text-amber-800"
+          }`}
+        >
+          <AlertCircle
+            className={`h-4 w-4 shrink-0 mt-0.5 ${
+              isDirectClose ? "text-rose-500" : "text-amber-500"
+            }`}
+          />
           <p className="leading-relaxed text-[11px]">
-            Setelah ditutup, solusi ini akan ditampilkan sebagai <strong>Solusi Resmi</strong>{" "}
-            kepada pelapor dan pelapor dapat memberikan penilaian (rating).
+            {isDirectClose
+              ? "Laporan ini akan langsung ditutup (SELESAI). Tuliskan alasan penutupan (misal: laporan tidak valid, duplikat, atau telah terselesaikan sebelumnya) sebagai catatan resmi bagi pelapor."
+              : "Setelah ditutup, uraian tindakan ini akan ditampilkan sebagai Solusi Resmi kepada pelapor dan pelapor dapat memberikan penilaian (rating)."}
           </p>
         </div>
 
@@ -82,22 +152,17 @@ export default function CloseComplaintModal({
           {/* Quick Templates */}
           <div className="space-y-1.5">
             <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
-              Template Cepat (Opsional)
+              {isDirectClose ? "Pilihan Alasan Cepat (Opsional)" : "Template Cepat Solusi (Opsional)"}
             </label>
             <div className="flex flex-wrap gap-1.5">
-              {[
-                "Kerusakan telah diperbaiki",
-                "Penggantian peralatan selesai",
-                "Koordinasi lintas unit tuntas",
-                "Masalah teridentifikasi & diatasi",
-              ].map((tpl) => (
+              {templates.map((tpl) => (
                 <button
-                  key={tpl}
+                  key={tpl.label}
                   type="button"
-                  onClick={() => onChangeText(tpl)}
-                  className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 text-slate-600 font-semibold text-[11px] rounded-lg transition-all cursor-pointer active:scale-95"
+                  onClick={() => onChangeText(tpl.text)}
+                  className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200/80 hover:text-slate-900 border border-slate-200 text-slate-650 font-semibold text-[11px] rounded-lg transition-all cursor-pointer active:scale-95 text-left"
                 >
-                  + {tpl}
+                  + {tpl.label}
                 </button>
               ))}
             </div>
@@ -106,15 +171,22 @@ export default function CloseComplaintModal({
           {/* Textarea */}
           <div className="space-y-1.5">
             <label className="block text-[10.5px] font-bold text-slate-450 uppercase tracking-wider">
-              Uraian Solusi / Tindakan yang Dilakukan <span className="text-red-500">*</span>
+              {isDirectClose
+                ? "Alasan Penutupan Keluhan"
+                : "Uraian Solusi / Tindakan yang Dilakukan"}{" "}
+              <span className="text-red-500">*</span>
             </label>
             <textarea
               required
               rows={4}
-              placeholder="Jelaskan secara detail tindakan dan perbaikan yang telah diselesaikan oleh tim unit..."
+              placeholder={
+                isDirectClose
+                  ? "Tuliskan alasan penutupan langsung (contoh: Laporan tidak valid/palsu, duplikat, kendala sudah teratasi sebelumnya, atau informasi bukti tidak lengkap)..."
+                  : "Jelaskan secara detail tindakan dan perbaikan yang telah diselesaikan oleh tim unit..."
+              }
               value={solusiText}
               onChange={(e) => onChangeText(e.target.value)}
-              className="w-full p-3.5 text-xs rounded-2xl border border-slate-200 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 bg-white resize-none text-slate-800 placeholder:text-slate-350 leading-relaxed font-normal"
+              className="w-full p-3.5 text-xs rounded-2xl border border-slate-200 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-white resize-none text-slate-800 placeholder:text-slate-400 leading-relaxed font-normal"
             />
           </div>
 
@@ -130,14 +202,26 @@ export default function CloseComplaintModal({
             <button
               type="submit"
               disabled={isSubmitting || !solusiText.trim()}
-              className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2"
+              className={`flex-1 h-11 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold rounded-xl transition-all text-xs shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2 ${
+                isDirectClose
+                  ? "bg-rose-600 hover:bg-rose-700"
+                  : "bg-emerald-600 hover:bg-emerald-700"
+              }`}
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isDirectClose ? (
+                <CheckCircle2 className="h-4 w-4" />
               ) : (
                 <CheckCircle className="h-4 w-4" />
               )}
-              <span>{isSubmitting ? "Menyimpan..." : "Tutup & Terbitkan Solusi"}</span>
+              <span>
+                {isSubmitting
+                  ? "Menyimpan..."
+                  : isDirectClose
+                  ? "Tutup Keluhan Sekarang"
+                  : "Tutup & Terbitkan Solusi"}
+              </span>
             </button>
           </div>
         </form>
