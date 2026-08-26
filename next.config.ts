@@ -11,6 +11,8 @@ import path from "path";
 //   - Information leakage via Referrer-Policy
 //   - CSP blok koneksi ke origin tidak sah (defense-in-depth untuk LO-5 XSS stored)
 
+const isDev = process.env.NODE_ENV !== "production";
+
 const securityHeaders = [
   {
     key: "X-Content-Type-Options",
@@ -29,19 +31,17 @@ const securityHeaders = [
     value: "camera=(), microphone=(), geolocation=()",
   },
   {
-    // CSP: blok eval (walaupun Next.js butuh unsafe-inline untuk hydration),
-    // batasi koneksi hanya ke origin yang dikenal.
+    // CSP: blok eval di produksi, izinkan 'unsafe-eval' di development untuk React devtools / Turbopack callstack reconstruction.
     // CATATAN: 'unsafe-inline' di script-src diperlukan Next.js inline scripts.
-    // Upgrade ke nonce-based CSP saat Next.js 14+ strict mode diaktifkan.
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' https: data: blob:",
       "media-src 'self' https:",
-      "connect-src 'self' https://api-suara.alfareza.site https://s3-suara.alfareza.site",
+      `connect-src 'self' https://api-suara.alfareza.site https://s3-suara.alfareza.site${isDev ? " ws: wss: http://localhost:* http://127.0.0.1:*" : ""}`,
       "frame-ancestors 'none'",
       "object-src 'none'",
       "base-uri 'self'",

@@ -123,7 +123,7 @@ export default function Header() {
       {/* ─── DESKTOP: Ultra-Smooth MacBook Notch Morphing Navbar ─── */}
       <div className="fixed top-0 left-0 right-0 z-50 hidden md:flex justify-center pointer-events-none font-sans px-4">
         <motion.header
-          initial={{ y: -80, opacity: 0, scale: 0.95 }}
+          initial={{ y: -80, opacity: 0, scale: 0.95, maxWidth: 1060 }}
           animate={{
             y: 0,
             opacity: 1,
