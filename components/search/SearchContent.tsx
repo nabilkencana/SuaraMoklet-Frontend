@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Header from "@/components/shared/Header";
+import Footer from "@/components/shared/Footer";
 import { Complaint } from "@/types/complaint";
 import { apiClient } from "@/lib/api";
 
@@ -112,7 +113,7 @@ export default function SearchContent() {
     });
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] text-slate-800 font-sans flex flex-col pt-16">
+    <div className="min-h-screen bg-[#FAFAFA] text-slate-800 font-sans flex flex-col">
       <Header />
 
       <ExploreLandingView
@@ -131,6 +132,8 @@ export default function SearchContent() {
           if (sort) setSortBy(sort);
         }}
       />
+
+      <Footer />
     </div>
   );
 }

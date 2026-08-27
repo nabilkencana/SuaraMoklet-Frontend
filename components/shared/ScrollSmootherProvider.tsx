@@ -16,7 +16,6 @@ const SMOOTHER_ROUTES = [
   "/privacy",
   "/terms",
   "/credits",
-  "/search",
 ];
 
 function isSmootherRoute(pathname: string | null): boolean {
