@@ -259,7 +259,7 @@ export default function ExploreLandingView({
                       <img
                         src={item.evidenceUrl}
                         alt={item.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
                       <div className="w-full h-full bg-linear-to-tr from-red-500/10 to-amber-500/10 flex items-center justify-center">
@@ -277,11 +277,6 @@ export default function ExploreLandingView({
                   {/* Content Details */}
                   <div className="p-5 flex-1 flex flex-col justify-between gap-4 relative z-20">
                     <div className="space-y-2">
-                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                        {item.isAnonymous
-                          ? "diajukan oleh anonim"
-                          : `promosikan oleh ${item.reporter?.name || "Siswa"}`}
-                      </div>
 
                       <Link href={`/complaints/${item.id}`} className="block relative z-20">
                         <h4 className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-2 hover:text-red-600 hover:underline transition-colors">

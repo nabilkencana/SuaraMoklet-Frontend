@@ -9,30 +9,32 @@ import TextLoop from "@/components/TextLoop";
 export default function CtaBannerSection() {
   return (
     <section className="relative py-20 sm:py-28 overflow-hidden bg-white flex items-center justify-center">
-      {/* TextLoop: Absolute background centered directly behind the card */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
-        <TextLoop
-          text="Suaramu Penting ✦ Laporkan Masalah ✦ Bersama Membangun Moklet ✦ Transparan & Terpercaya"
-          shape="wave"
-          speed={80}
-          direction="forward"
-          separator="✦"
-          curviness={90}
-          fontSize={46}
-          fontWeight={800}
-          letterSpacing={2}
-          uppercase
-          color="#ffffff"
-          ribbon
-          ribbonColor="#B61722"
-          ribbonWidth={86}
-          pauseOnHover={false}
-        />
+      {/* TextLoop: Absolute background scaled dynamically so it is prominently visible looping ABOVE & BELOW the card on mobile */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0 overflow-hidden">
+        <div className="w-[210%] sm:w-full min-w-[920px] sm:min-w-0 scale-y-[1.85] scale-x-[1.35] sm:scale-100 flex items-center justify-center transition-transform">
+          <TextLoop
+            text="Suaramu Penting ✦ Laporkan Masalah ✦ Bersama Membangun Moklet ✦ Transparan & Terpercaya"
+            shape="wave"
+            speed={80}
+            direction="forward"
+            separator="✦"
+            curviness={115}
+            fontSize={46}
+            fontWeight={800}
+            letterSpacing={2}
+            uppercase
+            color="#ffffff"
+            ribbon
+            ribbonColor="#B61722"
+            ribbonWidth={88}
+            pauseOnHover={false}
+          />
+        </div>
       </div>
 
       {/* Card — sits directly above the wave via z-10 */}
       <div className="relative z-10 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="relative bg-linear-to-br from-red-600 to-red-700 rounded-3xl px-8 py-14 sm:py-20 overflow-hidden shadow-2xl shadow-red-200">
+        <div className="relative bg-linear-to-br from-red-600 to-red-700 rounded-3xl px-6 py-9 sm:px-8 sm:py-20 overflow-hidden shadow-2xl shadow-red-200">
           {/* Decorative circles */}
           <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-white/5" />
           <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-white/5" />

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ThumbsUp, ThumbsDown, Loader2, LogIn, Heart } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Loader2, LogIn, Heart, Sparkles } from "lucide-react";
 import { useAuthStore } from "@/app/store/auth.store";
 import { toast } from "sonner";
 
@@ -27,11 +27,12 @@ export default function SupportWidget({
   const [localLiked, setLocalLiked] = useState<boolean>(false);
   const [localDisliked, setLocalDisliked] = useState<boolean>(false);
   const [likeCount, setLikeCount] = useState<number>(supports);
+  const [dislikeCount, setDislikeCount] = useState<number>(dislikes);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [dislikeCount, setDislikeCount] = useState<number>(dislikes);
+  const isPrivileged = user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC";
 
-  // Initialize from backend
+  // Initialize from backend & local state
   useEffect(() => {
     setLikeCount(supports);
     setDislikeCount(dislikes);
@@ -73,7 +74,7 @@ export default function SupportWidget({
         setLikeCount(success.supports);
         setDislikeCount(success.dislikes);
 
-        // If previously disliked, remove dislike from local
+        // If previously disliked, remove dislike
         if (localDisliked) {
           setLocalDisliked(false);
           const dislikedList = JSON.parse(localStorage.getItem("disliked_complaints") || "[]");
@@ -145,100 +146,96 @@ export default function SupportWidget({
   };
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
-        <div className="flex items-center gap-6">
-          <div>
-            <span className="block text-2xl font-extrabold text-slate-800 leading-none">
-              {likeCount}
-            </span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1.5 block">
-              Jumlah Suka
-            </span>
-          </div>
-
-          {(user?.role === "SUPERADMIN" || user?.role === "SUPER_PIC") && (
-            <div>
-              <span className="block text-2xl font-extrabold text-slate-800 leading-none">
-                {dislikeCount}
-              </span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1.5 block">
-                Jumlah Dislike
-              </span>
-            </div>
-          )}
+    <div className="bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4.5">
+      {/* Stats Card: Dukungan Suka */}
+      <div className="bg-linear-to-br from-red-50/70 to-rose-50/30 border border-red-100/90 rounded-2xl p-4 flex items-center justify-between">
+        <div className="space-y-0.5">
+          <span className="text-[10.5px] font-extrabold text-red-700/80 uppercase tracking-wider block">
+            Dukungan Suka
+          </span>
+          <span className="text-2xl sm:text-3xl font-black text-slate-900 leading-none block">
+            {likeCount.toLocaleString("id-ID")}
+          </span>
         </div>
-
-        <div className="flex gap-2">
-          {/* Like Button */}
-          <button
-            onClick={handleLike}
-            disabled={isSubmitting}
-            className={`h-10 px-4 rounded-xl flex items-center justify-center gap-2 border text-xs font-bold uppercase tracking-wider transition-all select-none cursor-pointer ${
-              localLiked
-                ? "bg-red-50 border-red-200 text-red-650 hover:bg-red-100"
-                : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"
-            }`}
-          >
-            {isSubmitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ThumbsUp className={`h-4 w-4 ${localLiked ? "fill-red-600 text-red-600" : "text-slate-500"}`} />
-            )}
-            <span>{localLiked ? "Unlike" : "Like"}</span>
-          </button>
-
-          {/* Dislike Button */}
-          {localDisliked ? (
-            <button
-              onClick={handleUndoDislike}
-              className="h-10 px-4 rounded-xl flex items-center justify-center gap-2 border text-xs font-bold uppercase tracking-wider transition-all bg-slate-100 border-slate-200 text-slate-800 cursor-pointer hover:bg-slate-200/80"
-            >
-              <ThumbsDown className="h-4 w-4 fill-slate-700 text-slate-700" />
-              <span>Undo Dislike</span>
-            </button>
-          ) : (
-            <button
-              onClick={handleDislike}
-              className="h-10 px-4 rounded-xl flex items-center justify-center gap-2 border text-xs font-bold uppercase tracking-wider transition-all bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 cursor-pointer"
-            >
-              <ThumbsDown className="h-4 w-4 text-slate-500" />
-              <span>Dislike</span>
-            </button>
-          )}
+        <div className="h-10 w-10 rounded-xl bg-white shadow-2xs border border-red-100/80 flex items-center justify-center text-red-600 shrink-0">
+          <ThumbsUp className={`h-5 w-5 ${localLiked ? "fill-red-600" : ""}`} />
         </div>
       </div>
 
+      {/* Action Buttons Grid (Structured 2-column layout to prevent any overflow) */}
+      <div className="grid grid-cols-2 gap-2.5 pt-1">
+        {/* Like / Unlike Button */}
+        <button
+          type="button"
+          onClick={handleLike}
+          disabled={isSubmitting}
+          className={`h-11 px-3.5 rounded-2xl flex items-center justify-center gap-2 text-xs font-bold transition-all cursor-pointer select-none active:scale-95 shadow-2xs ${
+            localLiked
+              ? "bg-red-600 text-white hover:bg-red-700 shadow-md shadow-red-500/20 border border-red-600"
+              : "bg-white text-slate-700 hover:text-red-600 hover:bg-red-50/60 border border-slate-200/90 hover:border-red-200"
+          }`}
+        >
+          {isSubmitting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ThumbsUp className={`h-4 w-4 shrink-0 ${localLiked ? "fill-white text-white" : "text-slate-500 group-hover:text-red-600"}`} />
+          )}
+          <span className="truncate">{localLiked ? "Disukai" : "Suka"}</span>
+        </button>
+
+        {/* Dislike / Undo Dislike Button */}
+        {localDisliked ? (
+          <button
+            type="button"
+            onClick={handleUndoDislike}
+            className="h-11 px-3.5 rounded-2xl flex items-center justify-center gap-2 text-xs font-bold transition-all bg-slate-800 text-white hover:bg-slate-900 border border-slate-800 shadow-md shadow-slate-900/10 cursor-pointer active:scale-95 select-none"
+          >
+            <ThumbsDown className="h-4 w-4 fill-white text-white shrink-0" />
+            <span className="truncate">Batal Dislike</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleDislike}
+            className="h-11 px-3.5 rounded-2xl flex items-center justify-center gap-2 text-xs font-bold transition-all bg-white text-slate-700 hover:text-slate-900 hover:bg-slate-50 border border-slate-200/90 hover:border-slate-300 shadow-2xs cursor-pointer active:scale-95 select-none"
+          >
+            <ThumbsDown className="h-4 w-4 text-slate-500 shrink-0" />
+            <span className="truncate">Dislike</span>
+          </button>
+        )}
+      </div>
+
+      {/* Owner Notice or Login Prompt */}
       {isOwner ? (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-start gap-3">
-          <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0 mt-0.5">
-            <Heart className="h-4 w-4" />
+        <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3.5 flex items-start gap-3">
+          <div className="h-7 w-7 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0 mt-0.5 border border-red-100">
+            <Heart className="h-3.5 w-3.5 fill-red-500" />
           </div>
           <div>
-            <h5 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Aspirasi Anda</h5>
-            <p className="text-xs text-slate-500 leading-relaxed mt-0.5">
-              Ini adalah aspirasi yang Anda buat sendiri.
+            <h5 className="text-xs font-bold text-slate-800">Aspirasi Anda</h5>
+            <p className="text-[11px] text-slate-500 leading-relaxed mt-0.5">
+              Ini adalah laporan yang Anda buat. Anda dapat memantau perkembangan penyelesaiannya di sini.
             </p>
           </div>
         </div>
       ) : (
         !isAuthenticated && (
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
-                <LogIn className="h-4 w-4" />
+          <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                <LogIn className="h-3.5 w-3.5" />
               </div>
-              <div>
-                <p className="text-xs font-bold text-slate-700">Ingin merespon?</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">Login untuk menyukai atau menyembunyikan aspirasi.</p>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-slate-800 truncate">Ingin memberi dukungan?</p>
+                <p className="text-[10px] text-slate-400 truncate mt-0.5">Masuk untuk memberi suka atau masukan.</p>
               </div>
             </div>
             <Link
               href={`/login?redirect=/complaints/${complaintId}`}
-              className="shrink-0 h-8 px-4 inline-flex items-center gap-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors"
+              className="shrink-0 h-8 px-3.5 inline-flex items-center gap-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
             >
-              <LogIn className="h-3.5 w-3.5" />
-              Login
+              <LogIn className="h-3 w-3" />
+              <span>Masuk</span>
             </Link>
           </div>
         )
@@ -246,4 +243,3 @@ export default function SupportWidget({
     </div>
   );
 }
-

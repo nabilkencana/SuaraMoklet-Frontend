@@ -22,12 +22,12 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-white border-t border-slate-200/80 pt-16 mt-24 overflow-hidden relative">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 space-y-12">
+    <footer className="bg-white border-t border-slate-200/80 pt-12 sm:pt-16 mt-16 sm:mt-24 overflow-hidden relative">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 space-y-8 sm:space-y-12">
         {/* Top Section: Contacts & Nav Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 sm:gap-10">
           {/* Left Column: Socials & School Contact */}
-          <div className="md:col-span-5 space-y-6">
+          <div className="md:col-span-5 space-y-5 sm:space-y-6">
             {/* Circular Social Media Icons */}
             <div className="flex items-center gap-3">
               {socialMedia.map(({ label, path, url }) => (
@@ -37,7 +37,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="h-11 w-11 rounded-full border border-slate-300 flex items-center justify-center text-slate-700 hover:text-red-650 hover:border-red-500 hover:bg-red-50/50 transition-all cursor-pointer shadow-2xs"
+                  className="h-10 w-10 sm:h-11 sm:w-11 rounded-full border border-slate-300 flex items-center justify-center text-slate-700 hover:text-red-650 hover:border-red-500 hover:bg-red-50/50 transition-all cursor-pointer shadow-2xs"
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor" className="h-4.5 w-4.5">
                     <path d={path} />
@@ -47,7 +47,7 @@ export default function Footer() {
             </div>
 
             {/* Address & Contact Info */}
-            <div className="space-y-2 text-sm text-slate-600 leading-relaxed font-normal pt-1">
+            <div className="space-y-1.5 sm:space-y-2 text-sm text-slate-600 leading-relaxed font-normal pt-1">
               <p className="font-semibold text-slate-800">
                 Jl. Danau Ranau, Sawojajar, Kec. Kedungkandang,
                 <br />
@@ -63,9 +63,9 @@ export default function Footer() {
           </div>
 
           {/* Right Columns: Nav Links */}
-          <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
+          <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8">
             {/* Column 1: MENU */}
-            <div className="space-y-4">
+            <div className="space-y-3.5 sm:space-y-4">
               <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest">
                 MENU
               </h4>
@@ -94,7 +94,7 @@ export default function Footer() {
             </div>
 
             {/* Column 2: UNIT SEKOLAH */}
-            <div className="space-y-4">
+            <div className="space-y-3.5 sm:space-y-4">
               <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest">
                 UNIT SEKOLAH
               </h4>
@@ -123,7 +123,7 @@ export default function Footer() {
             </div>
 
             {/* Column 3: INFORMASI */}
-            <div className="space-y-4">
+            <div className="space-y-3.5 sm:space-y-4 col-span-2 sm:col-span-1">
               <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest">
                 INFORMASI
               </h4>
@@ -150,11 +150,11 @@ export default function Footer() {
         </div>
 
         {/* Horizontal Line Divider with Pill Button */}
-        <div className="relative flex items-center justify-between pt-4">
+        <div className="relative flex items-center justify-between pt-2 sm:pt-4">
           <div className="w-full border-t border-slate-300" />
           <Link
             href="/complaints/create"
-            className="shrink-0 ml-4 inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-slate-300 bg-white hover:bg-red-650 hover:text-white hover:border-red-650 text-slate-800 font-semibold text-xs tracking-wide transition-all shadow-2xs group cursor-pointer"
+            className="shrink-0 ml-4 inline-flex items-center gap-2 px-5 sm:px-6 py-2 sm:py-2.5 rounded-full border border-slate-300 bg-white hover:bg-red-650 hover:text-white hover:border-red-650 text-slate-800 font-semibold text-xs tracking-wide transition-all shadow-2xs group cursor-pointer"
           >
             <span>Mulai Lapor</span>
             <ArrowRight className="h-3.5 w-3.5 text-slate-600 group-hover:text-white transition-colors" />
@@ -163,11 +163,11 @@ export default function Footer() {
 
         {/* Sub-line Section: Description & Terms/Privacy */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs font-medium text-slate-500 pb-2">
-          <p className="max-w-md leading-relaxed">
+          <p className="max-w-md leading-relaxed text-xs">
             Platform resmi aspirasi &amp; pengaduan terbuka SMK Telkom Malang.
             Suaramu menciptakan perubahan positif untuk sekolah kita.
           </p>
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-slate-800 tracking-wider font-semibold text-[11px] uppercase">
+          <div className="flex flex-wrap items-center gap-3.5 sm:gap-6 text-slate-800 tracking-wider font-semibold text-[10.5px] sm:text-[11px] uppercase">
             <Link href="/credits" className="hover:text-red-650 transition-colors text-red-650 font-bold">
               CREDITS
             </Link>
@@ -181,9 +181,12 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Giant Watermark Typography at Very Bottom */}
-      <div className="w-full overflow-hidden select-none pointer-events-none leading-none pt-6 pb-0 -mb-3 text-center">
-        <span className="text-[14vw] sm:text-[14.5vw] font-black tracking-tighter uppercase text-red-650/10 block whitespace-nowrap leading-none font-sans">
+      {/* Giant Watermark Typography at Very Bottom — Ultra Colossal & Massive on Desktop and Mobile */}
+      <div className="w-full overflow-hidden select-none pointer-events-none text-center pt-8 sm:pt-14 pb-2 sm:pb-0 -mb-3 sm:-mb-6">
+        <span
+          className="text-[36vw] sm:text-[22vw] lg:text-[15.5vw] font-black tracking-tighter uppercase block whitespace-nowrap leading-none select-none font-sans"
+          style={{ color: "rgba(182, 23, 34, 0.12)" }}
+        >
           suara.-moklet
         </span>
       </div>

@@ -93,14 +93,13 @@ export function ComplaintCard({ data, className, maxSupports }: ComplaintCardPro
       )}
     >
       {/* Image Container */}
-      <div className="relative h-44 w-full overflow-hidden bg-slate-100 shrink-0">
+      <div className="relative aspect-16/10 w-full overflow-hidden bg-slate-100 shrink-0">
         {data.image ? (
-          <Image
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
             src={data.image}
             alt={data.title}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="w-full h-full bg-linear-to-tr from-red-50 to-slate-100 flex items-center justify-center">
@@ -109,17 +108,17 @@ export function ComplaintCard({ data, className, maxSupports }: ComplaintCardPro
         )}
 
         {/* Badges overlay */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 z-10">
+        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5 z-10">
           {/* Left: rank + category */}
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 min-w-0">
             {data.rank !== undefined && (
-              <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-red-600 text-white text-xs font-black shadow-md">
+              <span className="inline-flex items-center justify-center h-5.5 w-5.5 rounded-full bg-red-600 text-white text-[10.5px] font-black shadow-md shrink-0">
                 #{data.rank}
               </span>
             )}
             <span
               className={cn(
-                "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md shadow-2xs",
+                "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md shadow-2xs truncate max-w-24 sm:max-w-36",
                 categoryClasses
               )}
             >
@@ -130,7 +129,7 @@ export function ComplaintCard({ data, className, maxSupports }: ComplaintCardPro
           {/* Right: status */}
           <span
             className={cn(
-              "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide backdrop-blur-md shadow-2xs",
+              "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide backdrop-blur-md shadow-2xs shrink-0",
               statusConfig.classes
             )}
           >
