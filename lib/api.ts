@@ -532,8 +532,18 @@ export const complaintsApi = {
     return response.data;
   },
 
-  getLandingStats: async (): Promise<{ total: number; resolved: number }> => {
-    const response = await api.get<{ total: number; resolved: number }>("/complaints/overview");
+  getLandingStats: async (): Promise<{
+    total: number;
+    resolved: number;
+    unitCount?: number;
+    resolutionRate?: number;
+  }> => {
+    const response = await api.get<{
+      total: number;
+      resolved: number;
+      unitCount?: number;
+      resolutionRate?: number;
+    }>("/complaints/overview");
     return response.data;
   }
 };

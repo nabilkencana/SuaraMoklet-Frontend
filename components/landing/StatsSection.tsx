@@ -8,6 +8,8 @@ interface StatsSectionProps {
   summaryStats: {
     total: number;
     resolved: number;
+    unitCount?: number;
+    resolutionRate?: number;
   };
 }
 
@@ -33,19 +35,19 @@ export default function StatsSection({ isLoading, summaryStats }: StatsSectionPr
 
   const stats = [
     {
-      target: summaryStats.total > 0 ? summaryStats.total : (isLoading ? 0 : 124),
+      target: summaryStats.total,
       suffix: "+",
       label: "Total keluhan & aspirasi yang dilaporkan siswa.",
     },
     {
-      target: summaryStats.resolved > 0 ? summaryStats.resolved : (isLoading ? 0 : 98),
+      target: summaryStats.resolved,
       suffix: "+",
       label: "Laporan resmi yang berhasil diselesaikan unit.",
     },
     {
-      target: 100,
+      target: summaryStats.resolutionRate ?? 100,
       suffix: "%",
-      label: "Komitmen respons & peninjauan oleh 6 unit sekolah.",
+      label: `Komitmen respons & peninjauan oleh ${summaryStats.unitCount ?? 6} unit sekolah.`,
     },
   ];
 
@@ -61,7 +63,7 @@ export default function StatsSection({ isLoading, summaryStats }: StatsSectionPr
               <div className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 flex items-baseline justify-center">
                 <CountingNumber
                   target={stat.target}
-                  autoStart={statsTriggered}
+                  autoStart={statsTriggered && !isLoading}
                   transition={{ duration: 2.2, ease: "easeOut", type: "tween" }}
                 />
                 <span className="text-red-600 font-bold ml-1 text-2xl sm:text-3xl lg:text-4xl">

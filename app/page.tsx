@@ -22,7 +22,12 @@ export default function LandingPage() {
   const [petitionTitle, setPetitionTitle] = useState("");
   const [trendingComplaints, setTrendingComplaints] = useState<ComplaintCardData[]>([]);
   const [isLoadingComplaints, setIsLoadingComplaints] = useState(true);
-  const [summaryStats, setSummaryStats] = useState({ total: 0, resolved: 0 });
+  const [summaryStats, setSummaryStats] = useState({
+    total: 0,
+    resolved: 0,
+    unitCount: 6,
+    resolutionRate: 100,
+  });
 
   const handleStartPetition = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,7 +109,12 @@ export default function LandingPage() {
         // 3. Fetch summary stats from backend
         try {
           const stats = await apiClient.complaints.getLandingStats();
-          setSummaryStats({ total: stats.total, resolved: stats.resolved });
+          setSummaryStats({
+            total: stats.total,
+            resolved: stats.resolved,
+            unitCount: stats.unitCount ?? 6,
+            resolutionRate: stats.resolutionRate ?? 100,
+          });
         } catch (statsErr) {
           console.error("Failed to load landing stats:", statsErr);
         }
