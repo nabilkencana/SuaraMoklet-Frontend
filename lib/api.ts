@@ -324,6 +324,24 @@ export const authApi = {
     };
   },
 
+  googleLogin: async (idToken: string): Promise<LoginResponse> => {
+    const response = await api.post<any>("/auth/google", {
+      idToken,
+      credential: idToken,
+    });
+    const user = response.data.user;
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatarUrl: user.profilePicture || user.avatarUrl || undefined,
+      },
+      accessToken: response.data.accessToken,
+    };
+  },
+
   getProfile: async (): Promise<User> => {
     const response = await api.get<any>("/users/me");
     const user = response.data;

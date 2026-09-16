@@ -48,19 +48,19 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://cdn.jsdelivr.net${isDev ? " 'unsafe-eval'" : ""}`,
+      `script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://cdn.jsdelivr.net https://accounts.google.com/gsi/client${isDev ? " 'unsafe-eval'" : ""}`,
       "worker-src 'self' blob:",
       "child-src 'self' blob:",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' https: data: blob:",
       "media-src 'self' https:",
       // L-02 Fix: Hapus `http:` dari connect-src di production.
       // Production: hanya https: dan wss:. Development: tambah ws: dan http://localhost.
       isDev
-        ? "connect-src 'self' https: ws: wss: http://localhost:* http://127.0.0.1:*"
-        : "connect-src 'self' https: wss:",
-      "frame-src 'self' blob: data:",
+        ? "connect-src 'self' https: ws: wss: http://localhost:* http://127.0.0.1:* https://accounts.google.com/gsi/"
+        : "connect-src 'self' https: wss: https://accounts.google.com/gsi/",
+      "frame-src 'self' https://accounts.google.com/gsi/ blob: data:",
       "frame-ancestors 'self'",
       "object-src 'self' blob: data:",
       "base-uri 'self'",

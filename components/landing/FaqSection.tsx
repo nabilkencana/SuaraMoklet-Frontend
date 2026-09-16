@@ -1,106 +1,119 @@
 "use client";
 
-import React, { useState } from "react";
-import { HelpCircle, ChevronDown } from "lucide-react";
-import SectionEyebrow from "./SectionEyebrow";
-import { cn } from "@/lib/utils";
+import React from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { BlurredStagger } from "@/components/ui/text-reveal-faqs";
 
-interface FaqItem {
-  question: string;
-  answer: string;
-}
-
-const FAQ_DATA: FaqItem[] = [
+const FAQ_DATA = [
   {
+    id: "item-1",
     question: "Apa itu SuaraMoklet?",
     answer:
       "SuaraMoklet adalah platform aspirasi dan pengaduan resmi bagi seluruh siswa, guru, dan warga SMK Telkom Malang untuk menyampaikan masukan, ide, maupun kendala terkait sarana prasarana, kurikulum, kesiswaan, hubungan industri, tata usaha, dan layanan umum secara terbuka dan terpercaya.",
   },
   {
+    id: "item-2",
     question: "Apakah saya bisa melapor secara anonim?",
     answer:
       "Ya, tentu saja! Kamu dapat mengaktifkan opsi 'Kirim Sebagai Anonim'. Identitasmu (nama dan profil) dijamin 100% dirahasiakan oleh sistem dan tidak akan pernah ditampilkan baik ke publik maupun ke petugas unit sekolah yang menangani laporan. Kamu bisa menyampaikan keluhan dan aspirasi dengan tenang dan aman.",
   },
   {
+    id: "item-3",
     question: "Bagaimana alur tindak lanjut dari laporan saya?",
     answer:
       "Setiap laporan baru (BARU) akan langsung masuk ke antrean verifikasi unit sekolah yang dituju (seperti Sarpras, Kurikulum, atau Kesiswaan) dan diproses (DIPROSES). Kamu dapat memantau progres penanganan secara transparan melalui linimasa riwayat dan saling berdiskusi hingga masalah dinyatakan selesai (SELESAI).",
   },
   {
+    id: "item-4",
     question: "Format dokumen bukti apa saja yang didukung?",
     answer:
       "Kami mendukung berkas lampiran berupa foto/gambar (JPG, JPEG, PNG) atau dokumen digital (PDF) dengan batas ukuran maksimal 5MB untuk mempermudah unit pengelola melakukan inspeksi dan verifikasi di lapangan.",
   },
 ];
 
-function FaqAccordionItem({
-  item,
-  isOpen,
-  onClick,
-}: {
-  item: FaqItem;
-  isOpen: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <div className="border border-slate-200/80 rounded-2xl overflow-hidden bg-white shadow-xs hover:border-red-200 transition-all duration-300">
-      <button
-        onClick={onClick}
-        type="button"
-        className="w-full flex items-center justify-between p-5 text-left font-bold text-slate-800 hover:text-red-650 transition-colors gap-4 select-none cursor-pointer"
-      >
-        <span className="text-sm md:text-base leading-snug">{item.question}</span>
-        <ChevronDown
-          className={cn(
-            "h-5 w-5 text-slate-400 shrink-0 transition-transform duration-300",
-            isOpen && "rotate-180 text-red-600"
-          )}
-        />
-      </button>
-      <div
-        className={cn(
-          "grid transition-all duration-300 ease-in-out",
-          isOpen
-            ? "grid-rows-[1fr] opacity-100 border-t border-slate-100"
-            : "grid-rows-[0fr] opacity-0"
-        )}
-      >
-        <div className="overflow-hidden">
-          <p className="p-5 text-xs md:text-sm text-slate-500 leading-relaxed bg-slate-50/50">
-            {item.answer}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function FaqSection() {
-  const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
-
   return (
-    <section id="faq" className="py-16 sm:py-24 bg-white border-t border-slate-100">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <SectionEyebrow label="FAQ" icon={HelpCircle} />
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Pertanyaan yang Sering Diajukan
-          </h2>
-          <p className="mt-3 text-slate-500 text-sm max-w-md mx-auto leading-relaxed">
-            Temukan jawaban atas kebingungan Anda seputar penggunaan platform aspirasi
-            SuaraMoklet.
-          </p>
-        </div>
+    <section id="faq" className="py-16 md:py-24 border-t border-slate-100 bg-white overflow-hidden">
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
+        <div className="grid gap-8 lg:grid-cols-12 lg:gap-14 xl:gap-20 items-start">
+          {/* Sisi Kiri: Judul & Informasi dengan Animasi Slide-In */}
+          <motion.div
+            initial={{ opacity: 0, x: -35 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:col-span-4 xl:col-span-4 flex flex-col justify-start"
+          >
+            <h2 className="text-foreground text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 mt-1">
+              Pertanyaan yang Sering Diajukan
+            </h2>
+            <p className="text-muted-foreground text-slate-500 mt-4 text-balance text-base leading-relaxed">
+              Temukan jawaban atas kebingungan Anda seputar penggunaan platform aspirasi SuaraMoklet.
+            </p>
+            <p className="text-muted-foreground text-slate-500 mt-6 hidden lg:block text-sm leading-relaxed">
+              Tidak menemukan jawaban yang kamu cari? Kunjungi{" "}
+              <Link
+                href="/help"
+                className="text-red-600 font-semibold hover:underline"
+              >
+                Pusat Bantuan SuaraMoklet
+              </Link>{" "}
+              untuk panduan lebih lanjut.
+            </p>
+          </motion.div>
 
-        <div className="space-y-4">
-          {FAQ_DATA.map((faq, index) => (
-            <FaqAccordionItem
-              key={faq.question}
-              item={faq}
-              isOpen={activeFaqIndex === index}
-              onClick={() => setActiveFaqIndex(activeFaqIndex === index ? null : index)}
-            />
-          ))}
+          {/* Sisi Kanan: Accordion Luas dengan Staggered Entrance dan Text Reveal */}
+          <div className="lg:col-span-8 xl:col-span-8">
+            <Accordion type="single" collapsible className="w-full space-y-2">
+              {FAQ_DATA.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{
+                    duration: 0.5,
+                    delay: index * 0.12,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                >
+                  <AccordionItem
+                    value={item.id}
+                    className="border-b border-slate-200/80 rounded-xl px-3 transition-colors duration-200 hover:bg-slate-50/50 data-[state=open]:bg-slate-50/40"
+                  >
+                    <AccordionTrigger className="cursor-pointer text-base md:text-lg font-semibold text-slate-800 hover:text-red-600 hover:no-underline py-4 text-left transition-colors group">
+                      <span className="transition-transform duration-200 group-hover:translate-x-0.5">
+                        {item.question}
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="text-slate-600 pb-4 pt-1">
+                        <BlurredStagger text={item.answer} />
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </motion.div>
+              ))}
+            </Accordion>
+          </div>
+
+          {/* Link bantuan untuk tampilan mobile */}
+          <p className="text-muted-foreground text-slate-500 mt-4 lg:hidden text-sm">
+            Tidak menemukan jawaban yang kamu cari? Kunjungi{" "}
+            <Link
+              href="/help"
+              className="text-red-600 font-semibold hover:underline"
+            >
+              Pusat Bantuan SuaraMoklet
+            </Link>
+          </p>
         </div>
       </div>
     </section>
