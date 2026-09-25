@@ -1,17 +1,25 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { User, Mail, Phone, ShieldCheck, Clock, Settings, Loader2 } from "lucide-react";
+import { User, Mail, Phone, ShieldCheck, Clock, Settings } from "lucide-react";
 import useProfile from "@/hooks/useProfile";
 import { apiClient } from "@/lib/api";
 import { toast } from "sonner";
+import ChangePasswordCard from "./ChangePasswordCard";
 
 const ROLE_LABEL: Record<string, string> = {
-  USER: "Siswa",
+  USER: "Pengguna",
   UNIT_MEMBER: "Anggota Unit",
   UNIT_PIC: "PIC Unit",
   SUPER_PIC: "Super PIC",
   SUPERADMIN: "Super Admin",
+};
+
+const USER_TYPE_LABEL: Record<string, string> = {
+  SISWA: "Siswa",
+  ORANGTUA: "Orang Tua / Wali",
+  GURU: "Guru",
+  KARYAWAN: "Karyawan / Staf",
 };
 
 const ROLE_COLOR: Record<string, string> = {
@@ -113,8 +121,24 @@ export default function ProfileContainer() {
     .toUpperCase()
     .slice(0, 2);
 
-  const roleLabel = ROLE_LABEL[profile.user.role] || profile.user.role;
-  const roleColor = ROLE_COLOR[profile.user.role] || "bg-slate-100 text-slate-600 border border-slate-200";
+  const isUserRole = profile.user.role === "USER";
+  const userType = profile.user.userType;
+
+  let roleLabel = ROLE_LABEL[profile.user.role] || profile.user.role;
+  let roleColor = ROLE_COLOR[profile.user.role] || "bg-slate-100 text-slate-600 border border-slate-200";
+
+  if (isUserRole && userType && USER_TYPE_LABEL[userType]) {
+    roleLabel = USER_TYPE_LABEL[userType];
+    if (userType === "ORANGTUA") {
+      roleColor = "bg-amber-50 text-amber-700 border border-amber-200";
+    } else if (userType === "GURU") {
+      roleColor = "bg-emerald-50 text-emerald-700 border border-emerald-200";
+    } else if (userType === "KARYAWAN") {
+      roleColor = "bg-indigo-50 text-indigo-700 border border-indigo-200";
+    } else if (userType === "SISWA") {
+      roleColor = "bg-blue-50 text-blue-600 border border-blue-200";
+    }
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -123,8 +147,10 @@ export default function ProfileContainer() {
       <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
         <ShieldCheck className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
         <p className="text-xs text-amber-700 leading-relaxed">
-          <span className="font-bold">Data profil bersifat read-only.</span>{" "}
-          Informasi akun disinkronkan dari sistem sekolah dan tidak dapat diubah melalui platform ini.
+          <span className="font-bold">Data profil disinkronkan dari sistem sekolah.</span>{" "}
+          {isUserRole
+            ? "Informasi akun utama dikelola oleh pihak sekolah. Anda dapat memperbarui kata sandi akun Anda secara mandiri pada bagian di bawah."
+            : "Informasi akun disinkronkan dari sistem sekolah dan tidak dapat diubah melalui platform ini."}
         </p>
       </div>
 
@@ -158,7 +184,7 @@ export default function ProfileContainer() {
           <InfoRow icon={User} label="Nama Lengkap" value={profile.user.name} />
           <InfoRow icon={Mail} label="Email" value={profile.user.email} />
           <InfoRow icon={Phone} label="Nomor Telepon" value={profile.phone} />
-          <InfoRow icon={ShieldCheck} label="Role" value={roleLabel} />
+          <InfoRow icon={ShieldCheck} label="Role / Hak Akses" value={roleLabel} />
         </div>
 
         {/* Footer note */}
@@ -169,6 +195,13 @@ export default function ProfileContainer() {
           </div>
         </div>
       </div>
+
+      {/* Change Password Section (Khusus untuk USER / Orang Tua) */}
+      {isUserRole && (
+        <ChangePasswordCard
+          userType={userType}
+        />
+      )}
 
       {/* Preferences Section (Hanya untuk PIC & Admin) */}
       {isPIC && (

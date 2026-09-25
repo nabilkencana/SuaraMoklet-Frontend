@@ -16,6 +16,7 @@ export interface AuthUser {
   name: string;
   email: string;
   role: UserRole;
+  userType?: string;
   avatarUrl?: string;
   createdAt?: string;
   updatedAt?: string;

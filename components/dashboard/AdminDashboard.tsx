@@ -28,6 +28,7 @@ import AutoCloseConfigModal from "./admin/modals/AutoCloseConfigModal";
 import ImportUsersModal from "./admin/modals/ImportUsersModal";
 import UserFormModal from "./admin/modals/UserFormModal";
 import ViewUserModal from "./admin/modals/ViewUserModal";
+import ResetPasswordModal from "./admin/modals/ResetPasswordModal";
 import DetailComplaintModal from "./admin/modals/DetailComplaintModal";
 import DeleteComplaintModal from "./admin/modals/DeleteComplaintModal";
 import PublishCategoryModal from "./admin/modals/PublishCategoryModal";
@@ -119,6 +120,9 @@ export default function AdminDashboard() {
   });
 
   const [selectedUserForView, setSelectedUserForView] = useState<AdminUserRow | null>(null);
+  const [selectedUserForResetPassword, setSelectedUserForResetPassword] = useState<AdminUserRow | null>(null);
+  const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [detailModalData, setDetailModalData] = useState<any>(null);
@@ -601,6 +605,23 @@ export default function AdminDashboard() {
     });
   };
 
+  // Handler: Reset Password
+  const handleResetPassword = async (userId: string, newPassword: string) => {
+    setIsResettingPassword(true);
+    try {
+      const res = await apiClient.users.resetPassword(userId, newPassword);
+      toast.success(res?.message || "Password berhasil direset");
+      setIsResetPasswordModalOpen(false);
+      setSelectedUserForResetPassword(null);
+    } catch (err: any) {
+      toast.error("Gagal mereset password", {
+        description: err?.response?.data?.message || "Terjadi kesalahan saat mereset password",
+      });
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
   // Handler: Download Logs
   const handleDownloadLogs = async () => {
     try {
@@ -933,6 +954,10 @@ export default function AdminDashboard() {
                 setIsUserFormModalOpen(true);
               }}
               onViewUser={(u) => setSelectedUserForView(u)}
+              onResetPasswordUser={(u) => {
+                setSelectedUserForResetPassword(u);
+                setIsResetPasswordModalOpen(true);
+              }}
               onRestoreUser={handleRestoreUser}
               onDeleteUser={handleDeleteUser}
             />
@@ -1030,6 +1055,17 @@ export default function AdminDashboard() {
       <ViewUserModal
         user={selectedUserForView}
         onClose={() => setSelectedUserForView(null)}
+      />
+
+      <ResetPasswordModal
+        isOpen={isResetPasswordModalOpen}
+        user={selectedUserForResetPassword}
+        isSubmitting={isResettingPassword}
+        onClose={() => {
+          setIsResetPasswordModalOpen(false);
+          setSelectedUserForResetPassword(null);
+        }}
+        onSubmit={handleResetPassword}
       />
 
       <DetailComplaintModal

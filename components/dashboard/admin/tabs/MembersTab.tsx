@@ -7,6 +7,7 @@ import {
   Sliders,
   Eye,
   Pencil,
+  KeyRound,
   RefreshCw,
   Trash2,
 } from "lucide-react";
@@ -32,6 +33,7 @@ interface MembersTabProps {
   onExportUsers: () => void;
   onOpenCreateUser: () => void;
   onOpenEditUser: (user: AdminUserRow) => void;
+  onResetPasswordUser: (user: AdminUserRow) => void;
   onViewUser: (user: AdminUserRow) => void;
   onRestoreUser: (id: string, name: string) => void;
   onDeleteUser: (id: string, name: string) => void;
@@ -63,6 +65,7 @@ export default function MembersTab({
   onExportUsers,
   onOpenCreateUser,
   onOpenEditUser,
+  onResetPasswordUser,
   onViewUser,
   onRestoreUser,
   onDeleteUser,
@@ -248,6 +251,14 @@ export default function MembersTab({
                           title="Edit User"
                         >
                           <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => onResetPasswordUser(u)}
+                          className="h-8 w-8 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg flex items-center justify-center cursor-pointer transition-colors"
+                          title="Reset Password"
+                          aria-label={`Reset Password ${u.name}`}
+                        >
+                          <KeyRound className="h-4 w-4" />
                         </button>
                         {u.status === "Inactive" ? (
                           <button

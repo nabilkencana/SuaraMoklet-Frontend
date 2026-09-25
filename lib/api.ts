@@ -365,6 +365,7 @@ export const profileApi = {
       name: user.name,
       email: user.email,
       role: user.role,
+      userType: user.userType,
       avatarUrl: user.profilePicture || undefined,
     };
     return {
@@ -381,8 +382,16 @@ export const profileApi = {
   updateAvatar: async (_avatarUrl: string): Promise<{ user: User; phone?: string; avatarUrl?: string }> => {
     throw new Error("Profil tidak dapat diubah.");
   },
-  changePassword: async (_data: ChangePasswordRequest): Promise<{ message: string }> => {
-    throw new Error("Password tidak dapat diubah.");
+  changePassword: async (data: ChangePasswordRequest): Promise<{ message: string }> => {
+    try {
+      const response = await api.patch<any>("/users/me/password", data);
+      return response.data || { message: "Kata sandi berhasil diperbarui" };
+    } catch (err: any) {
+      if (err.response?.status === 404 || err.response?.status === 405) {
+        throw new Error("Layanan ganti kata sandi di server sedang dalam proses integrasi backend.");
+      }
+      throw new Error(err.response?.data?.message || err.message || "Gagal memperbarui kata sandi.");
+    }
   },
 
   getPreferences: async (): Promise<Record<string, boolean>> => {
@@ -779,6 +788,12 @@ export const usersApi = {
   },
   bulkImport: async (data: any[]): Promise<{ message: string; totalImported: number }> => {
     const response = await api.post("/users/bulk-import", { data });
+    return response.data;
+  },
+  resetPassword: async (id: string, password: string): Promise<{ message: string }> => {
+    const response = await api.patch<{ message: string }>(`/users/${id}/reset-password`, {
+      password,
+    });
     return response.data;
   },
 };
