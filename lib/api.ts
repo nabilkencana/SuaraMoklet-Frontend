@@ -786,8 +786,13 @@ export const usersApi = {
     });
     return response.data;
   },
-  bulkImport: async (data: any[]): Promise<{ message: string; totalImported: number }> => {
-    const response = await api.post("/users/bulk-import", { data });
+  bulkImport: async (file: File, data: any[]): Promise<{ message: string; totalImported: number }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("data", JSON.stringify(data));
+    const response = await api.post("/users/bulk-import", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return response.data;
   },
   resetPassword: async (id: string, password: string): Promise<{ message: string }> => {

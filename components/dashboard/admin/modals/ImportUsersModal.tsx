@@ -382,7 +382,7 @@ export default function ImportUsersModal({
 
                   try {
                     setIsSubmitting(true);
-                    const res = await apiClient.users.bulkImport(importData);
+                    const res = await apiClient.users.bulkImport(importFile!, importData);
                     toast.success(res.message || "Data berhasil diimport");
                     onClose();
                     onSetImportFile(null);
