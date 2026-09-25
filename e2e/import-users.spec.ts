@@ -3,7 +3,8 @@ import type { Page, BrowserContext } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
-// Helpers ─────────────────────────────────────────────────────────────────────
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeMockToken(role = 'SUPERADMIN') {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
@@ -13,9 +14,9 @@ function makeMockToken(role = 'SUPERADMIN') {
   return `${header}.${payload}.mock-signature`;
 }
 
-async function setupAuthAndCommonRoutes(page: import('@playwright/test').Page, context: import('@playwright/test').BrowserContext) {
-  await context.addCookies([
 async function setupAuthAndCommonRoutes(page: Page, context: BrowserContext) {
+  await context.addCookies([
+    { name: 'accessToken', value: makeMockToken(), domain: 'localhost', path: '/' },
   ]);
 
   await page.route('**/users/me', (route) =>
@@ -58,25 +59,46 @@ async function setupAuthAndCommonRoutes(page: Page, context: BrowserContext) {
   });
 }
 
-// Minimal CSV content matching the expected format
-const CSV_CONTENT = `Nama,Email,Nomor HP,Role,Unit
-Budi Santoso,budi@moklet.org,08123456789,Siswa,
-Siti Aminah,siti@moklet.org,08987654321,Guru,Kurikulum`;
+// ── Fixtures ──────────────────────────────────────────────────────────────────
+
+const CSV_CONTENT = [
+  'Nama,Email,Nomor HP,Role,Unit',
+  'Budi Santoso,budi@moklet.org,08123456789,Siswa,',
+  'Siti Aminah,siti@moklet.org,08987654321,Guru,Kurikulum',
+].join('\n');
 
 const PREVIEW_RESPONSE = {
   data: [
-    { name: 'Budi Santoso', email: 'budi@moklet.org', phone_number: '08123456789', role: 'SISWA', unit: '', isValid: true, isDuplicate: false },
-    { name: 'Siti Aminah', email: 'siti@moklet.org', phone_number: '08987654321', role: 'GURU', unit: 'Kurikulum', isValid: true, isDuplicate: false },
+    {
+      name: 'Budi Santoso',
+      email: 'budi@moklet.org',
+      phone_number: '08123456789',
+      role: 'SISWA',
+      unit: '',
+      isValid: true,
+      isDuplicate: false,
+    },
+    {
+      name: 'Siti Aminah',
+      email: 'siti@moklet.org',
+      phone_number: '08987654321',
+      role: 'GURU',
+      unit: 'Kurikulum',
+      isValid: true,
+      isDuplicate: false,
+    },
   ],
 };
 
-// Tests ───────────────────────────────────────────────────────────────────────
+// ── Tests ─────────────────────────────────────────────────────────────────────
 
 test.describe('Import Pengguna — Submit Import', () => {
-  test('Submit Import mengirim multipart/form-data dengan field "file" dan berhasil', async ({ page, context }) => {
+  test('Submit Import mengirim multipart/form-data dengan field "file" dan sukses', async ({
+    page,
+    context,
+  }) => {
     await setupAuthAndCommonRoutes(page, context);
 
-    // ── Mock preview endpoint ──────────────────────────────────────────────
     await page.route('**/users/bulk-import-preview', (route) =>
       route.fulfill({
         status: 200,
@@ -85,7 +107,7 @@ test.describe('Import Pengguna — Submit Import', () => {
       }),
     );
 
-    // ── Intercept bulk-import and capture request details ─────────────────
+    // Intercept final import — capture request metadata
     let capturedContentType: string | null = null;
     let capturedPostData: string | null = null;
     let bulkImportCalled = false;
@@ -105,9 +127,8 @@ test.describe('Import Pengguna — Submit Import', () => {
       }
     });
 
-    // ── Write a temporary CSV file so Playwright can attach it ─────────────
-    const tmpDir = os.tmpdir();
-    const csvPath = path.join(tmpDir, 'test_import.csv');
+    // Write temp CSV so Playwright can attach it to the file input
+    const csvPath = path.join(os.tmpdir(), 'test_import.csv');
     fs.writeFileSync(csvPath, CSV_CONTENT, 'utf-8');
 
     await page.addInitScript(() => {
@@ -117,58 +138,51 @@ test.describe('Import Pengguna — Submit Import', () => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
 
-    // ── Open Import modal ─────────────────────────────────────────────────
-    const importBtn = page.getByRole('button', { name: /Import Pengguna/i });
+    // Open modal — button label in MembersTab is "Import" (with Download icon)
+    const importBtn = page.getByRole('button', { name: /^Import$/i });
     await expect(importBtn).toBeVisible({ timeout: 10000 });
     await importBtn.click();
 
     const modalHeading = page.getByRole('heading', { name: 'Import Pengguna' });
     await expect(modalHeading).toBeVisible();
 
-    // ── Step 1: upload file ───────────────────────────────────────────────
+    // Step 1 — attach file
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(csvPath);
-
-    // File name should appear
     await expect(page.getByText('test_import.csv')).toBeVisible({ timeout: 5000 });
 
     const previewBtn = page.getByRole('button', { name: 'Preview Data' });
     await expect(previewBtn).toBeEnabled();
     await previewBtn.click();
 
-    // ── Step 2: verify data table is shown ───────────────────────────────
+    // Step 2 — verify data table (rows are rendered as <input> elements)
     await expect(page.getByText('Total Data:')).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText('Budi Santoso')).toBeVisible();
-    await expect(page.getByText('Siti Aminah')).toBeVisible();
+    await expect(page.locator('input[value="Budi Santoso"]')).toBeVisible();
+    await expect(page.locator('input[value="Siti Aminah"]')).toBeVisible();
 
-    // ── Step 3: click Submit Import ───────────────────────────────────────
+    // Step 3 — submit
     const submitBtn = page.getByRole('button', { name: 'Submit Import' });
     await expect(submitBtn).toBeVisible();
     await submitBtn.click();
 
-    // ── Assert: success toast ─────────────────────────────────────────────
+    // Success toast
     await expect(page.getByText('Data berhasil diimport')).toBeVisible({ timeout: 8000 });
 
-    // ── Assert: bulk-import was called ───────────────────────────────────
+    // Verify bulk-import was actually called
     expect(bulkImportCalled).toBe(true);
 
-    // ── Assert: request was multipart/form-data (must contain "file" boundary field) ──
+    // Verify the request used multipart/form-data with the "file" field
     expect(capturedContentType).toMatch(/multipart\/form-data/i);
-
-    // postData contains the raw multipart body; "file" field name must be present
     expect(capturedPostData).toContain('name="file"');
-
-    // "data" field (edited rows as JSON string) must also be present
     expect(capturedPostData).toContain('name="data"');
 
-    // Modal should close after success
+    // Modal should close
     await expect(modalHeading).not.toBeVisible({ timeout: 5000 });
 
-    // Clean up temp file
     fs.unlinkSync(csvPath);
   });
 
-  test('Submit Import menampilkan error toast ketika backend menolak', async ({ page, context }) => {
+  test('Submit Import menampilkan error toast saat backend menolak', async ({ page, context }) => {
     await setupAuthAndCommonRoutes(page, context);
 
     await page.route('**/users/bulk-import-preview', (route) =>
@@ -179,7 +193,7 @@ test.describe('Import Pengguna — Submit Import', () => {
       }),
     );
 
-    // Backend returns validation error
+    // Backend rejects — simulates the original bug
     await page.route('**/users/bulk-import', (route) =>
       route.fulfill({
         status: 422,
@@ -188,8 +202,7 @@ test.describe('Import Pengguna — Submit Import', () => {
       }),
     );
 
-    const tmpDir = os.tmpdir();
-    const csvPath = path.join(tmpDir, 'test_import_err.csv');
+    const csvPath = path.join(os.tmpdir(), 'test_import_err.csv');
     fs.writeFileSync(csvPath, CSV_CONTENT, 'utf-8');
 
     await page.addInitScript(() => {
@@ -198,8 +211,7 @@ test.describe('Import Pengguna — Submit Import', () => {
 
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
-
-    const importBtn = page.getByRole('button', { name: /Import Pengguna/i });
+    const importBtn = page.getByRole('button', { name: /^Import$/i });
     await expect(importBtn).toBeVisible({ timeout: 10000 });
     await importBtn.click();
 
@@ -212,10 +224,7 @@ test.describe('Import Pengguna — Submit Import', () => {
 
     await page.getByRole('button', { name: 'Submit Import' }).click();
 
-    // Error toast from backend must surface
-    await expect(
-      page.getByText(/File Excel wajib diunggah/i),
-    ).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(/File Excel wajib diunggah/i)).toBeVisible({ timeout: 8000 });
 
     fs.unlinkSync(csvPath);
   });
