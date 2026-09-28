@@ -174,6 +174,12 @@ export default function ImportUsersModal({
                   </tbody>
                 </table>
               </div>
+              <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                <span>💡</span>
+                <span>
+                  <strong>Format Teks:</strong> Kolom <em>Nomor HP</em> diproses sebagai <strong>string/teks</strong> agar awalan 0 pada file <strong>.csv</strong> (contoh: <code className="bg-slate-100 px-1.5 py-0.5 rounded text-[#b61722] font-mono">08123456789</code> atau <code className="bg-slate-100 px-1.5 py-0.5 rounded text-[#b61722] font-mono">+62...</code>) tidak hilang.
+                </span>
+              </p>
             </div>
 
             <div className="flex gap-2.5 pt-2">
@@ -194,7 +200,11 @@ export default function ImportUsersModal({
                   try {
                     setIsSubmitting(true);
                     const res = await apiClient.users.bulkImportPreview(importFile);
-                    onSetImportData(res.data || []);
+                    const formattedData = (res.data || []).map((item: any) => ({
+                      ...item,
+                      phone_number: item.phone_number != null ? String(item.phone_number) : "",
+                    }));
+                    onSetImportData(formattedData);
                     onSetImportStep(2);
                   } catch (err: any) {
                     toast.error(err?.response?.data?.message || "Gagal memproses file");
@@ -285,13 +295,14 @@ export default function ImportUsersModal({
                       <td className="p-2">
                         <input
                           type="text"
-                          value={row.phone_number}
+                          value={row.phone_number ?? ""}
+                          placeholder="08xxxxxxxxxx"
                           onChange={(e) => {
                             const nd = [...importData];
                             nd[i].phone_number = e.target.value;
                             onSetImportData(nd);
                           }}
-                          className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs bg-white"
+                          className="w-full h-8 px-2 border border-slate-200 rounded-lg text-xs bg-white font-mono"
                         />
                       </td>
                       <td className="p-2">
@@ -382,7 +393,11 @@ export default function ImportUsersModal({
 
                   try {
                     setIsSubmitting(true);
-                    const res = await apiClient.users.bulkImport(importFile!, importData);
+                    const sanitizedData = importData.map((d: any) => ({
+                      ...d,
+                      phone_number: d.phone_number != null ? String(d.phone_number).trim() : "",
+                    }));
+                    const res = await apiClient.users.bulkImport(importFile!, sanitizedData);
                     toast.success(res.message || "Data berhasil diimport");
                     onClose();
                     onSetImportFile(null);

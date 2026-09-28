@@ -155,11 +155,12 @@ test.describe('Import Pengguna — Submit Import', () => {
     await expect(previewBtn).toBeEnabled();
     await previewBtn.click();
 
-    // Step 2 — verify data table (rows are rendered as <input> elements)
+    // Step 2 — verify data table (rows are rendered as <input> elements, phone number string preserved)
     await expect(page.getByText('Total Data:')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('input[value="Budi Santoso"]')).toBeVisible();
     await expect(page.locator('input[value="Siti Aminah"]')).toBeVisible();
-
+    await expect(page.locator('input[value="08123456789"]')).toBeVisible();
+    await expect(page.locator('input[value="08987654321"]')).toBeVisible();
     // Step 3 — submit
     const submitBtn = page.getByRole('button', { name: 'Submit Import' });
     await expect(submitBtn).toBeVisible();
@@ -175,7 +176,7 @@ test.describe('Import Pengguna — Submit Import', () => {
     expect(capturedContentType).toMatch(/multipart\/form-data/i);
     expect(capturedPostData).toContain('name="file"');
     expect(capturedPostData).toContain('name="data"');
-
+    expect(capturedPostData).toContain('"phone_number":"08123456789"');
     // Modal should close
     await expect(modalHeading).not.toBeVisible({ timeout: 5000 });
 
