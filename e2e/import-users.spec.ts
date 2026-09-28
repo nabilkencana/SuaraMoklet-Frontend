@@ -57,6 +57,15 @@ async function setupAuthAndCommonRoutes(page: Page, context: BrowserContext) {
       route.continue();
     }
   });
+  await page.route('**/audit-logs**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) }),
+  );
+  await page.route('**/notifications**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) }),
+  );
+  await page.route('**/whatsapp**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ isConnected: false }) }),
+  );
 }
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────

@@ -5,7 +5,11 @@ import useAuthStore from "@/app/store/auth.store";
 import { isHttpOnlyMode, REFRESH_ENDPOINT } from "@/lib/auth-mode";
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api",
+  baseURL:
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+      ? "http://localhost:3001/api"
+      : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -16,8 +20,10 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      config.baseURL = "http://localhost:3001/api";
+    }
     // Mode cookie-js: Pasang Authorization Bearer header secara manual
-    // Mode httponly (Fase 2): Skip header — browser otomatis kirim HttpOnly cookie via withCredentials
     if (!isHttpOnlyMode) {
       const token = getCookie("accessToken");
       if (token) {
