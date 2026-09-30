@@ -168,12 +168,20 @@ export default function UnitComplaintsList({ hideSidebar = false }: { hideSideba
     toast.promise(
       (async () => {
         await apiClient.comments.create(selectedComplaint.id, { content: replyText });
+        if (replyStatus && selectedComplaint.status !== replyStatus) {
+          await apiClient.complaints.updateStatus(
+            selectedComplaint.id,
+            replyStatus,
+            replyStatus === "OPEN" ? replyText : undefined,
+            replyStatus === "DONE" ? replyText : undefined
+          );
+        }
         setIsModalOpen(false);
         fetchComplaints();
       })(),
       {
         loading: "Mengirim tanggapan...",
-        success: "Tanggapan berhasil dikirim!",
+        success: "Tanggapan berhasil dikirim dan status diperbarui!",
         error: "Gagal mengirim tanggapan.",
       }
     );

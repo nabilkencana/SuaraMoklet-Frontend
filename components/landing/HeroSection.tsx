@@ -125,19 +125,24 @@ export default function HeroSection({
         <div className="mt-14 sm:mt-16 max-w-2xl mx-auto">
           <form
             onSubmit={onSubmit}
-            className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:items-center sm:bg-white sm:rounded-2xl sm:border-2 sm:border-slate-200 sm:shadow-lg sm:shadow-slate-100 sm:hover:border-red-300 sm:focus-within:border-red-500 sm:focus-within:shadow-red-100/50 sm:focus-within:shadow-xl sm:transition-all sm:duration-300 sm:overflow-hidden sm:p-1.5"
+            className="group flex flex-col sm:flex-row gap-3 sm:gap-0 sm:items-center sm:bg-white sm:rounded-2xl sm:border-2 sm:border-slate-200 sm:shadow-lg sm:shadow-slate-100 sm:hover:border-red-300 sm:focus-within:border-red-500 sm:focus-within:shadow-red-100/50 sm:focus-within:shadow-xl sm:transition-all sm:duration-300 sm:overflow-hidden sm:p-2"
           >
-            <div className="flex items-center gap-2.5 flex-1 bg-white border-2 border-slate-200 rounded-2xl px-4 py-3 focus-within:border-red-500 transition-all sm:border-0 sm:rounded-none sm:px-0 sm:py-0 sm:focus-within:border-0">
-              <Megaphone className="h-5 w-5 text-red-500 shrink-0 sm:ml-3" />
+            <div className="flex items-center gap-3 flex-1 bg-white border-2 border-slate-200 rounded-2xl px-3 py-2.5 focus-within:border-red-500 transition-all sm:border-0 sm:rounded-none sm:px-1.5 sm:py-0 sm:focus-within:border-0">
+              <div className="relative flex items-center justify-center h-10 w-10 sm:h-9.5 sm:w-9.5 rounded-xl bg-linear-to-br from-red-50 via-rose-50 to-red-100/80 border border-red-200/70 text-red-600 shadow-xs shrink-0 transition-all duration-300 group-hover:scale-105 group-focus-within:scale-105 group-focus-within:border-red-300 group-focus-within:shadow-sm group-focus-within:shadow-red-200/50">
+                <Megaphone className="h-4.5 w-4.5 -rotate-12 transition-transform duration-300 group-hover:-rotate-6 group-focus-within:rotate-0 text-red-600" />
+                <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+              </div>
               <input
                 type="text"
                 value={petitionTitle}
                 onChange={(e) => onTitleChange(e.target.value)}
                 placeholder="Tuliskan keluhan atau ide perbaikan di sekolahmu..."
-                className="flex-1 px-2 sm:px-3 text-sm sm:text-base text-slate-900 placeholder:text-slate-400 bg-transparent outline-none py-1 sm:py-3 font-medium"
+                className="flex-1 px-1 sm:px-2 text-sm sm:text-base text-slate-900 placeholder:text-slate-400 bg-transparent outline-none py-1 sm:py-3 font-medium"
               />
             </div>
-
             <button
               type="submit"
               className="w-full sm:w-auto sm:shrink-0 h-12 sm:h-11 px-6 rounded-2xl sm:rounded-xl bg-red-600 hover:bg-red-700 active:scale-[0.97] text-white text-sm font-bold transition-all shadow-md shadow-red-200/60 flex items-center justify-center gap-2 cursor-pointer"

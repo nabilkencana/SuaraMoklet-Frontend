@@ -182,7 +182,13 @@ export default function AdminDashboard() {
         const raw = await apiClient.complaints.getAll({ limit: 1000 });
         loadedComplaints = Array.isArray(raw) ? raw : [];
       } catch (err) {
-        console.error("Failed to fetch complaints:", err);
+        console.warn("Failed to fetch complaints with limit 1000, trying with limit 100:", err);
+        try {
+          const rawFallback = await apiClient.complaints.getAll({ limit: 100 });
+          loadedComplaints = Array.isArray(rawFallback) ? rawFallback : [];
+        } catch (fallbackErr) {
+          console.error("Failed to fetch complaints fallback:", fallbackErr);
+        }
       }
       setComplaints(loadedComplaints);
 
