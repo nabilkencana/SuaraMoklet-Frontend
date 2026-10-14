@@ -55,6 +55,8 @@ const securityHeaders = [
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' https: data: blob:",
       "media-src 'self' https:",
+      "default-src 'self'",
+  "connect-src 'self' http://localhost:3301 https: wss: https://accounts.google.com/gsi/",
       // L-02 Fix: Hapus `http:` dari connect-src di production.
       // Production: hanya https: dan wss:. Development: tambah ws: dan http://localhost.
       isDev

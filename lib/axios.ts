@@ -8,7 +8,7 @@ export const api = axios.create({
   baseURL:
     typeof window !== "undefined" &&
     (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
-      ? "http://localhost:4000/api"
+      ? process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"
       : process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api",
   withCredentials: true,
   headers: {
@@ -21,7 +21,7 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-      config.baseURL = "http://localhost:4000/api";
+      config.baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
     }
     // Mode cookie-js: Pasang Authorization Bearer header secara manual
     if (!isHttpOnlyMode) {
