@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { X } from "lucide-react";
 import { Complaint, UnitModel } from "@/types/complaint";
+import SearchableSelect, { SearchableSelectOption } from "@/components/ui/searchable-select";
 
 interface ForwardComplaintModalProps {
   complaint: Complaint | null;
@@ -23,11 +24,19 @@ export default function ForwardComplaintModal({
   onClose,
   onSubmit,
 }: ForwardComplaintModalProps) {
+  const unitOptions: SearchableSelectOption[] = useMemo(() => {
+    return (units || []).map((u) => ({
+      value: u.id,
+      label: u.name,
+      subLabel: u.description || undefined,
+    }));
+  }, [units]);
+
   if (!complaint) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150 overflow-visible">
         <div className="flex justify-between items-start">
           <h3 className="font-extrabold text-slate-800 text-sm uppercase tracking-wider">
             Delegasikan Keluhan
@@ -49,17 +58,15 @@ export default function ForwardComplaintModal({
             <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400">
               Pilih Unit Penerima
             </label>
-            <select
+            <SearchableSelect
+              options={unitOptions}
               value={forwardUnitId}
-              onChange={(e) => onSelectUnit(e.target.value)}
-              className="w-full h-10 px-4 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-white"
-            >
-              {units.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
+              onChange={onSelectUnit}
+              placeholder="-- Pilih Unit Penerima --"
+              searchPlaceholder="Ketik nama unit..."
+              emptyMessage="Unit tidak ditemukan"
+              required
+            />
           </div>
 
           <div className="space-y-1.5">
